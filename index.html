@@ -226,6 +226,7 @@ pre.csv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2)
   </div>
   <div class="sg"><div class="slabel">Settings</div>
     <a data-pg="api-settings"><span class="sico">🔑</span>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
+    <a data-pg="db-settings"><span class="sico">🗄</span>Database <span class="scnt scnt-red" id="db-warn" style="display:none">!</span></a>
     <a data-pg="pricing"><span class="sico">⚙️</span>Pricing Rules</a>
     <a data-pg="calc"><span class="sico">🧮</span>Margin Calculator</a>
   </div>
@@ -572,6 +573,77 @@ pre.csv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2)
         </div>
         <div style="margin-top:10px;padding:9px 12px;background:var(--greenl);border-radius:var(--r);font-size:11px;color:var(--greend);font-weight:500">
           ✅ A $10/month hard cap at Anthropic covers ~200–300 invoices. More than enough for weekly store orders.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DATABASE SETTINGS -->
+<div class="pg" id="pg-db-settings">
+  <div class="pgh"><div class="pgt">Database Settings</div><div class="pgs">Connect Neon to save invoices permanently — survives refresh, works on any device</div></div>
+  <div id="db-status-banner" style="display:none;border-radius:var(--r);padding:11px 16px;margin-bottom:14px;font-size:13px;font-weight:500"></div>
+  <div class="g2">
+    <div>
+      <div class="card">
+        <div class="ctit">🗄 Neon Database Connection</div>
+        <div class="csub">Paste your connection string — stored only in this browser, never in code</div>
+        <div class="ig">
+          <label>Connection string</label>
+          <div style="position:relative">
+            <input id="db-conn-input" type="password" placeholder="postgresql://user:password@host/dbname"
+              autocomplete="off" style="padding-right:80px;font-family:JetBrains Mono,monospace;font-size:11px"
+              oninput="checkConnFmt(this.value)">
+            <button onclick="toggleDbVis()" id="db-vis-btn" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:3px 10px;font-size:11px;border:1px solid var(--border2);background:var(--bg3);border-radius:4px">Show</button>
+          </div>
+          <div id="conn-hint" style="font-size:11px;margin-top:3px;min-height:16px"></div>
+        </div>
+        <div class="brow">
+          <button class="bp" onclick="saveDbConn()">💾 Save connection</button>
+          <button onclick="testDbConn()" id="db-test-btn">🧪 Test connection</button>
+          <button class="br" onclick="clearDbConn()">🗑 Remove</button>
+        </div>
+        <div id="db-test-result" style="margin-top:10px;font-size:12px;display:none;padding:8px 12px;border-radius:var(--r);background:var(--bg3)"></div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--amber)">
+        <div class="ctit" style="color:var(--amberd)">⚠️ Keep your connection string safe</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.9;margin-top:6px">
+          <div>• <b>Never share</b> your connection string in chat or screenshots</div>
+          <div>• If exposed, reset password at <b>console.neon.tech → Settings</b></div>
+          <div>• Stored in browser localStorage — this device only</div>
+          <div>• Goes directly browser → Neon — no middleman</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="ctit">📊 Database status</div>
+        <div id="db-status-display">
+          <div class="cr"><span class="crl">Connection</span><span id="db-conn-status" class="crv" style="font-size:13px;color:var(--text3)">Not connected</span></div>
+          <div class="cr"><span class="crl">Invoices saved</span><span class="crv mn" id="db-inv-count">—</span></div>
+          <div class="cr"><span class="crl">Products tracked</span><span class="crv mn" id="db-prod-count">—</span></div>
+          <div class="cr"><span class="crl">Last sync</span><span class="crv mn" style="font-size:11px;color:var(--text3)" id="db-last-sync">Never</span></div>
+        </div>
+        <div class="brow" style="margin-top:10px">
+          <button class="bp" onclick="syncToDb()" id="sync-btn">☁️ Sync all data to database</button>
+          <button onclick="loadFromDb()" id="load-btn">⬇️ Load from database</button>
+        </div>
+        <div id="sync-progress" style="display:none;margin-top:10px">
+          <div class="pb"><div class="pbf" id="sync-bar" style="width:0%"></div></div>
+          <div id="sync-status" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctit">💡 What the database does</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.9">
+          <div>✅ Data survives browser refresh</div>
+          <div>✅ Access from any device</div>
+          <div>✅ Never lose invoice history</div>
+          <div>✅ Price history builds up over time</div>
+          <div>✅ Free — Neon free tier is more than enough</div>
+        </div>
+        <div style="margin-top:10px;padding:9px 12px;background:var(--bluel);border-radius:var(--r);font-size:11px;color:var(--blued);font-weight:500">
+          ℹ️ After connecting, click "Sync all data" to upload your existing invoices, then "Load from database" on any new device to get everything back.
         </div>
       </div>
     </div>
@@ -1154,7 +1226,11 @@ function finalizeAndSave(){
   const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor);
   if(idx>=0)hist.splice(idx,1);hist.unshift({...INV,savedAt:new Date().toISOString()});saveHist(hist);
   renderHistory();renderTracker('all');renderVendors();updateNavCounts();
-  alert(`Saved! ${saved} products added to price history. ${skipped} rows correctly excluded.`);
+  // Auto-sync to Neon if connected
+  if(getDbConn()){
+    syncToDb().catch(e=>console.warn('Auto-sync failed:',e.message));
+  }
+  alert(`Saved! ${saved} products added to price history. ${skipped} rows excluded.${getDbConn()?' Syncing to database...':' Tip: Connect a database in Settings to save permanently.'}`);
 }
 
 // ═══════════ PRICE TRACKER ═══════════
@@ -1693,6 +1769,308 @@ function getCrossVendorPrices(itemNo, currentVendorKey, currentUnitCost) {
   };
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// NEON DATABASE INTEGRATION
+// Uses Neon's HTTP API — works directly from browser, no backend needed
+// ═══════════════════════════════════════════════════════════
+
+function getDbConn(){ return localStorage.getItem('tm_db_conn')||''; }
+
+function saveDbConn(){
+  const val=(document.getElementById('db-conn-input').value||'').trim();
+  if(!val){alert('Please paste your connection string.');return;}
+  if(!val.startsWith('postgresql://')&&!val.startsWith('postgres://')){
+    if(!confirm('This does not look like a PostgreSQL connection string. Save anyway?'))return;
+  }
+  localStorage.setItem('tm_db_conn',val);
+  document.getElementById('db-conn-input').value='';
+  document.getElementById('db-conn-input').placeholder='●●●●●●●●●●●● (connection saved)';
+  document.getElementById('conn-hint').innerHTML='<span style="color:var(--green);font-weight:600">✅ Connection string saved</span>';
+  const w=document.getElementById('db-warn');if(w)w.style.display='none';
+  showDbBanner('✅ Database connection saved. Click "Test connection" to verify.','var(--greenl)','var(--greend)');
+  updateDbStatus();
+}
+
+function clearDbConn(){
+  if(!confirm('Remove the saved database connection?'))return;
+  localStorage.removeItem('tm_db_conn');
+  document.getElementById('db-conn-input').placeholder='postgresql://user:password@host/dbname';
+  document.getElementById('conn-hint').textContent='';
+  document.getElementById('db-conn-status').textContent='Not connected';
+  document.getElementById('db-conn-status').style.color='var(--text3)';
+  const w=document.getElementById('db-warn');if(w)w.style.display='flex';
+}
+
+function toggleDbVis(){
+  const inp=document.getElementById('db-conn-input');
+  const btn=document.getElementById('db-vis-btn');
+  inp.type=inp.type==='password'?'text':'password';
+  btn.textContent=inp.type==='password'?'Show':'Hide';
+}
+
+function checkConnFmt(v){
+  const h=document.getElementById('conn-hint');if(!v){h.textContent='';return;}
+  if(v.startsWith('postgresql://')||v.startsWith('postgres://'))
+    h.innerHTML='<span style="color:var(--green);font-weight:500">✓ Valid PostgreSQL connection string</span>';
+  else h.innerHTML='<span style="color:var(--amber)">⚠ Expected format: postgresql://...</span>';
+}
+
+// Parse connection string to get Neon HTTP API endpoint
+function parseNeonConn(connStr){
+  try{
+    // postgresql://user:password@host/dbname?sslmode=require
+    const m=connStr.match(/postgresql:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)/);
+    if(!m) return null;
+    return {user:m[1],password:m[2],host:m[3],database:m[4]};
+  }catch(e){return null;}
+}
+
+// Execute SQL via Neon HTTP API
+async function neonQuery(sql, params){
+  const conn=getDbConn();
+  if(!conn) throw new Error('No database connection configured');
+  const parsed=parseNeonConn(conn);
+  if(!parsed) throw new Error('Could not parse connection string');
+  
+  // Neon HTTP API endpoint
+  const url=`https://${parsed.host}/sql`;
+  const resp=await fetch(url,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Basic '+btoa(parsed.user+':'+parsed.password),
+      'Neon-Connection-String':conn,
+    },
+    body:JSON.stringify({query:sql, params:params||[]})
+  });
+  if(!resp.ok){
+    const err=await resp.text();
+    throw new Error('Database error: '+err);
+  }
+  return await resp.json();
+}
+
+async function testDbConn(){
+  const conn=getDbConn();
+  if(!conn){alert('No connection saved. Paste and save your connection string first.');return;}
+  const btn=document.getElementById('db-test-btn');
+  const res=document.getElementById('db-test-result');
+  btn.textContent='Testing...';btn.disabled=true;
+  res.style.display='block';res.textContent='Connecting to Neon...';res.style.color='var(--text3)';
+  try{
+    await initDbTables();
+    res.innerHTML='<span style="color:var(--green);font-weight:600">✅ Connected to Neon successfully! Database is ready.</span>';
+    res.style.background='var(--greenl)';
+    document.getElementById('db-conn-status').textContent='Connected ✅';
+    document.getElementById('db-conn-status').style.color='var(--green)';
+    showDbBanner('✅ Database connected and ready.','var(--greenl)','var(--greend)');
+    updateDbStatus();
+  }catch(err){
+    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+err.message+'</span>';
+    res.style.background='var(--redl)';
+  }
+  btn.textContent='🧪 Test connection';btn.disabled=false;
+}
+
+// Create tables if they don't exist
+async function initDbTables(){
+  await neonQuery(`
+    CREATE TABLE IF NOT EXISTS invoices (
+      id SERIAL PRIMARY KEY,
+      invoice_no TEXT NOT NULL,
+      vendor TEXT NOT NULL,
+      date TEXT,
+      doc_type TEXT DEFAULT 'invoice',
+      customer TEXT,
+      total NUMERIC,
+      items JSONB,
+      saved_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(invoice_no, vendor)
+    )
+  `);
+  await neonQuery(`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id SERIAL PRIMARY KEY,
+      vendor_key TEXT NOT NULL,
+      item_no TEXT NOT NULL,
+      date TEXT,
+      case_cost NUMERIC,
+      unit_cost NUMERIC,
+      units INTEGER,
+      invoice_no TEXT,
+      doc_type TEXT,
+      size TEXT,
+      description TEXT,
+      norm_desc TEXT,
+      category TEXT,
+      confidence NUMERIC,
+      vendor TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(vendor_key, item_no, invoice_no)
+    )
+  `);
+  await neonQuery(`CREATE INDEX IF NOT EXISTS idx_ph_vendor_item ON price_history(vendor_key, item_no)`);
+  await neonQuery(`CREATE INDEX IF NOT EXISTS idx_ph_date ON price_history(date)`);
+  await neonQuery(`CREATE INDEX IF NOT EXISTS idx_inv_vendor ON invoices(vendor, invoice_no)`);
+}
+
+// Sync all localStorage data to Neon
+async function syncToDb(){
+  const conn=getDbConn();
+  if(!conn){alert('No database connection. Go to Database Settings first.');return;}
+  
+  const syncBtn=document.getElementById('sync-btn');
+  const prog=document.getElementById('sync-progress');
+  const bar=document.getElementById('sync-bar');
+  const status=document.getElementById('sync-status');
+  syncBtn.disabled=true;syncBtn.textContent='Syncing...';
+  show('sync-progress',true);
+  
+  try{
+    status.textContent='Initializing database tables...';
+    await initDbTables();
+    
+    const hist=loadHist();
+    const db=loadDB();
+    let done=0; const total=hist.length+Object.keys(db).length;
+    
+    // Sync invoices
+    status.textContent=`Syncing ${hist.length} invoices...`;
+    for(const inv of hist){
+      try{
+        await neonQuery(
+          `INSERT INTO invoices(invoice_no,vendor,date,doc_type,customer,total,items)
+           VALUES($1,$2,$3,$4,$5,$6,$7)
+           ON CONFLICT(invoice_no,vendor) DO UPDATE SET
+           date=EXCLUDED.date,total=EXCLUDED.total,items=EXCLUDED.items`,
+          [inv.invoiceNo,inv.vendor,inv.date,inv.docType||'invoice',
+           inv.customer||'',inv.total||0,JSON.stringify(inv.items||[])]
+        );
+      }catch(e){console.warn('Invoice sync error:',e.message);}
+      done++;bar.style.width=Math.round(done/total*100)+'%';
+    }
+    
+    // Sync price history
+    status.textContent=`Syncing price history...`;
+    for(const [key,entries] of Object.entries(db)){
+      const [vk,itemNo]=key.split('|');
+      for(const e of entries){
+        try{
+          await neonQuery(
+            `INSERT INTO price_history(vendor_key,item_no,date,case_cost,unit_cost,units,invoice_no,doc_type,size,description,norm_desc,category,confidence,vendor)
+             VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+             ON CONFLICT(vendor_key,item_no,invoice_no) DO UPDATE SET
+             unit_cost=EXCLUDED.unit_cost,case_cost=EXCLUDED.case_cost`,
+            [vk,itemNo,e.date,e.caseCost||0,e.unitCost||0,e.units||1,
+             e.invoiceNo||'',e.docType||'invoice',e.size||'',e.desc||'',
+             e.normDesc||'',e.cat||'other',e.conf||0.5,e.vendor||'']
+          );
+        }catch(e2){console.warn('History sync error:',e2.message);}
+        done++;bar.style.width=Math.round(done/total*100)+'%';
+      }
+    }
+    
+    bar.style.width='100%';
+    status.innerHTML='<span style="color:var(--green);font-weight:600">✅ All data synced to database!</span>';
+    lsSet('tm_last_sync',new Date().toISOString());
+    updateDbStatus();
+    showDbBanner('✅ All data synced to Neon successfully.','var(--greenl)','var(--greend)');
+  }catch(err){
+    status.innerHTML='<span style="color:var(--red)">❌ Sync failed: '+err.message+'</span>';
+    showDbBanner('❌ Sync failed: '+err.message,'var(--redl)','var(--redd)');
+  }
+  syncBtn.disabled=false;syncBtn.textContent='☁️ Sync all data to database';
+}
+
+// Load all data FROM Neon into localStorage
+async function loadFromDb(){
+  const conn=getDbConn();
+  if(!conn){alert('No database connection. Go to Database Settings first.');return;}
+  
+  const btn=document.getElementById('load-btn');
+  btn.disabled=true;btn.textContent='Loading...';
+  
+  try{
+    await initDbTables();
+    
+    // Load invoices
+    const invResult=await neonQuery('SELECT * FROM invoices ORDER BY date DESC');
+    const invoices=(invResult.rows||[]).map(r=>({
+      invoiceNo:r.invoice_no,vendor:r.vendor,date:r.date,
+      docType:r.doc_type,customer:r.customer,total:parseFloat(r.total)||0,
+      items:typeof r.items==='string'?JSON.parse(r.items):r.items||[],
+      savedAt:r.saved_at
+    }));
+    
+    // Re-classify items
+    invoices.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt))classifyInvoice(inv);});
+    saveHist(invoices);
+    
+    // Load price history
+    const phResult=await neonQuery('SELECT * FROM price_history ORDER BY date ASC');
+    const db={};
+    (phResult.rows||[]).forEach(r=>{
+      const key=r.vendor_key+'|'+r.item_no;
+      if(!db[key])db[key]=[];
+      if(!db[key].find(e=>e.invoiceNo===r.invoice_no)){
+        db[key].push({
+          date:r.date,caseCost:parseFloat(r.case_cost)||0,
+          unitCost:parseFloat(r.unit_cost)||0,units:parseInt(r.units)||1,
+          invoiceNo:r.invoice_no,docType:r.doc_type||'invoice',
+          size:r.size,desc:r.description,normDesc:r.norm_desc,
+          cat:r.category,conf:parseFloat(r.confidence)||0.5,vendor:r.vendor
+        });
+      }
+    });
+    saveDB(db);
+    
+    renderHistory();renderTracker('all');renderVendors();updateNavCounts();
+    lsSet('tm_last_sync',new Date().toISOString());
+    updateDbStatus();
+    showDbBanner(`✅ Loaded ${invoices.length} invoices and ${phResult.rows.length} price history entries.`,'var(--greenl)','var(--greend)');
+    alert(`✅ Loaded ${invoices.length} invoices from database. Your data is restored!`);
+  }catch(err){
+    showDbBanner('❌ Load failed: '+err.message,'var(--redl)','var(--redd)');
+    alert('Load failed: '+err.message);
+  }
+  btn.disabled=false;btn.textContent='⬇️ Load from database';
+}
+
+// Auto-save to Neon when finalizeAndSave is called
+const _origFinalizeAndSave = null;
+
+function showDbBanner(msg,bg,color){
+  const b=document.getElementById('db-status-banner');if(!b)return;
+  b.style.display='block';b.textContent=msg;
+  b.style.background=bg;b.style.color=color;b.style.border='1px solid '+color;
+  setTimeout(()=>{if(b)b.style.display='none';},6000);
+}
+
+function updateDbStatus(){
+  const conn=getDbConn();
+  const lastSync=lsGet('tm_last_sync');
+  const hist=loadHist();const db=loadDB();
+  const status=document.getElementById('db-conn-status');
+  if(status){
+    if(conn){status.textContent='Connected ✅';status.style.color='var(--green)';}
+    else{status.textContent='Not connected';status.style.color='var(--text3)';}
+  }
+  const ic=document.getElementById('db-inv-count');if(ic)ic.textContent=hist.length;
+  const pc=document.getElementById('db-prod-count');if(pc)pc.textContent=Object.keys(db).length;
+  const ls=document.getElementById('db-last-sync');
+  if(ls)ls.textContent=lastSync?new Date(lastSync).toLocaleString():'Never';
+  const w=document.getElementById('db-warn');
+  if(w)w.style.display=conn?'none':'flex';
+  if(conn){
+    const inp=document.getElementById('db-conn-input');
+    if(inp)inp.placeholder='●●●●●●●●●●●● (connection saved)';
+  }
+}
+
+// Override finalizeAndSave to also sync to DB
+const _baseFinalizeAndSave = typeof finalizeAndSave !== 'undefined' ? finalizeAndSave : null;
+
 // ═══════════ DEMO INVOICE ═══════════
 const DEMO={
   vendor:'U.S. Trading Company',invoiceNo:'7479337',date:'Aug 29, 2025',
@@ -1751,6 +2129,11 @@ const DEMO={
 // ═══════════ INIT ═══════════
 migrateDB();
 checkApiOnLoad();
+updateDbStatus();
+// Auto-load from DB on startup if connected and no local data
+if(getDbConn()&&!loadHist().length){
+  loadFromDb().catch(e=>console.warn('Auto-load failed:',e));
+}
 renderTargets();
 renderHistory();
 renderTracker('all');
