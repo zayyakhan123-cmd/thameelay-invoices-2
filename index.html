@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Thameelay · Invoice Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c1:#6366f1;--c1h:#4f46e5;--c1l:#eef2ff;--c1d:#3730a3;
+  --green:#10b981;--greenl:#d1fae5;--greend:#065f46;
+  --red:#ef4444;--redl:#fee2e2;--redd:#991b1b;
+  --amber:#f59e0b;--amberl:#fef3c7;--amberd:#92400e;
+  --blue:#3b82f6;--bluel:#dbeafe;--blued:#1e40af;
+  --purple:#8b5cf6;--purplel:#ede9fe;--purpled:#5b21b6;
+  --pink:#ec4899;--pinkl:#fce7f3;--pinkd:#9d174d;
+  --teal:#14b8a6;--teall:#ccfbf1;--teald:#134e4a;
+  --bg:#f8fafc;--bg2:#ffffff;--bg3:#f1f5f9;--bg4:#e2e8f0;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --border:#e2e8f0;--border2:#cbd5e1;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 4px 6px -1px rgba(0,0,0,.08),0 2px 4px -1px rgba(0,0,0,.05);
+  --r:8px;--rl:12px;--rxl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;min-height:100vh}
+a{text-decoration:none}
+
+/* HEADER */
+header{background:#fff;border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:300;box-shadow:var(--sh)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-ico{width:34px;height:34px;background:linear-gradient(135deg,#6366f1,#06b6d4);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0}
+.logo-text{font-size:16px;font-weight:700;color:var(--text)}
+.logo-text em{color:var(--c1);font-style:normal}
+.hbadge{font-size:11px;background:var(--c1l);color:var(--c1d);padding:4px 12px;border-radius:20px;font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - 56px)}
+.side{width:218px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:12px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.sg{margin-bottom:2px}
+.slabel{padding:8px 16px 4px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase}
+nav a{display:flex;align-items:center;gap:9px;padding:8px 16px;font-size:13px;color:var(--text2);transition:all .12s;cursor:pointer;position:relative;border-left:3px solid transparent}
+nav a:hover{background:var(--bg3);color:var(--text)}
+nav a.on{background:var(--c1l);color:var(--c1d);font-weight:600;border-left-color:var(--c1)}
+.sico{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.scnt{margin-left:auto;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:18px;text-align:center}
+.scnt-red{background:var(--red);color:#fff}
+.scnt-blue{background:var(--c1l);color:var(--c1d)}
+
+/* MAIN */
+.main{flex:1;padding:24px;min-width:0;overflow-x:hidden}
+.pg{display:none}.pg.on{display:block}
+.pgh{margin-bottom:20px}
+.pgt{font-size:20px;font-weight:700;color:var(--text);margin-bottom:3px}
+.pgs{font-size:13px;color:var(--text2)}
+
+/* STEP BAR */
+.steps{display:flex;border-radius:var(--rl);overflow:hidden;border:1px solid var(--border);margin-bottom:20px}
+.step{flex:1;padding:10px 14px;font-size:12px;font-weight:500;color:var(--text3);text-align:center;background:#fff;border-right:1px solid var(--border)}
+.step:last-child{border-right:none}
+.step.done{background:var(--greenl);color:var(--greend)}
+.step.active{background:var(--c1l);color:var(--c1d);font-weight:700}
+
+/* METRICS GRID */
+.mets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.met{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:16px;box-shadow:var(--sh)}
+.met-ico{width:38px;height:38px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
+.met-val{font-size:24px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+.met-lbl{font-size:11px;color:var(--text2);font-weight:500}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;margin-bottom:14px;box-shadow:var(--sh)}
+.ctit{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.csub{font-size:11px;color:var(--text3);margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+
+/* TABLES */
+.tw{overflow-x:auto;margin:0 -20px;padding:0 20px}
+table{width:100%;font-size:12px;border-collapse:collapse;min-width:480px}
+th{font-weight:600;color:var(--text3);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;background:var(--bg3)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.wd{white-space:normal;min-width:130px}
+
+/* TAGS */
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+.tg{background:var(--greenl);color:var(--greend)}
+.tr{background:var(--redl);color:var(--redd)}
+.ta{background:var(--amberl);color:var(--amberd)}
+.tb{background:var(--bluel);color:var(--blued)}
+.tp{background:var(--purplel);color:var(--purpled)}
+.tk{background:var(--pinkl);color:var(--pinkd)}
+.tt{background:var(--teall);color:var(--teald)}
+.tgr{background:var(--bg3);color:var(--text2)}
+
+/* INPUTS */
+.ig{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.ig label{font-size:11px;font-weight:600;color:var(--text2)}
+.ig input,.ig select,.ig textarea{font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;border:1.5px solid var(--border2);border-radius:var(--r);background:#fff;color:var(--text);outline:none;transition:border .12s,box-shadow .12s;width:100%}
+.ig input:focus,.ig select:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+button{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;padding:8px 16px;border-radius:var(--r);border:1.5px solid var(--border2);background:#fff;color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+button:hover{background:var(--bg3);color:var(--text)}
+.bp{background:var(--c1)!important;color:#fff!important;border-color:transparent!important}
+.bp:hover{background:var(--c1h)!important}
+.bg{background:var(--green)!important;color:#fff!important;border-color:transparent!important}
+.br{background:var(--red)!important;color:#fff!important;border-color:transparent!important}
+.bgo{background:transparent!important;border-color:var(--c1)!important;color:var(--c1)!important}
+.bgo:hover{background:var(--c1l)!important}
+.brow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+
+/* DROPZONE */
+.dz{border:2.5px dashed var(--border2);border-radius:var(--rxl);padding:52px 32px;text-align:center;background:#fff;transition:all .15s;cursor:pointer;position:relative}
+.dz:hover,.dz.over{border-color:var(--c1);background:var(--c1l)}
+.dz-icon{font-size:52px;margin-bottom:16px;display:block}
+.dz-title{font-size:19px;font-weight:700;color:var(--text);margin-bottom:7px}
+.dz-sub{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.7}
+
+/* MISC */
+.pb{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:6px 0}
+.pbf{height:100%;border-radius:3px;background:var(--c1);transition:width .3s}
+.pbf.g{background:var(--green)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.pill{font-size:11px;font-weight:500;padding:5px 13px;border-radius:20px;border:1.5px solid var(--border2);cursor:pointer;color:var(--text2);background:#fff;transition:all .12s}
+.pill:hover{border-color:var(--c1);color:var(--c1)}
+.pill.on{background:var(--c1);color:#fff;border-color:transparent}
+.mn{font-family:'JetBrains Mono',monospace}
+.up{color:var(--red);font-weight:600}.dn{color:var(--green);font-weight:600}
+.au{display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:7px solid var(--red);vertical-align:middle;margin-right:3px}
+.ad{display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid var(--green);vertical-align:middle;margin-right:3px}
+.aeq{display:inline-block;width:8px;height:2px;background:var(--text3);vertical-align:middle;margin-right:3px}
+
+/* TYPING DOTS */
+.typing{display:flex;gap:5px;align-items:center;padding:6px 0}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--c1);animation:pulse 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* ROW CLASSIFICATION COLORS */
+.rp td:first-child{border-left:3px solid var(--green)}
+.ro{opacity:.4}
+.rz td:first-child{border-left:3px solid var(--amber)}
+.rc td:first-child{border-left:3px solid var(--purple)}
+.rm td:first-child{border-left:3px solid var(--red)}
+
+/* APPROVAL ROW */
+.apr{display:flex;align-items:flex-start;gap:10px;padding:14px;border:1.5px solid var(--border);border-radius:var(--rl);margin-bottom:8px;background:#fff;transition:box-shadow .12s}
+.apr:hover{box-shadow:var(--shm)}
+.apr.aok{border-left:4px solid var(--green);background:#f0fdf4}
+.apr.ano{border-left:4px solid var(--text3);opacity:.55}
+.apr.ap{border-left:4px solid var(--amber)}
+.tinput{font-family:'JetBrains Mono',monospace;font-size:12px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px;background:#fff;color:var(--text);outline:none;width:90px;transition:border .12s}
+.tinput:focus{border-color:var(--c1);box-shadow:0 0 0 2px rgba(99,102,241,.1)}
+.tsel{font-size:11px;padding:3px 7px;border:1.5px solid var(--border2);border-radius:6px;background:#fff;color:var(--text);outline:none;cursor:pointer}
+.chk{width:15px;height:15px;accent-color:var(--c1);cursor:pointer;flex-shrink:0;margin-top:3px}
+
+/* CALC */
+.cr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.cr:last-child{border-bottom:none}
+.crl{font-size:12px;color:var(--text2);font-weight:500}
+.crv{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.vizbar{display:flex;height:28px;border-radius:var(--r);overflow:hidden;margin:10px 0}
+.vzc{background:var(--blue);transition:width .4s}.vzp{background:var(--green);transition:width .4s}.vze{flex:1;background:var(--bg3)}
+
+/* VENDOR CARD */
+.vc{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:12px;box-shadow:var(--sh)}
+.vc-hd{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.vc-av{width:38px;height:38px;border-radius:var(--r);background:linear-gradient(135deg,var(--c1),#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0}
+.vc-name{font-size:14px;font-weight:700;color:var(--text)}
+.vc-stats{display:flex;gap:20px;flex-wrap:wrap}
+.vs{display:flex;flex-direction:column;gap:2px}
+.vsv{font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.vsl{font-size:10px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+
+/* INV HISTORY CARD */
+.hcard{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:14px 18px;margin-bottom:10px;box-shadow:var(--sh);cursor:pointer;transition:box-shadow .12s}
+.hcard:hover{box-shadow:var(--shm)}
+
+/* ALERT */
+.alrow{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.alrow:last-child{border-bottom:none}
+.alico{width:34px;height:34px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+/* TARGET CARD */
+.tcard{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:16px;box-shadow:var(--sh);border-top:3px solid var(--c1)}
+.tcard input{width:74px;font-family:'JetBrains Mono',monospace;font-size:16px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--c1);outline:none;text-align:center;font-weight:600}
+.tcard input:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+
+/* LEGEND */
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text2)}
+.legi{display:flex;align-items:center;gap:5px}
+.legd{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* SUMBOX */
+.sumbox{background:linear-gradient(135deg,#eef2ff,#ecfeff);border:1px solid rgba(99,102,241,.2);border-radius:var(--rl);padding:14px 16px;margin-bottom:14px;font-size:13px;color:var(--text2);line-height:1.7}
+
+pre.csv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;overflow-x:auto;white-space:pre;line-height:1.6}
+
+@media(max-width:768px){.side{display:none}.mets,.g2,.g3{grid-template-columns:1fr 1fr}.main{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-ico">T</div>
+    <div class="logo-text">thameelay<em>.invoices</em></div>
+  </div>
+  <div class="hbadge" id="hbadge">No invoice loaded</div>
+</header>
+<div class="layout">
+<nav class="side">
+  <div class="sg"><div class="slabel">Workflow</div>
+    <a data-pg="upload" class="on"><span class="sico">📤</span>Upload Invoice</a>
+    <a data-pg="verify"><span class="sico">🔍</span>Verify Lines</a>
+    <a data-pg="approve"><span class="sico">✅</span>Price Approvals <span class="scnt scnt-red" id="ap-cnt">0</span></a>
+    <a data-pg="export"><span class="sico">📊</span>Export to POS</a>
+  </div>
+  <div class="sg"><div class="slabel">Intelligence</div>
+    <a data-pg="tracker"><span class="sico">📈</span>Price Tracker</a>
+    <a data-pg="vendors"><span class="sico">🏪</span>Vendor Dashboard</a>
+    <a data-pg="alerts"><span class="sico">🔔</span>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
+  </div>
+  <div class="sg"><div class="slabel">History</div>
+    <a data-pg="history"><span class="sico">🗂</span>Invoice History <span class="scnt scnt-blue" id="hi-cnt">0</span></a>
+  </div>
+  <div class="sg"><div class="slabel">Settings</div>
+    <a data-pg="api-settings"><span class="sico">🔑</span>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
+    <a data-pg="pricing"><span class="sico">⚙️</span>Pricing Rules</a>
+    <a data-pg="calc"><span class="sico">🧮</span>Margin Calculator</a>
+  </div>
+</nav>
+<main class="main">
+
+<!-- UPLOAD -->
+<div class="pg on" id="pg-upload">
+  <div class="pgh"><div class="pgt">Upload Invoice</div><div class="pgs">Drop a vendor invoice PDF — AI extracts every line item automatically</div></div>
+  <div class="steps"><div class="step active">1 · Upload</div><div class="step">2 · Verify</div><div class="step">3 · Approve</div><div class="step">4 · Export</div></div>
+  <div id="dz-wrap">
+    <div class="dz" id="dropzone">
+      <span class="dz-icon">📄</span>
+      <div class="dz-title">Drop your vendor invoice here</div>
+      <div class="dz-sub">PDF or image · AI reads every line item · Detects price changes against history<br>Multiple files OK for batch processing</div>
+      <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" onclick="event.stopPropagation()">
+        <button onclick="document.getElementById('file-in').click()">📁 Choose file(s)</button>
+        <button class="bp" onclick="loadDemo()">▶ Load demo invoice</button>
+        <button class="bgo" onclick="goTo('api-settings')" id="setup-key-btn">🔑 Set up API key</button>
+      </div>
+      <div id="no-key-notice" style="display:none;margin-top:12px;padding:8px 14px;background:var(--amberl);border-radius:var(--r);font-size:12px;color:var(--amberd);font-weight:500">
+        ⚠ No API key saved — real PDFs will fall back to demo mode. <a onclick="goTo('api-settings')" style="cursor:pointer;text-decoration:underline;color:var(--c1d)">Set up your key →</a>
+      </div>
+    </div>
+    <div id="queue-wrap" style="display:none;margin-top:14px">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="ctit">Upload queue</div>
+          <div style="display:flex;gap:8px">
+            <button class="bp" onclick="processQueue()">▶ Process all</button>
+            <button onclick="clearQueue()">Clear</button>
+          </div>
+        </div>
+        <div id="queue-list"></div>
+        <div id="queue-summary" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+  <div id="extracting" style="display:none">
+    <div class="card"><div class="ctit">Extracting invoice...</div>
+      <div class="sumbox" style="margin-bottom:0"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
+    </div>
+  </div>
+  <div id="batch-progress" style="display:none">
+    <div class="card">
+      <div class="ctit" id="bp-title">Processing invoices...</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin:8px 0 4px">
+        <span id="bp-status">Starting...</span><span class="mn" id="bp-counter">0/0</span>
+      </div>
+      <div class="pb"><div class="pbf" id="bp-bar" style="width:0%"></div></div>
+      <div id="bp-log" style="max-height:180px;overflow-y:auto;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);background:var(--bg3);border-radius:var(--r);padding:10px;margin-top:8px;line-height:1.8"></div>
+    </div>
+  </div>
+  <div id="batch-done" style="display:none">
+    <div class="card" style="border-left:4px solid var(--green)">
+      <div class="ctit" style="color:var(--green);margin-bottom:10px" id="bd-title">Invoices processed</div>
+      <div id="bd-list"></div>
+      <div class="brow" style="margin-top:14px">
+        <button class="bp" onclick="goTo('history')">View history</button>
+        <button class="bgo" onclick="goTo('tracker')">Price tracker</button>
+        <button onclick="resetUpload()">Upload more</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VERIFY -->
+<div class="pg" id="pg-verify">
+  <div class="pgh"><div class="pgt">Verify Line Items</div><div class="pgs" id="verify-sub">Review classified rows before pricing</div></div>
+  <div class="steps"><div class="step done">1 · Upload ✓</div><div class="step active">2 · Verify</div><div class="step">3 · Approve</div><div class="step">4 · Export</div></div>
+  <div id="v-alerts"></div>
+  <div class="legend">
+    <div class="legi"><div class="legd" style="background:var(--green)"></div>Purchased (enters price history)</div>
+    <div class="legi"><div class="legd" style="background:var(--amber)"></div>Zero-duplicate (excluded)</div>
+    <div class="legi"><div class="legd" style="background:var(--purple)"></div>Charge/fee (excluded)</div>
+    <div class="legi"><div class="legd" style="background:var(--red)"></div>Malformed (flagged)</div>
+    <div class="legi"><div class="legd" style="background:var(--text3)"></div>OOS (not received)</div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div><div class="ctit">All extracted lines</div><div class="csub" style="margin-bottom:0">Only <b style="color:var(--green)">purchased</b> rows write to price history. Edit category inline.</div></div>
+      <button class="bp" onclick="runPricing()">Run pricing engine →</button>
+    </div>
+    <div class="pills" id="vf-pills">
+      <div class="pill on" data-vf="all">All rows</div>
+      <div class="pill" data-vf="purchased">Purchased</div>
+      <div class="pill" data-vf="oos">OOS</div>
+      <div class="pill" data-vf="issues">Issues</div>
+    </div>
+    <div class="tw"><table id="v-tbl">
+      <thead><tr>
+        <th>Item#</th><th>Description</th><th>Category</th><th>Size / Units</th>
+        <th>Cases</th><th>Cost/Box</th><th>Cost/Unit</th>
+        <th>Type</th><th>Conf.</th><th>Price change</th>
+      </tr></thead>
+      <tbody id="v-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- APPROVE -->
+<div class="pg" id="pg-approve">
+  <div class="pgh"><div class="pgt">Price Approvals</div><div class="pgs">Suggested retail prices — approve, adjust, or reject before export</div></div>
+  <div class="steps"><div class="step done">1 ✓</div><div class="step done">2 ✓</div><div class="step active">3 · Approve</div><div class="step">4 · Export</div></div>
+  <div class="mets">
+    <div class="met"><div class="met-ico" style="background:var(--amberl);font-size:20px">⏳</div><div class="met-val" id="am-p">0</div><div class="met-lbl">Pending</div></div>
+    <div class="met"><div class="met-ico" style="background:var(--greenl);font-size:20px">✅</div><div class="met-val" id="am-a" style="color:var(--green)">0</div><div class="met-lbl">Approved</div></div>
+    <div class="met"><div class="met-ico" style="background:var(--redl);color:var(--red)">▲</div><div class="met-val" id="am-u" style="color:var(--red)">0</div><div class="met-lbl">Cost increases</div></div>
+    <div class="met"><div class="met-ico" style="background:var(--greenl);color:var(--green)">▼</div><div class="met-val" id="am-d" style="color:var(--green)">0</div><div class="met-lbl">Cost decreases</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div><div class="ctit">Suggested prices</div><div class="csub" style="margin-bottom:0">Edit retail/unit directly then approve</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="bg" onclick="bulkApprove()">✓ Approve all</button>
+        <button onclick="approveSelected()">Approve selected</button>
+        <button class="br" onclick="rejectAll()">✗ Reject all</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="sel-all" class="chk" onchange="toggleSelAll(this.checked)">Select all
+      </label>
+      <div class="pills" style="margin-bottom:0" id="af-pills">
+        <div class="pill on" data-af="all">All</div>
+        <div class="pill" data-af="pending">Pending</div>
+        <div class="pill" data-af="approved">Approved</div>
+        <div class="pill" data-af="up">Cost up ▲</div>
+        <div class="pill" data-af="dn">Cost down ▼</div>
+      </div>
+    </div>
+    <div id="ap-list"></div>
+  </div>
+  <div class="brow"><button class="bp" onclick="goTo('export')">Go to export →</button></div>
+</div>
+
+<!-- EXPORT -->
+<div class="pg" id="pg-export">
+  <div class="pgh"><div class="pgt">Export to POS</div><div class="pgs">Download approved price changes as CSV</div></div>
+  <div class="steps"><div class="step done">1 ✓</div><div class="step done">2 ✓</div><div class="step done">3 ✓</div><div class="step active">4 · Export</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctit">Export settings</div><div class="csub">Configure for your POS format</div>
+      <div class="ig"><label>POS format</label>
+        <select id="pos-fmt">
+          <option value="generic">Generic CSV (Item#, Description, Price)</option>
+          <option value="detailed">Detailed (all fields)</option>
+          <option value="square">Square POS</option>
+          <option value="clover">Clover POS</option>
+        </select>
+      </div>
+      <div class="ig"><label>Include items</label>
+        <select id="exp-scope"><option value="approved">Approved only</option><option value="all">All shipped</option><option value="changed">Changed prices only</option></select>
+      </div>
+      <div class="ig"><label>Price rounding</label>
+        <select id="exp-round"><option value="none" selected>Exact markup (no rounding)</option><option value="98">Round to .98</option><option value="99">Round to .99</option><option value="25">Round up to nearest $0.25</option></select>
+      </div>
+      <div class="brow">
+        <button class="bp" onclick="downloadCSV()">⬇ Download CSV</button>
+        <button class="bgo" onclick="previewCSV()">Preview</button>
+        <button class="bg" onclick="finalizeAndSave()">💾 Save to history</button>
+      </div>
+    </div>
+    <div class="card"><div class="ctit">Export summary</div><div id="exp-summary"><div style="color:var(--text3);font-size:12px">No invoice loaded</div></div></div>
+  </div>
+  <div id="csv-card" style="display:none"><div class="card"><div class="ctit">CSV preview</div><pre class="csv" id="csv-pre"></pre></div></div>
+</div>
+
+<!-- TRACKER -->
+<div class="pg" id="pg-tracker">
+  <div class="pgh"><div class="pgt">Price Tracker</div><div class="pgs">Full price history — every product, every invoice</div></div>
+  <div id="tr-empty" class="card" style="text-align:center;padding:40px">
+    <div style="font-size:40px;margin-bottom:12px">📈</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px">No price history yet</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Save invoices to start tracking changes</div>
+    <button class="bp" onclick="goTo('upload')">Upload first invoice</button>
+  </div>
+  <div id="tr-content" style="display:none">
+    <div class="mets">
+      <div class="met"><div class="met-ico" style="background:var(--bluel)">📦</div><div class="met-val mn" id="tr-tot" style="color:var(--blue)">0</div><div class="met-lbl">Products tracked</div></div>
+      <div class="met"><div class="met-ico" style="background:var(--redl)">▲</div><div class="met-val mn" id="tr-up" style="color:var(--red)">0</div><div class="met-lbl">Price increases</div></div>
+      <div class="met"><div class="met-ico" style="background:var(--greenl)">▼</div><div class="met-val mn" id="tr-dn" style="color:var(--green)">0</div><div class="met-lbl">Price decreases</div></div>
+      <div class="met"><div class="met-ico" style="background:var(--c1l)">🗂</div><div class="met-val mn" id="tr-invs">0</div><div class="met-lbl">Invoices saved</div></div>
+    </div>
+    <div class="pills" id="tr-pills">
+      <div class="pill on" data-tf="all">All</div><div class="pill" data-tf="up">Up ▲</div><div class="pill" data-tf="dn">Down ▼</div><div class="pill" data-tf="same">Same</div>
+      <div class="pill" data-tf="snacks">Snacks</div><div class="pill" data-tf="candy">Candy/Jelly</div><div class="pill" data-tf="frozen">Frozen</div>
+      <div class="pill" data-tf="bev">Beverages</div><div class="pill" data-tf="dry">Rice/Noodles</div><div class="pill" data-tf="other">Other</div>
+    </div>
+    <div class="card" style="padding:0">
+      <table><thead><tr>
+        <th style="padding:10px 14px">Item#</th><th>Description</th><th>Category</th>
+        <th>First $/unit</th><th>Latest $/unit</th><th>Δ $</th><th>Δ %</th>
+        <th>Retail/unit</th><th>Retail/box</th><th>Profit/unit</th>
+        <th>Orders</th><th>Status</th>
+      </tr></thead>
+      <tbody id="tr-body"></tbody></table>
+    </div>
+    <div class="brow"><button class="br" onclick="clearAllData()">🗑 Clear all data</button></div>
+  </div>
+</div>
+
+<!-- VENDORS -->
+<div class="pg" id="pg-vendors">
+  <div class="pgh"><div class="pgt">Vendor Dashboard</div><div class="pgs">Price trends and spend analysis by vendor</div></div>
+  <div id="vnd-empty" class="card" style="text-align:center;padding:32px"><div style="font-size:13px;color:var(--text2);margin-bottom:12px">Save invoices to see vendor data</div><button class="bp" onclick="goTo('upload')">Upload invoice</button></div>
+  <div id="vnd-content" style="display:none"><div id="vnd-list"></div></div>
+</div>
+
+<!-- ALERTS -->
+<div class="pg" id="pg-alerts">
+  <div class="pgh"><div class="pgt">Alerts & Exceptions</div><div class="pgs">Cost spikes, margin risks, and items needing attention</div></div>
+  <div id="al-empty" class="card" style="text-align:center;padding:32px"><div style="font-size:13px;color:var(--text2)">No alerts — load an invoice to detect issues</div></div>
+  <div id="al-content" style="display:none"><div id="al-list"></div></div>
+</div>
+
+<!-- HISTORY -->
+<div class="pg" id="pg-history">
+  <div class="pgh"><div class="pgt">Invoice History</div><div class="pgs">All saved invoices — click any to reload</div></div>
+  <div id="hi-empty" class="card" style="text-align:center;padding:40px">
+    <div style="font-size:40px;margin-bottom:12px">🗂</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px">No invoices saved</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Save invoices to build your price history database</div>
+    <button class="bp" onclick="goTo('upload')">Upload first invoice</button>
+  </div>
+  <div id="hi-list"></div>
+</div>
+
+<!-- PRICING RULES -->
+<div class="pg" id="pg-pricing">
+  <div class="pgh"><div class="pgt">Pricing Rules</div><div class="pgs">Set markup % by category — all calculations update instantly</div></div>
+  <div class="g3" id="tgt-grid"></div>
+  <div class="card"><div class="ctit">Quick reference</div>
+    <table style="min-width:0"><thead><tr><th>Category</th><th>Markup</th><th>Margin</th><th>$1.00 cost → retail</th><th>Profit</th></tr></thead>
+    <tbody id="ref-body"></tbody></table>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<div class="pg" id="pg-calc">
+  <div class="pgh"><div class="pgt">Margin Calculator</div><div class="pgs">Case cost ÷ units per case = unit cost · Apply markup → retail</div></div>
+  <div class="g2">
+    <div>
+      <div class="card"><div class="ctit">Input</div>
+        <div class="ig"><label>Category</label>
+          <select id="cc-cat" onchange="calcRun()">
+            <option value="">— select —</option>
+            <option value="snacks">Snacks & dry (30%)</option>
+            <option value="candy">Candy/Jelly (40%)</option>
+            <option value="frozen">Frozen (35%)</option>
+            <option value="bev">Beverages (30%)</option>
+            <option value="dry">Rice & noodles (30%)</option>
+            <option value="other">Other (30%)</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="ig"><label>Cost per case ($)</label><input id="cc-cost" type="number" step="0.01" min="0" placeholder="33.00" oninput="calcRun()"></div>
+          <div class="ig"><label>Units per case</label><input id="cc-units" type="number" step="1" min="1" placeholder="12" oninput="calcRun()"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="ig"><label>Cases ordered</label><input id="cc-cases" type="number" step="1" min="0" placeholder="2" oninput="calcRun()"></div>
+          <div class="ig"><label>Custom markup % (optional)</label><input id="cc-mk" type="number" step="0.1" min="0" placeholder="override" oninput="calcRun()"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><div class="ctit">Results</div><div id="calc-out"><div style="color:var(--text3);font-size:12px">Enter case cost and units per case to begin.</div></div></div>
+      <div class="card"><div class="ctit">Cost vs. profit</div>
+        <div class="vizbar"><div class="vzc" id="vzc" style="width:70%"></div><div class="vzp" id="vzp" style="width:0%"></div><div class="vze"></div></div>
+        <div style="display:flex;gap:14px;font-size:11px;color:var(--text2)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--blue);display:inline-block"></span>cost</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span>profit</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- API SETTINGS -->
+<div class="pg" id="pg-api-settings">
+  <div class="pgh"><div class="pgt">API Settings</div><div class="pgs">Connect your Anthropic API key to enable real PDF extraction from your invoices</div></div>
+  <div id="api-status-banner" style="display:none;border-radius:var(--r);padding:11px 16px;margin-bottom:14px;font-size:13px;font-weight:500"></div>
+  <div class="g2">
+    <div>
+      <div class="card">
+        <div class="ctit">🔑 Anthropic API Key</div>
+        <div class="csub">Stored only in your browser — never in the app code, never on any server</div>
+        <div class="ig">
+          <label>Paste your API key here</label>
+          <div style="position:relative">
+            <input id="api-key-input" type="password" placeholder="sk-ant-api03-..." autocomplete="off"
+              style="padding-right:80px;font-family:JetBrains Mono,monospace;font-size:12px" oninput="checkKeyFmt(this.value)">
+            <button onclick="toggleVis()" id="vis-btn" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:3px 10px;font-size:11px;border:1px solid var(--border2);background:var(--bg3);border-radius:4px;min-width:50px">Show</button>
+          </div>
+          <div id="key-hint" style="font-size:11px;margin-top:3px;min-height:16px"></div>
+        </div>
+        <div class="brow">
+          <button class="bp" onclick="saveApiKey()">💾 Save key</button>
+          <button onclick="testApiKey()" id="test-btn">🧪 Test connection</button>
+          <button class="br" onclick="clearApiKey()">🗑 Remove</button>
+        </div>
+        <div id="test-result" style="margin-top:10px;font-size:12px;display:none;padding:8px 12px;border-radius:var(--r);background:var(--bg3)"></div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--amber)">
+        <div class="ctit" style="color:var(--amberd)">⚠️ Keep your key safe</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.9;margin-top:6px">
+          <div>• <b>Never share your key</b> in chat, email, or screenshots</div>
+          <div>• If it was exposed, rotate it at <b>console.anthropic.com/settings/keys</b></div>
+          <div>• Your key lives in browser localStorage — this device only</div>
+          <div>• Set a hard spend cap at <b>console.anthropic.com → Settings → Limits</b></div>
+          <div>• Calls go directly browser → api.anthropic.com — no middleman</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="ctit">📊 Usage this month</div>
+        <div class="csub" id="usage-month-lbl">Estimated from extractions in this browser</div>
+        <div class="cr"><span class="crl">Invoices extracted</span><span class="crv mn" id="u-invs">0</span></div>
+        <div class="cr"><span class="crl">Est. tokens used</span><span class="crv mn" id="u-tokens">0</span></div>
+        <div class="cr"><span class="crl">Est. cost (Sonnet)</span><span class="crv mn" style="color:var(--green)" id="u-cost">$0.0000</span></div>
+        <div class="cr" style="border-bottom:none"><span class="crl">Monthly budget alert</span>
+          <span style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:13px;color:var(--text2)">$</span>
+            <input id="budget-inp" type="number" step="1" min="1" value="10"
+              style="width:62px;font-size:14px;font-family:JetBrains Mono,monospace;padding:3px 7px;border:1.5px solid var(--border2);border-radius:6px;outline:none;text-align:center"
+              oninput="saveBudget(this.value)">
+            <span style="font-size:11px;color:var(--text3)">/month</span>
+          </span>
+        </div>
+        <div class="pb" style="margin-top:10px"><div class="pbf g" id="budget-bar" style="width:0%"></div></div>
+        <div id="budget-lbl" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+        <div class="brow" style="margin-top:10px"><button onclick="resetUsage()" style="font-size:11px">Reset counter</button></div>
+      </div>
+      <div class="card">
+        <div class="ctit">💡 Cost estimate</div>
+        <div style="font-size:12px;color:var(--text2);line-height:2">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px"><span>1 invoice (3–4 pages)</span><span class="mn" style="color:var(--green);font-weight:600">~$0.03–0.05</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px"><span>5 invoices</span><span class="mn" style="color:var(--green);font-weight:600">~$0.15–0.25</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px"><span>20 invoices/month</span><span class="mn" style="color:var(--green);font-weight:600">~$0.60–1.00</span></div>
+          <div style="display:flex;justify-content:space-between"><span>50 invoices/month</span><span class="mn" style="color:var(--green);font-weight:600">~$1.50–2.50</span></div>
+        </div>
+        <div style="margin-top:10px;padding:9px 12px;background:var(--greenl);border-radius:var(--r);font-size:11px;color:var(--greend);font-weight:500">
+          ✅ A $10/month hard cap at Anthropic covers ~200–300 invoices. More than enough for weekly store orders.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+</div>
+<script>
+// ═══════════ CONSTANTS ═══════════
+const TARGETS={snacks:30,candy:40,frozen:35,bev:30,dry:30,other:30};
+const CLABEL={snacks:'Snacks & dry',candy:'Candy/Jelly',frozen:'Frozen',bev:'Beverage',dry:'Rice & noodles',other:'Other'};
+const CCLS={snacks:'ta',candy:'tk',frozen:'tb',bev:'tp',dry:'tt',other:'tgr'};
+const CAT_COLS={snacks:'#f59e0b',candy:'#ec4899',frozen:'#3b82f6',bev:'#8b5cf6',dry:'#14b8a6',other:'#94a3b8'};
+const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2'};
+
+// ═══════════ ROW CLASSIFICATION ENGINE ═══════════
+const RT={PURCHASED:'purchased',OOS:'oos',ZERO_DUP:'zero_dup',CHARGE:'charge',MALFORMED:'malformed'};
+const CHARGE_RE=/pallet|charge|fee|handling|service|freight|shipping|surcharge|deposit/i;
+const CHARGE_ITEM=/^503\d{3}$|^9\d{5}$/;
+
+function parseUnitsRobust(size){
+  if(!size) return {u:1,conf:0.5,note:'Missing size'};
+  const s=size.trim();
+  // Outer × (Inner×SIZE) pattern: "4 X (6X10.82" — outer N packs per case
+  const oi=s.match(/^(\d+)\s*[xX]\s*\(/);
+  if(oi){const n=parseInt(oi[1]);return {u:n,conf:0.75,note:`Outer pack format: ${n} inner packs per case`};}
+  // Simple NxSIZE
+  const simple=s.match(/^(\d+)\s*[xX]/i);
+  if(simple){const n=parseInt(simple[1]);if(n>=1&&n<=500)return {u:n,conf:0.95,note:''}; return {u:n,conf:0.6,note:`Unusual unit count: ${n}`};}
+  return {u:1,conf:0.4,note:`Cannot parse: "${s}"`};
+}
+
+function classifyRow(item,allItems){
+  if(item.isOOS||item.qty===0) return {rt:RT.OOS,conf:1.0,notes:['OOS — not received']};
+  if(CHARGE_RE.test(item.desc)||CHARGE_ITEM.test(item.item||''))
+    return {rt:RT.CHARGE,conf:0.95,notes:['Non-product charge row']};
+  if(!item.caseCost||item.caseCost===0){
+    const sib=allItems.find(o=>o!==item&&o.item===item.item&&o.caseCost>0&&!o.isOOS);
+    return {rt:RT.ZERO_DUP,conf:sib?0.95:0.7,notes:[sib?`Zero-price duplicate of item ${item.item}`:'Zero cost, no paid sibling']};
+  }
+  const {u,conf,note}=parseUnitsRobust(item.size);
+  if(conf<0.5) return {rt:RT.MALFORMED,conf,notes:[note],u};
+  const notes=[];if(conf<0.8&&note)notes.push(note);
+  const isNew=!Object.keys(loadDB()).some(k=>k.endsWith('|'+item.item));
+  if(isNew)notes.push('First time ordered');
+  return {rt:RT.PURCHASED,conf,notes,u,isNew};
+}
+
+function classifyInvoice(inv){
+  inv.items.forEach(item=>{
+    const r=classifyRow(item,inv.items);
+    item._rt=r.rt; item._conf=r.conf; item._notes=r.notes||[];
+    item._u=r.u||parseUnitsRobust(item.size).u;
+    item._isNew=r.isNew||false;
+  });
+  return inv;
+}
+
+// ═══════════ MATH ═══════════
+function getTgt(cat){const el=document.getElementById('tgt-'+cat);return el?parseFloat(el.value)||TARGETS[cat]:TARGETS[cat];}
+function unitCost(item){return item.caseCost/(item._u||parseUnitsRobust(item.size).u);}
+function retailUnit(item){return unitCost(item)*(1+getTgt(item.cat)/100);}
+function f2(n){return '$'+n.toFixed(2);}
+function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function normV(v){return (v||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20);}
+
+// ═══════════ STORAGE ═══════════
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function loadHist(){return lsGet(SK.HIST)||[];}
+function saveHist(a){lsSet(SK.HIST,a);}
+function loadDB(){return lsGet(SK.PRICE)||{};}
+function saveDB(d){lsSet(SK.PRICE,d);}
+
+// ═══════════ PRICE HISTORY — ONLY PURCHASED ROWS ═══════════
+function saveInvoiceToDB(inv){
+  const db=loadDB(); const vk=normV(inv.vendor);
+  let saved=0,skipped=0;
+  inv.items.forEach(item=>{
+    if(item._rt!==RT.PURCHASED){skipped++;return;}
+    if(!item.qty||item.qty<=0){skipped++;return;}
+    if(!item.caseCost||item.caseCost<=0){skipped++;return;}
+    const key=vk+'|'+item.item;
+    if(!db[key])db[key]=[];
+    if(db[key].find(e=>e.invoiceNo===inv.invoiceNo)){skipped++;return;}
+    const cu=unitCost(item);
+    if(cu<=0){skipped++;return;} // never save zero unit cost
+    db[key].push({date:inv.date,caseCost:item.caseCost,unitCost:cu,units:item._u,
+      invoiceNo:inv.invoiceNo,docType:inv.docType||'invoice',
+      size:item.size,desc:item.desc,normDesc:normDesc(item.desc),
+      cat:item.cat,conf:item._conf,vendor:inv.vendor});
+    saved++;
+  });
+  Object.keys(db).forEach(k=>{db[k].sort((a,b)=>new Date(a.date)-new Date(b.date));});
+  saveDB(db);
+  const vm=lsGet(SK.VENDOR)||{};
+  if(!vm[vk])vm[vk]={key:vk,name:inv.vendor,count:0,last:''};
+  vm[vk].count++;vm[vk].last=inv.date;lsSet(SK.VENDOR,vm);
+  return {saved,skipped};
+}
+
+function getPrevCost(vk,itemNo,curInvNo){
+  const db=loadDB(); const key=vk+'|'+itemNo;
+  const hist=(db[key]||[]).filter(e=>e.invoiceNo!==curInvNo&&e.unitCost>0);
+  return hist.length?hist[hist.length-1]:null;
+}
+
+// ═══════════ PRICE CHANGE DETECTION ═══════════
+// Uses only valid purchased rows. Compares current unit cost vs most recent prior invoice.
+function detectChange(item,vk,curInvNo){
+  if(item._rt!==RT.PURCHASED) return {status:'excluded'};
+  const curr=unitCost(item);
+  
+  // Use fuzzy matching engine — finds same item across invoices AND vendors
+  const match=findBestHistoryMatch(item,vk,curInvNo);
+  if(!match) return {status:'no_history',curr};
+  
+  const prev=match.entry;
+  const diff=curr-prev.unitCost;
+  const pct=prev.unitCost>0?(diff/prev.unitCost*100):0;
+  const status=Math.abs(diff)<0.001?'no_change':diff>0?'increase':'decrease';
+  
+  // Cross-vendor comparison
+  const crossVendor=getCrossVendorPrices(item.item,vk,curr);
+  
+  return {
+    status,prev:prev.unitCost,curr,diff,pct,
+    prevInv:prev.invoiceNo,prevDate:prev.date,
+    matchType:match.matchType,
+    matchConf:match.confidence,
+    crossVendor,
+    // Flag if a cheaper vendor exists
+    cheaperAvailable: crossVendor&&crossVendor.cheaperCount>0
+  };
+}
+
+// ═══════════ DB MIGRATION ═══════════
+function migrateDB(){
+  const db=loadDB(); const keys=Object.keys(db); if(!keys.length)return;
+  const nd={};
+  keys.forEach(key=>{
+    const pi=key.indexOf('|');
+    if(pi<0){nd[key]=db[key];return;}
+    const vp=key.substring(0,pi); const ip=key.substring(pi+1);
+    const nv=normV(vp); const nk=nv+'|'+ip;
+    if(nd[nk]){
+      const seen=new Set();
+      nd[nk]=[...nd[nk],...db[key]]
+        .filter(e=>{if(seen.has(e.invoiceNo))return false;seen.add(e.invoiceNo);return true;})
+        .sort((a,b)=>new Date(a.date)-new Date(b.date));
+    } else nd[nk]=db[key];
+  });
+  saveDB(nd);
+  // Also re-run on history to ensure _rt is set
+  const hist=loadHist();
+  hist.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt))classifyInvoice(inv);});
+  saveHist(hist);
+}
+
+// ═══════════ STATE ═══════════
+let INV=null, APPROVALS={}, FILE_QUEUE=[];
+
+// ═══════════ NAVIGATION ═══════════
+function goTo(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('on'));
+  const pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('on');
+  document.querySelectorAll(`nav a[data-pg="${id}"]`).forEach(a=>a.classList.add('on'));
+  if(id==='tracker')renderTracker('all');
+  if(id==='vendors')renderVendors();
+  if(id==='alerts')renderAlerts();
+  if(id==='history')renderHistory();
+}
+document.querySelectorAll('nav a[data-pg]').forEach(a=>a.addEventListener('click',()=>goTo(a.dataset.pg)));
+
+// ═══════════ DRAG & DROP ═══════════
+const DZ=document.getElementById('dropzone');
+DZ.addEventListener('dragover',e=>{e.preventDefault();DZ.classList.add('over');});
+DZ.addEventListener('dragleave',()=>DZ.classList.remove('over'));
+DZ.addEventListener('drop',e=>{
+  e.preventDefault();DZ.classList.remove('over');
+  const files=Array.from(e.dataTransfer.files).filter(f=>f.type==='application/pdf'||f.type.startsWith('image/'));
+  if(!files.length)return;
+  if(files.length===1)processSingleFile(files[0]); else addToQueue(files);
+});
+
+// ═══════════ UPLOAD FLOW ═══════════
+function handleFiles(e){
+  const files=Array.from(e.target.files);
+  if(!files.length)return;
+  if(files.length===1)processSingleFile(files[0]); else addToQueue(files);
+}
+
+async function processSingleFile(file){
+  show('dz-wrap',false);show('extracting',true);
+  try{const inv=await extractInvoice(file);show('extracting',false);loadInvoice(inv);}
+  catch(err){
+    show('extracting',false);show('dz-wrap',true);
+    if(err.message!=='no_api_key') alert('Extraction failed: '+err.message+'. Check your API key in Settings.');
+  }
+}
+
+function loadDemo(){
+  show('dz-wrap',false);show('extracting',true);
+  setTimeout(()=>{show('extracting',false);loadInvoice(JSON.parse(JSON.stringify(DEMO)));},1100);
+}
+
+function addToQueue(files){
+  files.forEach(f=>FILE_QUEUE.push({file:f,name:f.name,status:'waiting',result:null}));
+  renderQueue(); show('queue-wrap',true);
+}
+
+function renderQueue(){
+  const ico={waiting:'⏳',processing:'⟳',done:'✅',error:'❌'};
+  document.getElementById('queue-list').innerHTML=FILE_QUEUE.map((q,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <span>${ico[q.status]||'⏳'}</span>
+      <span style="flex:1;font-size:12px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.name}</span>
+      <span style="font-size:11px;color:var(--text3)">${q.status==='done'&&q.result?q.result.vendor+' #'+q.result.invoiceNo:q.status}</span>
+      ${q.status==='waiting'?`<button style="font-size:11px;padding:3px 8px" onclick="FILE_QUEUE.splice(${i},1);renderQueue()">×</button>`:''}
+    </div>`).join('');
+  const w=FILE_QUEUE.filter(q=>q.status==='waiting').length;
+  document.getElementById('queue-summary').textContent=`${FILE_QUEUE.length} files · ${w} waiting · ${FILE_QUEUE.filter(q=>q.status==='done').length} done`;
+}
+
+function clearQueue(){FILE_QUEUE=[];show('queue-wrap',false);}
+
+async function processQueue(){
+  const waiting=FILE_QUEUE.filter(q=>q.status==='waiting');
+  if(!waiting.length){alert('No files waiting.');return;}
+  show('dz-wrap',false);show('queue-wrap',false);show('batch-progress',true);
+  const total=FILE_QUEUE.length;
+  const log=document.getElementById('bp-log');log.innerHTML='';
+  const addLog=(m,c)=>{log.innerHTML+=`<div style="color:${c||'var(--text2)'}">${m}</div>`;log.scrollTop=log.scrollHeight;};
+  addLog(`Starting: ${total} invoice(s)...`);
+  const results=[];
+  for(let i=0;i<FILE_QUEUE.length;i++){
+    if(FILE_QUEUE[i].status!=='waiting')continue;
+    FILE_QUEUE[i].status='processing';renderQueue();
+    document.getElementById('bp-bar').style.width=Math.round(i/total*100)+'%';
+    document.getElementById('bp-counter').textContent=`${i+1}/${total}`;
+    document.getElementById('bp-status').textContent=FILE_QUEUE[i].name;
+    addLog(`[${i+1}/${total}] Extracting ${FILE_QUEUE[i].name}...`);
+    try{
+      const inv=await extractInvoice(FILE_QUEUE[i].file);
+      classifyInvoice(inv);
+      FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=inv;
+      const {saved,skipped}=saveInvoiceToDB(inv);
+      const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===inv.invoiceNo&&h.vendor===inv.vendor);
+      if(idx>=0)hist.splice(idx,1);hist.unshift({...inv,savedAt:new Date().toISOString()});saveHist(hist);
+      const vk=normV(inv.vendor);
+      const ups=inv.items.filter(it=>it._rt===RT.PURCHASED&&it.qty>0).filter(it=>detectChange(it,vk,inv.invoiceNo).status==='increase').length;
+      results.push({inv,saved,skipped,ups});
+      addLog(`  ✅ ${inv.vendor} #${inv.invoiceNo} · ${inv.date} · ${saved} products · ${ups} increases`,'#10b981');
+    }catch(err){
+      FILE_QUEUE[i].status='error';
+      addLog(`  ❌ ${FILE_QUEUE[i].name}: ${err.message}`,'#ef4444');
+    }
+    renderQueue();
+  }
+  document.getElementById('bp-bar').style.width='100%';
+  document.getElementById('bp-status').textContent='Complete';
+  addLog(`Done. ${results.length} invoices processed.`,'#6366f1');
+  show('batch-progress',false);show('batch-done',true);
+  const done=results.filter(r=>r);
+  document.getElementById('bd-title').textContent=`${done.length} invoice${done.length!==1?'s':''} processed and saved`;
+  document.getElementById('bd-list').innerHTML=done.map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px">
+      <div>
+        <div style="font-weight:600">${r.inv.vendor} — #${r.inv.invoiceNo}</div>
+        <div style="font-size:11px;color:var(--text2)">${r.inv.date} · ${r.saved} products saved · ${r.skipped} excluded</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${r.ups>0?`<span class="tag tr">▲ ${r.ups} increase${r.ups!==1?'s':''}</span>`:'<span class="tag tg">No increases</span>'}
+        <button onclick="reloadInv('${r.inv.vendor}','${r.inv.invoiceNo}')" style="font-size:11px;padding:4px 10px">Review →</button>
+      </div>
+    </div>`).join('');
+  if(done.length){INV=done[0].inv;document.getElementById('hbadge').textContent=INV.vendor+' #'+INV.invoiceNo+' · '+INV.date;}
+  updateNavCounts();
+}
+
+function resetUpload(){
+  FILE_QUEUE=[];
+  ['dz-wrap'].forEach(id=>show(id,true));
+  ['batch-done','batch-progress','extracting','queue-wrap'].forEach(id=>show(id,false));
+  document.getElementById('file-in').value='';
+}
+
+// ═══════════ INVOICE EXTRACTION ═══════════
+function AI_KEY(){return localStorage.getItem('tm_api_key')||'';}
+const AI_PROMPT=`You are extracting a vendor invoice. Read EVERY line item carefully including OOS and zero-quantity rows.
+
+DOCUMENT: Check the header — is this an INVOICE or SALES ORDER? Extract the exact invoice/order number and date.
+
+FOR EACH LINE ITEM extract ALL of these fields:
+- item: the item/product number (e.g. "12006", "503000")
+- desc: full product description, remove asterisks but keep all words
+- size: pack size EXACTLY as printed (e.g. "12X2LBS", "4 X (6X10.82", "1X50LBS", "30X14.9OZ")
+- qty: cases ordered (use 0 if OOS or not shipped)
+- caseCost: the UNIT PRICE column (price per case), use 0 if blank
+- cat: snacks OR candy OR frozen OR bev OR dry OR other
+  snacks=crackers/chips/cookies/breadsticks/biscuits/wafers/puffs
+  candy=jelly/pudding/gummies/candy/chocolate/sweets/mochi
+  frozen=anything marked FZ or FROZEN
+  bev=drinks/juice/soda/coffee/tea/syrup/coconut water/energy drinks
+  dry=rice/noodles/vermicelli/pasta/flour/starch/tapioca
+  other=sauces/condiments/mushroom/seafood/canned goods/spices/misc/charges
+- isNew: true if description contains *NEW* or NEW
+- isOOS: true if quantity is 0 or row says OOS
+
+IMPORTANT RULES:
+- Include EVERY row including OOS rows and zero-price rows
+- For "Unit Price" column that shows per-each price, multiply by units per case to get caseCost
+- If a row has no price and no quantity, still include it with qty:0 caseCost:0
+- Charge rows like "Pallet Charge" should be included with cat:"other"
+
+Return ONLY raw JSON with no markdown, no backticks, no explanation:
+{"vendor":"","invoiceNo":"","date":"","docType":"invoice","customer":"","total":0,"items":[{"item":"","desc":"","size":"","qty":0,"caseCost":0.00,"cat":"other","isNew":false,"isOOS":false}]}`;
+
+async function extractInvoice(file){
+  const key=AI_KEY(); if(!key){
+    // No API key — redirect to settings instead of silently loading demo
+    show('extracting',false); show('dz-wrap',true);
+    goTo('api-settings');
+    showBanner('⚠ No API key saved. Enter your key below to extract real invoices — or use the demo button.','var(--amberl)','var(--amberd)');
+    throw new Error('no_api_key');
+  }
+  const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,messages:[{role:'user',content:[
+      {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
+      {type:'text',text:AI_PROMPT}
+    ]}]})
+  });
+  const data=await resp.json();
+  const raw=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+  const _inv=JSON.parse(raw);trackUsage(_inv);return _inv;
+}
+
+// ═══════════ LOAD INVOICE ═══════════
+function loadInvoice(inv){
+  if(!inv.docType)inv.docType='invoice';
+  classifyInvoice(inv);
+  INV=inv;
+  document.getElementById('hbadge').textContent=inv.vendor+' #'+inv.invoiceNo+' · '+inv.date;
+  const vk=normV(inv.vendor);
+  APPROVALS={};
+  inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{
+    const ch=detectChange(i,vk,inv.invoiceNo);
+    APPROVALS[i.item]={status:'pending',retailPrice:retailUnit(i),change:ch,
+      desc:i.desc,cat:i.cat,size:i.size,qty:i.qty,caseCost:i.caseCost};
+  });
+  renderVerify('all');renderApprovals('all');
+  updateApprovalCounts();buildAlerts();updateNavCounts();
+  goTo('verify');
+}
+
+function reloadInv(vendor,invoiceNo){
+  const h=loadHist().find(h=>h.vendor===vendor&&h.invoiceNo===invoiceNo);
+  if(h)loadInvoice(h);
+}
+
+// ═══════════ VERIFY PAGE ═══════════
+function renderVerify(filter){
+  if(!INV)return;
+  const vk=normV(INV.vendor);
+  const purchased=INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0);
+  const oos=INV.items.filter(i=>i._rt===RT.OOS);
+  const zeros=INV.items.filter(i=>i._rt===RT.ZERO_DUP);
+  const charges=INV.items.filter(i=>i._rt===RT.CHARGE);
+  const malformed=INV.items.filter(i=>i._rt===RT.MALFORMED);
+  const newItems=INV.items.filter(i=>i._isNew&&i._rt===RT.PURCHASED);
+  const increases=purchased.filter(i=>detectChange(i,vk,INV.invoiceNo).status==='increase');
+
+  document.getElementById('verify-sub').textContent=`${INV.vendor} · ${INV.docType==='sales_order'?'⚠ Sales Order':'Invoice'} #${INV.invoiceNo} · ${INV.date} · ${INV.items.length} total lines`;
+
+  let al='';
+  if(INV.docType==='sales_order')al+=`<div style="background:var(--amberl);border:1px solid var(--amberd);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--amberd)">⚠ <b>Sales Order</b> — prices may differ from final invoice. Saved and flagged accordingly.</div>`;
+  if(increases.length)al+=`<div style="background:var(--redl);border:1px solid var(--redd);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--redd)">▲ <b>${increases.length} price increase${increases.length!==1?'s':''}</b> detected vs previous invoice from this vendor.</div>`;
+  if(newItems.length)al+=`<div style="background:var(--bluel);border:1px solid var(--blued);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--blued)">🆕 <b>${newItems.length} new product${newItems.length!==1?'s':''}</b> — not seen before. Set retail prices.</div>`;
+  if(malformed.length)al+=`<div style="background:var(--redl);border:1px solid var(--redd);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--redd)">⚠ <b>${malformed.length} malformed row${malformed.length!==1?'s':''}</b> flagged for review — excluded from price history.</div>`;
+  al+=`<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text2)">✅ <b>${purchased.length}</b> purchased · <b>${oos.length}</b> OOS · <b>${zeros.length}</b> zero-duplicates excluded · <b>${charges.length}</b> charge rows excluded</div>`;
+  document.getElementById('v-alerts').innerHTML=al;
+
+  const rowCls={[RT.PURCHASED]:'rp',[RT.OOS]:'ro',[RT.ZERO_DUP]:'rz',[RT.CHARGE]:'rc',[RT.MALFORMED]:'rm'};
+  const tagHtml={
+    [RT.PURCHASED]:'<span class="tag tg">Purchased</span>',
+    [RT.OOS]:'<span class="tag tgr">OOS</span>',
+    [RT.ZERO_DUP]:'<span class="tag ta">Zero dup</span>',
+    [RT.CHARGE]:'<span class="tag tp">Charge</span>',
+    [RT.MALFORMED]:'<span class="tag tr">⚠ Malformed</span>',
+  };
+
+  let data=INV.items;
+  if(filter==='purchased')data=INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0);
+  else if(filter==='oos')data=INV.items.filter(i=>i._rt===RT.OOS);
+  else if(filter==='issues')data=INV.items.filter(i=>i._rt===RT.MALFORMED||i._rt===RT.ZERO_DUP);
+
+  document.getElementById('v-body').innerHTML=data.map(i=>{
+    const cu=i.caseCost>0?(i.caseCost/(i._u||1)):0;
+    const isPurch=i._rt===RT.PURCHASED&&i.qty>0;
+    const ch=isPurch?detectChange(i,vk,INV.invoiceNo):null;
+    let chCell='<span style="color:var(--text3);font-size:11px">—</span>';
+    if(ch){
+      const matchBadge=ch.matchType==='cross_vendor'?'<span class="tag tp" style="font-size:9px">cross-vendor</span>':ch.matchType==='fuzzy'?`<span class="tag ta" style="font-size:9px">${Math.round((ch.matchConf||0)*100)}% match</span>`:'';
+      const cvBadge=ch.crossVendor&&ch.crossVendor.cheaperCount>0?`<span class="tag tg" style="font-size:9px">cheaper vendor exists</span>`:'';
+      if(ch.status==='increase')chCell=`<div><span class="au"></span><span class="up">${f2(ch.prev)}→${f2(ch.curr)} +${ch.pct.toFixed(1)}%</span> ${matchBadge}</div>${cvBadge}`;
+      else if(ch.status==='decrease')chCell=`<div><span class="ad"></span><span class="dn">${f2(ch.prev)}→${f2(ch.curr)} ${ch.pct.toFixed(1)}%</span> ${matchBadge}</div>`;
+      else if(ch.status==='no_change')chCell=`<span class="aeq"></span><span style="color:var(--text3)">unchanged</span> ${matchBadge}`;
+      else if(ch.status==='no_history')chCell=`<span class="tag tb">No history</span>`;
+    }
+    const cc=i._conf>=0.9?'var(--green)':i._conf>=0.65?'var(--amber)':'var(--red)';
+    return `<tr class="${rowCls[i._rt]||''}">
+      <td class="mn" style="font-size:11px;color:var(--text3)">${i.item}</td>
+      <td class="wd">
+        <input class="tinput" style="width:100%;max-width:200px;font-size:11px" value="${(i.desc||'').replace(/"/g,'&quot;')}" onchange="editDesc('${i.item}',this.value)">
+        ${i._isNew?'<span class="tag tb" style="margin-left:4px;font-size:9px">NEW</span>':''}
+        ${i._notes.length?`<div style="font-size:9px;color:var(--text3);margin-top:1px">${i._notes.join(' · ')}</div>`:''}
+      </td>
+      <td>
+        <select class="tsel" onchange="editCat('${i.item}',this.value)">
+          ${Object.keys(CLABEL).map(c=>`<option value="${c}"${i.cat===c?' selected':''}>${CLABEL[c]}</option>`).join('')}
+        </select>
+      </td>
+      <td class="mn" style="font-size:11px;color:var(--text3)">${i.size||'—'} <span style="color:var(--text3)">(${i._u||1})</span></td>
+      <td class="mn">${i.isOOS||i.qty===0?'OOS':i.qty}</td>
+      <td class="mn">${i.caseCost?f2(i.caseCost):'—'}</td>
+      <td class="mn" style="font-weight:600">${cu>0?f2(cu):'—'}</td>
+      <td>${tagHtml[i._rt]||''}</td>
+      <td style="color:${cc};font-weight:600;font-family:'JetBrains Mono',monospace">${Math.round(i._conf*100)}%</td>
+      <td>${chCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('vf-pills').addEventListener('click',e=>{
+  const pill=e.target.closest('.pill');if(!pill)return;
+  document.querySelectorAll('#vf-pills .pill').forEach(p=>p.classList.remove('on'));
+  pill.classList.add('on');renderVerify(pill.dataset.vf);
+});
+
+function editDesc(item,v){if(!INV)return;const i=INV.items.find(x=>x.item===item);if(i){i.desc=v;if(APPROVALS[item])APPROVALS[item].desc=v;}}
+function editCat(item,v){if(!INV)return;const i=INV.items.find(x=>x.item===item);if(i){i.cat=v;if(APPROVALS[item]){APPROVALS[item].cat=v;APPROVALS[item].retailPrice=retailUnit(i);}}}
+
+function runPricing(){
+  if(!INV){alert('No invoice loaded.');return;}
+  INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{if(APPROVALS[i.item])APPROVALS[i.item].retailPrice=retailUnit(i);});
+  renderApprovals('all');updateApprovalCounts();goTo('approve');
+}
+
+// ═══════════ APPROVALS ═══════════
+function renderApprovals(filter){
+  if(!INV)return;
+  let items=INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0);
+  if(filter==='pending')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].status==='pending');
+  else if(filter==='approved')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].status==='approved');
+  else if(filter==='up')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].change&&APPROVALS[i.item].change.status==='increase');
+  else if(filter==='dn')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].change&&APPROVALS[i.item].change.status==='decrease');
+
+  document.getElementById('ap-list').innerHTML=items.map(i=>{
+    const ap=APPROVALS[i.item]||{};
+    const cu=unitCost(i);
+    const retail=ap.retailPrice||retailUnit(i);
+    const prof=retail-cu; const marg=retail>0?(prof/retail*100):0;
+    const mc=marg>=30?'var(--green)':marg>=20?'var(--amber)':'var(--red)';
+    const st=ap.status||'pending'; const ch=ap.change||{};
+    let chTag='';
+    if(ch.status==='increase'){
+      chTag=`<span class="tag tr">▲ +${ch.pct.toFixed(1)}% vs ${ch.prevDate||'prev invoice'}</span>`;
+      if(ch.matchType==='cross_vendor')chTag+=` <span class="tag tp">cross-vendor match</span>`;
+      else if(ch.matchType==='fuzzy')chTag+=` <span class="tag ta">${Math.round((ch.matchConf||0)*100)}% similarity</span>`;
+    }
+    else if(ch.status==='decrease')chTag=`<span class="tag tg">▼ ${ch.pct.toFixed(1)}%</span>`;
+    else if(ch.status==='no_history')chTag=`<span class="tag tb">First time ordered</span>`;
+    // Cross-vendor cheaper option
+    if(ch.crossVendor&&ch.crossVendor.cheaperCount>0){
+      chTag+=` <span class="tag tg" style="font-size:10px">💰 cheaper from another vendor (save ${f2(ch.crossVendor.savings)}/unit)</span>`;
+    }
+    return `<div class="apr ap${st==='approved'?'ok':st==='rejected'?'no':'p'}">
+      <input type="checkbox" class="chk apchk" data-item="${i.item}">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;margin-bottom:3px">${i.desc} ${i._isNew?'<span class="tag tb">NEW</span>':''}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:5px">${CLABEL[i.cat]} · ${i.size} · ${i._u||1} units/case · ${i.qty} cases</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:12px">Cost: <b class="mn">${f2(cu)}/unit</b> · Box: <b class="mn">${f2(i.caseCost)}</b></span>
+          ${chTag}
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding-left:12px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/UNIT</div>
+          <input type="number" class="tinput" value="${retail.toFixed(2)}" step="0.01" min="0"
+            onchange="updateRetail('${i.item}',parseFloat(this.value))">
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/BOX</div>
+          <div class="mn" style="font-size:14px;font-weight:700;color:var(--c1)">${f2(retail*(i._u||1))}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">MARGIN</div>
+          <div class="mn" style="font-size:14px;font-weight:700;color:${mc}">${marg.toFixed(1)}%</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="setAp('${i.item}','approved')" ${st==='approved'?'class="bg"':''}>✓</button>
+          <button onclick="setAp('${i.item}','rejected')" ${st==='rejected'?'class="br"':''}>✗</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('#af-pills .pill').forEach(p=>{
+    p.onclick=()=>{document.querySelectorAll('#af-pills .pill').forEach(x=>x.classList.remove('on'));p.classList.add('on');renderApprovals(p.dataset.af);};
+  });
+}
+
+function updateRetail(k,v){if(APPROVALS[k])APPROVALS[k].retailPrice=v;const p=document.querySelector('#af-pills .pill.on');renderApprovals(p?p.dataset.af:'all');}
+function setAp(k,s){if(APPROVALS[k])APPROVALS[k].status=s;updateApprovalCounts();const p=document.querySelector('#af-pills .pill.on');renderApprovals(p?p.dataset.af:'all');updateExportSummary();}
+function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');updateExportSummary();}
+function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');updateExportSummary();}
+function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');updateExportSummary();}
+function toggleSelAll(v){document.querySelectorAll('.apchk').forEach(c=>c.checked=v);}
+function updateApprovalCounts(){
+  const vals=Object.values(APPROVALS);
+  document.getElementById('am-p').textContent=vals.filter(v=>v.status==='pending').length;
+  document.getElementById('am-a').textContent=vals.filter(v=>v.status==='approved').length;
+  document.getElementById('am-u').textContent=vals.filter(v=>v.change&&v.change.status==='increase').length;
+  document.getElementById('am-d').textContent=vals.filter(v=>v.change&&v.change.status==='decrease').length;
+  document.getElementById('ap-cnt').textContent=vals.filter(v=>v.status==='pending').length;
+}
+
+// ═══════════ EXPORT ═══════════
+function getExportRows(){
+  if(!INV)return[];
+  const scope=document.getElementById('exp-scope')?.value||'approved';
+  const rm=document.getElementById('exp-round')?.value||'none';
+  function round(p){
+    if(rm==='none')return p;if(rm==='98'){const f=Math.floor(p);return p<f+.98?f+.98-1:f+.98;}
+    if(rm==='99'){const f=Math.floor(p);return p<f+.99?f+.99-1:f+.99;}
+    if(rm==='25')return Math.ceil(p*4)/4; return p;
+  }
+  return INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).filter(i=>{
+    if(scope==='approved')return APPROVALS[i.item]&&APPROVALS[i.item].status==='approved';
+    if(scope==='changed'){const ch=APPROVALS[i.item]&&APPROVALS[i.item].change;return ch&&ch.status!=='no_change'&&ch.status!=='no_history';}
+    return true;
+  }).map(i=>{
+    const ap=APPROVALS[i.item]||{};
+    const cu=unitCost(i); const r=round(ap.retailPrice||retailUnit(i));
+    return {no:i.item,desc:i.desc,size:i.size,upc:i._u,cat:CLABEL[i.cat],box:i.caseCost,unit:cu,mk:getTgt(i.cat),retail:r,profit:(r-cu).toFixed(2),margin:((r-cu)/r*100).toFixed(1)+'%'};
+  });
+}
+function buildCSV(rows){
+  const fmt=document.getElementById('pos-fmt')?.value||'generic';
+  let h,fn;
+  if(fmt==='generic'){h=['Item#','Description','Retail Price'];fn=r=>[r.no,`"${r.desc}"`,r.retail.toFixed(2)];}
+  else if(fmt==='detailed'){h=['Item#','Description','Size','Units/Case','Category','Cost/Box','Cost/Unit','Markup%','Retail/Unit','Retail/Box','Profit/Unit','Margin'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.upc,`"${r.cat}"`,r.box.toFixed(2),r.unit.toFixed(2),r.mk+'%',r.retail.toFixed(2),(r.retail*r.upc).toFixed(2),r.profit,r.margin];}
+  else{h=['SKU','Name','Retail','Cost'];fn=r=>[r.no,`"${r.desc}"`,r.retail.toFixed(2),r.unit.toFixed(2)];}
+  return [h.join(','),...rows.map(r=>fn(r).join(','))].join('\n');
+}
+function updateExportSummary(){
+  const rows=getExportRows();
+  const appr=Object.values(APPROVALS).filter(v=>v.status==='approved').length;
+  const total=INV?INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).length:0;
+  document.getElementById('exp-summary').innerHTML=`
+    <div class="cr"><span class="crl">Approved items</span><span class="crv" style="color:var(--green)">${appr}</span></div>
+    <div class="cr"><span class="crl">Total purchased items</span><span class="crv">${total}</span></div>
+    <div class="cr"><span class="crl">Items in export</span><span class="crv" style="color:var(--c1)">${rows.length}</span></div>
+    <div class="cr"><span class="crl">Invoice</span><span class="crv mn" style="font-size:12px">${INV?INV.vendor+' #'+INV.invoiceNo:'—'}</span></div>
+    <div class="cr"><span class="crl">Date</span><span class="crv mn" style="font-size:12px">${INV?INV.date:'—'}</span></div>`;
+}
+function previewCSV(){const rows=getExportRows();document.getElementById('csv-pre').textContent=buildCSV(rows).split('\n').slice(0,11).join('\n');show('csv-card',true);}
+function downloadCSV(){
+  if(!INV){alert('No invoice.');return;}const rows=getExportRows();if(!rows.length){alert('Nothing to export.');return;}
+  const blob=new Blob([buildCSV(rows)],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`${INV.vendor.replace(/\s+/g,'-')}-${INV.invoiceNo}.csv`;a.click();URL.revokeObjectURL(url);
+}
+function finalizeAndSave(){
+  if(!INV){alert('No invoice.');return;}
+  const {saved,skipped}=saveInvoiceToDB(INV);
+  const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor);
+  if(idx>=0)hist.splice(idx,1);hist.unshift({...INV,savedAt:new Date().toISOString()});saveHist(hist);
+  renderHistory();renderTracker('all');renderVendors();updateNavCounts();
+  alert(`Saved! ${saved} products added to price history. ${skipped} rows correctly excluded.`);
+}
+
+// ═══════════ PRICE TRACKER ═══════════
+function renderTracker(filter){
+  const db=loadDB();const hist=loadHist();const keys=Object.keys(db);
+  if(!keys.length){show('tr-empty',true);show('tr-content',false);return;}
+  show('tr-empty',false);show('tr-content',true);
+
+  let prods=keys.map(key=>{
+    const ents=db[key].filter(e=>e.unitCost>0);if(!ents.length)return null;
+    const first=ents[0];const last=ents[ents.length-1];
+    const diff=last.unitCost-first.unitCost;
+    const pct=first.unitCost>0?((diff/first.unitCost)*100):0;
+    const trend=Math.abs(pct)<0.005?'same':diff>0?'up':'dn';
+    const lr=last.unitCost*(1+getTgt(last.cat||'other')/100);
+    return {key,desc:last.desc,cat:last.cat||'other',item:key.split('|')[1],
+      firstCu:first.unitCost,lastCu:last.unitCost,diff,pct,trend,
+      orders:ents.length,latestRetail:lr,
+      latestBox:lr*(last.units||1),latestProfit:lr-last.unitCost};
+  }).filter(Boolean);
+
+  document.getElementById('tr-tot').textContent=prods.length;
+  document.getElementById('tr-up').textContent=prods.filter(p=>p.trend==='up').length;
+  document.getElementById('tr-dn').textContent=prods.filter(p=>p.trend==='dn').length;
+  document.getElementById('tr-invs').textContent=hist.length;
+
+  if(filter==='up')prods=prods.filter(p=>p.trend==='up');
+  else if(filter==='dn')prods=prods.filter(p=>p.trend==='dn');
+  else if(filter==='same')prods=prods.filter(p=>p.trend==='same');
+  else if(filter!=='all')prods=prods.filter(p=>p.cat===filter);
+  prods.sort((a,b)=>b.pct-a.pct);
+
+  document.getElementById('tr-body').innerHTML=prods.map(p=>{
+    const ds=p.trend==='same'?'—':p.diff>0?`<span class="up">+${f2(p.diff)}</span>`:`<span class="dn">${f2(p.diff)}</span>`;
+    const ps=p.trend==='same'?'—':p.pct>0?`<span class="up">+${p.pct.toFixed(1)}%</span>`:`<span class="dn">${p.pct.toFixed(1)}%</span>`;
+    const st=p.trend==='up'?'<span class="tag tr">▲ Up</span>':p.trend==='dn'?'<span class="tag tg">▼ Down</span>':'<span class="tag tgr">— Same</span>';
+    const cv=getCrossVendorPrices(p.item,p.key.split('|')[0],p.lastCu);
+    const cvTag=cv&&cv.totalVendors>1?(cv.cheaperCount>0?`<span class="tag tg" style="font-size:9px">💰save ${f2(cv.savings)}/u</span>`:'<span class="tag tgr" style="font-size:9px">cheapest vendor</span>'):'';
+    const rc=p.trend==='up'?'style="background:#fff7f7"':p.trend==='dn'?'style="background:#f0fdf4"':'';
+    return `<tr ${rc}>
+      <td class="mn" style="font-size:11px;color:var(--text3)">${p.item}</td>
+      <td class="wd">${p.desc}</td>
+      <td><span class="tag ${CCLS[p.cat]||'tgr'}">${CLABEL[p.cat]||p.cat}</span></td>
+      <td class="mn">${f2(p.firstCu)}</td><td class="mn" style="font-weight:700">${f2(p.lastCu)}</td>
+      <td>${ds}</td><td>${ps}</td>
+      <td class="mn" style="color:var(--green);font-weight:600">${f2(p.latestRetail)}</td>
+      <td class="mn" style="color:var(--c1)">${f2(p.latestBox)}</td>
+      <td class="mn" style="color:var(--green)">${f2(p.latestProfit)}</td>
+      <td class="mn">${p.orders}</td><td>${st}</td>
+    </tr>`;
+  }).join('');
+}
+document.getElementById('tr-pills').addEventListener('click',e=>{
+  const p=e.target.closest('.pill');if(!p)return;
+  document.querySelectorAll('#tr-pills .pill').forEach(x=>x.classList.remove('on'));
+  p.classList.add('on');renderTracker(p.dataset.tf);
+});
+
+// ═══════════ VENDORS ═══════════
+function renderVendors(){
+  const hist=loadHist();const db=loadDB();
+  if(!hist.length){show('vnd-empty',true);show('vnd-content',false);return;}
+  show('vnd-empty',false);show('vnd-content',true);
+  const V={};
+  hist.forEach(inv=>{
+    if(!V[inv.vendor])V[inv.vendor]={name:inv.vendor,invs:[],spend:0,items:new Set(),up:0,dn:0};
+    const v=V[inv.vendor];v.invs.push(inv);v.spend+=inv.total||0;
+    inv.items.forEach(i=>v.items.add(i.item));
+  });
+  const n2f={};Object.keys(V).forEach(name=>{n2f[normV(name)]=name;});
+  Object.keys(db).forEach(key=>{
+    const vk=key.split('|')[0];const full=n2f[vk];if(!full)return;
+    const ents=db[key].filter(e=>e.unitCost>0);if(ents.length<2)return;
+    const diff=ents[ents.length-1].unitCost-ents[0].unitCost;
+    if(diff>0.001)V[full].up++; else if(diff<-0.001)V[full].dn++;
+  });
+  document.getElementById('vnd-list').innerHTML=Object.values(V).map(v=>{
+    const avg=v.invs.length?v.spend/v.invs.length:0;
+    return `<div class="vc">
+      <div class="vc-hd"><div class="vc-av">${v.name.charAt(0)}</div><div class="vc-name">${v.name}</div></div>
+      <div class="vc-stats">
+        <div class="vs"><div class="vsv mn">${v.invs.length}</div><div class="vsl">Invoices</div></div>
+        <div class="vs"><div class="vsv mn">${fBig(v.spend)}</div><div class="vsl">Total spend</div></div>
+        <div class="vs"><div class="vsv mn">${fBig(avg)}</div><div class="vsl">Avg/invoice</div></div>
+        <div class="vs"><div class="vsv mn">${v.items.size}</div><div class="vsl">Catalog items</div></div>
+        <div class="vs"><div class="vsv mn" style="color:var(--red)">${v.up}</div><div class="vsl">Price increases</div></div>
+        <div class="vs"><div class="vsv mn" style="color:var(--green)">${v.dn}</div><div class="vsl">Price decreases</div></div>
+        <div class="vs"><div class="vsv mn" style="font-size:11px;color:var(--text3)">${v.invs[v.invs.length-1].date}</div><div class="vsl">Last invoice</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════ ALERTS ═══════════
+function buildAlerts(){
+  if(!INV){show('al-empty',true);show('al-content',false);return;}
+  const vk=normV(INV.vendor);
+  const alerts=[];
+  INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{
+    const ch=detectChange(i,vk,INV.invoiceNo);
+    if(ch.status==='increase'){
+      const pct=ch.pct||0;
+      if(pct>10)alerts.push({sev:'red',ico:'🚨',title:`Cost spike: ${i.desc}`,detail:`+${pct.toFixed(1)}% — ${f2(ch.prev)} → ${f2(ch.curr)}/unit. Review retail price urgently.`});
+      else if(pct>3)alerts.push({sev:'amber',ico:'⚠️',title:`Cost increase: ${i.desc}`,detail:`+${pct.toFixed(1)}% — ${f2(ch.prev)} → ${f2(ch.curr)}/unit. Margin may be affected.`});
+    }
+    if(ch.status==='decrease'&&ch.pct<-3)
+      alerts.push({sev:'green',ico:'✅',title:`Price drop: ${i.desc}`,detail:`${ch.pct.toFixed(1)}% — ${f2(ch.prev)} → ${f2(ch.curr)}/unit. Opportunity to improve margin.`});
+    const marg=(retailUnit(i)-unitCost(i))/retailUnit(i)*100;
+    if(marg<20)alerts.push({sev:'red',ico:'📉',title:`Low margin: ${i.desc}`,detail:`${marg.toFixed(1)}% at suggested retail ${f2(retailUnit(i))}. Below 20% threshold.`});
+  });
+  const newItems=INV.items.filter(i=>i._isNew&&i._rt===RT.PURCHASED);
+  if(newItems.length)alerts.push({sev:'blue',ico:'🆕',title:`${newItems.length} new products`,detail:newItems.map(i=>i.desc).slice(0,3).join(', ')+(newItems.length>3?' and more...':'')});
+  const oos=INV.items.filter(i=>i._rt===RT.OOS);
+  if(oos.length)alerts.push({sev:'amber',ico:'📦',title:`${oos.length} items out of stock`,detail:oos.map(i=>i.desc).slice(0,3).join(', ')+(oos.length>3?' and more...':'')});
+  const malformed=INV.items.filter(i=>i._rt===RT.MALFORMED);
+  if(malformed.length)alerts.push({sev:'red',ico:'⚠️',title:`${malformed.length} rows with malformed sizes`,detail:`Excluded from history: ${malformed.map(i=>i.item).join(', ')}`});
+
+  document.getElementById('al-cnt').textContent=alerts.filter(a=>a.sev==='red'||a.sev==='amber').length;
+  if(!alerts.length){show('al-empty',true);show('al-content',false);return;}
+  show('al-empty',false);show('al-content',true);
+  const cols={red:'var(--red)',amber:'var(--amber)',green:'var(--green)',blue:'var(--blue)'};
+  const bgs={red:'var(--redl)',amber:'var(--amberl)',green:'var(--greenl)',blue:'var(--bluel)'};
+  document.getElementById('al-list').innerHTML=`<div class="card">`+alerts.map(a=>`
+    <div class="alrow">
+      <div class="alico" style="background:${bgs[a.sev]}">${a.ico}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;margin-bottom:2px">${a.title}</div>
+        <div style="font-size:12px;color:var(--text2)">${a.detail}</div>
+      </div>
+    </div>`).join('')+`</div>`;
+}
+function renderAlerts(){buildAlerts();}
+
+// ═══════════ HISTORY ═══════════
+function renderHistory(){
+  const hist=loadHist();
+  document.getElementById('hi-cnt').textContent=hist.length;
+  if(!hist.length){show('hi-empty',true);document.getElementById('hi-list').innerHTML='';return;}
+  show('hi-empty',false);
+  document.getElementById('hi-list').innerHTML=hist.map((inv,idx)=>{
+    const purch=inv.items?inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0):[];
+    const oos=inv.items?inv.items.filter(i=>i._rt===RT.OOS).length:0;
+    const newCt=inv.items?inv.items.filter(i=>i._isNew&&i._rt===RT.PURCHASED).length:0;
+    return `<div class="hcard" onclick="reloadInv('${inv.vendor}','${inv.invoiceNo}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:14px">${inv.vendor} — #${inv.invoiceNo}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${inv.date} · ${inv.docType==='sales_order'?'⚠ Sales Order':'Invoice'} · ${purch.length} products</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="text-align:center"><div class="mn" style="font-size:15px;font-weight:700">${fBig(inv.total||0)}</div><div style="font-size:10px;color:var(--text3)">total</div></div>
+          ${newCt?`<span class="tag tb">${newCt} new</span>`:''}
+          ${oos?`<span class="tag tr">${oos} OOS</span>`:''}
+          <button onclick="event.stopPropagation();deleteHistory(${idx})" style="font-size:11px;padding:4px 10px;color:var(--red)">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function deleteHistory(idx){
+  if(!confirm('Delete this invoice?'))return;
+  const h=loadHist();h.splice(idx,1);saveHist(h);renderHistory();updateNavCounts();
+}
+
+// ═══════════ PRICING RULES ═══════════
+function renderTargets(){
+  document.getElementById('tgt-grid').innerHTML=Object.keys(CLABEL).map(c=>{
+    const t=TARGETS[c];const ret=(1+t/100).toFixed(2);const marg=((t/(100+t))*100).toFixed(1);
+    return `<div class="tcard" style="border-top-color:${CAT_COLS[c]}">
+      <div style="font-size:11px;font-weight:600;color:${CAT_COLS[c]};letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px">${CLABEL[c]}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input id="tgt-${c}" type="number" value="${t}" min="0" max="300" step="1" oninput="onTgtChange('${c}')">
+        <span style="font-size:13px;color:var(--text2)">% markup</span>
+      </div>
+      <div id="ti-${c}" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ ${marg}% margin · $1.00 → $${ret}</div>
+    </div>`;
+  }).join('');
+  renderRefTable();
+}
+function onTgtChange(c){
+  const v=parseFloat(document.getElementById('tgt-'+c).value)||0;
+  const ret=(1+v/100).toFixed(2);const marg=((v/(100+v))*100).toFixed(1);
+  const el=document.getElementById('ti-'+c);if(el)el.textContent=`→ ${marg}% margin · $1.00 → $${ret}`;
+  renderRefTable();calcRun();
+  if(INV){renderVerify('all');renderApprovals('all');}
+}
+function renderRefTable(){
+  document.getElementById('ref-body').innerHTML=Object.keys(CLABEL).map(c=>{
+    const t=getTgt(c);const ret=(1+t/100).toFixed(2);const p=(ret-1).toFixed(2);const m=((p/ret)*100).toFixed(1);
+    return `<tr><td><span class="tag ${CCLS[c]}">${CLABEL[c]}</span></td><td class="mn" style="color:var(--amber)">${t}%</td><td class="mn">${m}%</td><td class="mn" style="color:var(--green)">$${ret}</td><td class="mn" style="color:var(--green)">+$${p}</td></tr>`;
+  }).join('');
+}
+
+// ═══════════ CALCULATOR ═══════════
+function calcRun(){
+  const cc=parseFloat(document.getElementById('cc-cost').value)||0;
+  const u=parseFloat(document.getElementById('cc-units').value)||0;
+  const cs=parseFloat(document.getElementById('cc-cases').value)||0;
+  const cat=document.getElementById('cc-cat').value;
+  const cmk=parseFloat(document.getElementById('cc-mk').value)||0;
+  const out=document.getElementById('calc-out');
+  if(cc<=0||u<=0){out.innerHTML='<div style="color:var(--text3);font-size:12px">Enter case cost and units per case.</div>';return;}
+  const tgt=cmk>0?cmk:(cat?getTgt(cat):30);
+  const cu=cc/u;const ru=cu*(1+tgt/100);const pu=ru-cu;
+  const marg=(pu/ru*100);const mc=marg>=30?'var(--green)':marg>=20?'var(--amber)':'var(--red)';
+  let extra='';
+  if(cs>0){const tu=cs*u;extra=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+    <div class="cr"><span class="crl">Total units (${cs}×${u})</span><span class="crv">${tu}</span></div>
+    <div class="cr"><span class="crl">Total cost</span><span class="crv">${fBig(cc*cs)}</span></div>
+    <div class="cr"><span class="crl">Total retail revenue</span><span class="crv" style="color:var(--green)">${fBig(ru*tu)}</span></div>
+    <div class="cr"><span class="crl">Total gross profit</span><span class="crv" style="color:var(--green)">+${fBig(pu*tu)}</span></div>
+    </div>`;}
+  out.innerHTML=`
+    <div class="cr"><span class="crl">Cost per case</span><span class="crv">${f2(cc)}</span></div>
+    <div class="cr"><span class="crl">Units per case</span><span class="crv">${u}</span></div>
+    <div class="cr"><span class="crl">Cost per unit</span><span class="crv" style="color:var(--blue)">${f2(cu)}</span></div>
+    <div class="cr"><span class="crl">Markup applied</span><span class="crv" style="color:var(--amber)">${tgt}%</span></div>
+    <div class="cr"><span class="crl">Retail per unit</span><span class="crv" style="color:var(--green)">${f2(ru)}</span></div>
+    <div class="cr"><span class="crl">Profit per unit</span><span class="crv" style="color:var(--green)">+${f2(pu)}</span></div>
+    <div class="cr"><span class="crl">Gross margin</span><span class="crv" style="color:${mc}">${marg.toFixed(1)}%</span></div>${extra}`;
+  document.getElementById('vzc').style.width=(cu/ru*100).toFixed(1)+'%';
+  document.getElementById('vzp').style.width=(pu/ru*100).toFixed(1)+'%';
+}
+
+// ═══════════ UTILS ═══════════
+function show(id,v){const el=document.getElementById(id);if(el)el.style.display=v?'block':'none';}
+function updateNavCounts(){
+  const h=loadHist();document.getElementById('hi-cnt').textContent=h.length;
+}
+function clearAllData(){
+  if(!confirm('Delete ALL saved data? This cannot be undone.'))return;
+  Object.values(SK).forEach(k=>localStorage.removeItem(k));
+  renderHistory();renderTracker('all');renderVendors();updateNavCounts();
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// API SETTINGS + USAGE TRACKING
+// ═══════════════════════════════════════════════════════════
+function getStoredKey(){return localStorage.getItem('tm_api_key')||'';}
+
+function saveApiKey(){
+  const val=(document.getElementById('api-key-input').value||'').trim();
+  if(!val){alert('Please paste your API key.');return;}
+  if(!val.startsWith('sk-ant-')){
+    if(!confirm('This does not look like an Anthropic key (expected: sk-ant-...). Save anyway?'))return;
+  }
+  localStorage.setItem('tm_api_key',val);
+  document.getElementById('api-key-input').value='';
+  document.getElementById('api-key-input').placeholder='●●●●●●●●●●●● (key saved)';
+  document.getElementById('key-hint').innerHTML='<span style="color:var(--green);font-weight:600">✅ Key saved successfully</span>';
+  const w=document.getElementById('api-warn');if(w)w.style.display='none';
+  showBanner('✅ API key saved. You can now extract real invoices.','var(--greenl)','var(--greend)');
+}
+
+function clearApiKey(){
+  if(!confirm('Remove the saved API key? The app will go back to demo mode.'))return;
+  localStorage.removeItem('tm_api_key');
+  document.getElementById('api-key-input').placeholder='sk-ant-api03-...';
+  document.getElementById('key-hint').textContent='';
+  const w=document.getElementById('api-warn');if(w)w.style.display='flex';
+  showBanner('API key removed. App is now in demo mode.','var(--amberl)','var(--amberd)');
+}
+
+function toggleVis(){
+  const inp=document.getElementById('api-key-input');
+  const btn=document.getElementById('vis-btn');
+  if(inp.type==='password'){inp.type='text';btn.textContent='Hide';}
+  else{inp.type='password';btn.textContent='Show';}
+}
+
+function checkKeyFmt(v){
+  const h=document.getElementById('key-hint');if(!v){h.textContent='';return;}
+  if(v.startsWith('sk-ant-api03-'))h.innerHTML='<span style="color:var(--green);font-weight:500">✓ Valid Anthropic key format</span>';
+  else h.innerHTML='<span style="color:var(--amber)">⚠ Expected format: sk-ant-api03-...</span>';
+}
+
+async function testApiKey(){
+  const key=getStoredKey();
+  if(!key){alert('No key saved yet. Paste and save your key first.');return;}
+  const btn=document.getElementById('test-btn');
+  const res=document.getElementById('test-result');
+  btn.textContent='Testing...';btn.disabled=true;
+  res.style.display='block';res.textContent='Connecting to Anthropic...';res.style.color='var(--text3)';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,
+        'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,
+        messages:[{role:'user',content:'Say OK'}]})
+    });
+    const d=await r.json();
+    if(d.content&&d.content[0]){
+      res.innerHTML='<span style="color:var(--green);font-weight:600">✅ Connection successful! API key is working correctly.</span>';
+      res.style.background='var(--greenl)';
+      showBanner('✅ API key verified — ready to extract real invoices.','var(--greenl)','var(--greend)');
+    } else if(d.error){
+      res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+( d.error.message||'API error')+' — check your key and account.</span>';
+      res.style.background='var(--redl)';
+    }
+  }catch(err){
+    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ Connection failed: '+err.message+'</span>';
+    res.style.background='var(--redl)';
+  }
+  btn.textContent='🧪 Test connection';btn.disabled=false;
+}
+
+function showBanner(msg,bg,color){
+  const b=document.getElementById('api-status-banner');
+  if(!b)return;
+  b.style.display='block';b.textContent=msg;
+  b.style.background=bg;b.style.color=color;b.style.border='1px solid '+color;
+  setTimeout(()=>{if(b)b.style.display='none';},5000);
+}
+
+function checkApiOnLoad(){
+  const key=getStoredKey();
+  const w=document.getElementById('api-warn');
+  if(w)w.style.display=key?'none':'flex';
+  const notice=document.getElementById('no-key-notice');
+  if(notice)notice.style.display=key?'none':'block';
+  const setupBtn=document.getElementById('setup-key-btn');
+  if(setupBtn)setupBtn.style.display=key?'none':'flex';
+  if(key){const inp=document.getElementById('api-key-input');if(inp)inp.placeholder='●●●●●●●●●●●● (key saved)';}
+  renderUsage();
+}
+
+// ── Usage tracking ────────────────────────────────────────
+const SK_USAGE='tm_usage_v1';
+function loadUsage(){
+  const d=lsGet(SK_USAGE);
+  const m=new Date().getFullYear()+'-'+(new Date().getMonth()+1);
+  return (d&&d.month===m)?d:{month:m,invoices:0,tokens:0,cost:0};
+}
+function trackUsage(inv){
+  const u=loadUsage();
+  const items=inv&&inv.items?inv.items.length:30;
+  const tokIn=items*300+8000; const tokOut=items*50;
+  const cost=(tokIn/1e6)*3+(tokOut/1e6)*15;
+  u.invoices++;u.tokens+=tokIn+tokOut;u.cost+=cost;
+  lsSet(SK_USAGE,u);renderUsage();
+}
+function saveBudget(v){lsSet('tm_budget',parseFloat(v)||10);renderUsage();}
+function resetUsage(){if(!confirm('Reset this month usage counter?'))return;lsSet(SK_USAGE,null);renderUsage();}
+function renderUsage(){
+  const u=loadUsage();const budget=lsGet('tm_budget')||10;
+  const pct=Math.min((u.cost/budget)*100,100);
+  const el=id=>document.getElementById(id);
+  if(el('budget-inp'))el('budget-inp').value=budget;
+  if(el('u-invs'))el('u-invs').textContent=u.invoices;
+  if(el('u-tokens'))el('u-tokens').textContent=u.tokens.toLocaleString();
+  if(el('u-cost'))el('u-cost').textContent='$'+u.cost.toFixed(4);
+  if(el('budget-bar'))el('budget-bar').style.width=pct.toFixed(1)+'%';
+  if(el('budget-bar'))el('budget-bar').style.background=pct>=90?'var(--red)':pct>=70?'var(--amber)':'var(--green)';
+  if(el('budget-lbl')){
+    if(pct>=90)el('budget-lbl').innerHTML='<b style="color:var(--red)">⚠ '+pct.toFixed(0)+'% of monthly budget used — approaching limit</b>';
+    else el('budget-lbl').textContent=pct.toFixed(0)+'% of $'+budget+' monthly budget used';
+  }
+  if(el('usage-month-lbl'))el('usage-month-lbl').textContent='Month: '+u.month+' · estimates only';
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// NORMALIZATION + FUZZY MATCHING ENGINE
+// Solves: same product with slightly different descriptions
+//         across invoices and vendors
+// ═══════════════════════════════════════════════════════════
+
+// Known abbreviation expansions for this vendor's products
+const ABBREVS = {
+  'df':'dragon fly','hb':'healthy boy','jhc':'jhc','fz':'frozen',
+  'sce':'sauce','scs':'sauce','bbs':'bamboo shoot',
+  'flvr':'flavor','flv':'flavor','spcy':'spicy','spic':'spicy',
+  'swt':'sweet','sour':'sour','chli':'chili','chl':'chili',
+  'org':'original','orgn':'original','orig':'original',
+  'plstc':'plastic','bot':'bottle','btl':'bottle',
+  'pwdr':'powder','conc':'concentrate','cndnt':'concentrate',
+  'grn':'green','lrg':'large','sm':'small','lg':'large',
+  'wht':'white','blk':'black','red':'red',
+  'jas':'jasmine','coco':'coconut','cocnt':'coconut',
+  'tom':'tomato','tmt':'tomato',
+  'shrmp':'shrimp','shp':'shrimp','prwn':'prawn',
+  'ndl':'noodle','noodle':'noodle','vrm':'vermicelli',
+  'rce':'rice','jly':'jelly','jell':'jelly',
+  'pudd':'pudding','puddng':'pudding',
+  'bnna':'banana','mng':'mango','lychee':'lychee',
+  'cuttlefish':'cuttlefish','squid':'squid',
+};
+
+// Normalize a product description for matching
+// Returns lowercase, expanded, cleaned string
+function normDesc(raw) {
+  if(!raw) return '';
+  let s = raw.toLowerCase()
+    .replace(/\*new\*/gi,'').replace(/\*+/g,'')  // remove *NEW* markers
+    .replace(/[^\w\s]/g,' ')                       // remove punctuation
+    .replace(/\s+/g,' ').trim();
+  // expand abbreviations
+  s = s.split(' ').map(w => ABBREVS[w] || w).join(' ');
+  return s;
+}
+
+// Build a stable product key for cross-invoice matching
+// Priority: item number > normalized description+size
+function buildProductKey(itemNo, desc, size) {
+  if(itemNo && itemNo.trim() && itemNo !== '0') {
+    return 'ITEM:' + itemNo.trim();
+  }
+  const nd = normDesc(desc);
+  const ns = (size||'').replace(/\s+/g,'').toUpperCase();
+  return 'DESC:' + nd + '|SZ:' + ns;
+}
+
+// Levenshtein distance for fuzzy string comparison
+function levenshtein(a, b) {
+  if(a===b) return 0;
+  const m=a.length, n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+// Token overlap similarity (0–1)
+function tokenSim(a, b) {
+  const ta=new Set(a.split(' ').filter(t=>t.length>2));
+  const tb=new Set(b.split(' ').filter(t=>t.length>2));
+  if(!ta.size||!tb.size) return 0;
+  let shared=0; ta.forEach(t=>{if(tb.has(t))shared++;});
+  return shared / Math.max(ta.size, tb.size);
+}
+
+// Combined fuzzy score (0–1)
+function fuzzyScore(a, b) {
+  const na=normDesc(a), nb=normDesc(b);
+  if(na===nb) return 1.0;
+  const maxLen=Math.max(na.length, nb.length);
+  const editSim = maxLen>0 ? 1-(levenshtein(na,nb)/maxLen) : 0;
+  const tokSim = tokenSim(na, nb);
+  return tokSim*0.6 + editSim*0.4;
+}
+
+// Find best matching history entry for an item
+// Handles: same item# (exact), fuzzy description match (cross-vendor)
+function findBestHistoryMatch(item, currentVendorKey, currentInvNo) {
+  const db = loadDB();
+  const allKeys = Object.keys(db);
+  
+  // 1. EXACT: same vendor + same item number (most reliable)
+  const exactKey = currentVendorKey + '|' + item.item;
+  const exactHist = (db[exactKey]||[]).filter(e=>e.invoiceNo!==currentInvNo&&e.unitCost>0);
+  if(exactHist.length) {
+    return {
+      entry: exactHist[exactHist.length-1],
+      matchType: 'exact',
+      confidence: 1.0,
+      key: exactKey
+    };
+  }
+
+  // 2. SAME ITEM# different vendor (cross-vendor comparison)
+  const sameItemOtherVendor = allKeys
+    .filter(k => k !== exactKey && k.endsWith('|'+item.item))
+    .flatMap(k => (db[k]||[]).filter(e=>e.unitCost>0).map(e=>({...e, _key:k})));
+  
+  if(sameItemOtherVendor.length) {
+    const latest = sameItemOtherVendor.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+    const otherVendor = latest._key.split('|')[0];
+    return {
+      entry: latest,
+      matchType: 'cross_vendor',
+      confidence: 0.9,
+      key: latest._key,
+      otherVendor
+    };
+  }
+
+  // 3. FUZZY: normalized description similarity across all history
+  if(item.desc && item.desc.length > 5) {
+    let bestScore = 0, bestEntry = null, bestKey = null;
+    for(const key of allKeys) {
+      const entries = (db[key]||[]).filter(e=>e.invoiceNo!==currentInvNo&&e.unitCost>0&&e.desc);
+      for(const entry of entries) {
+        const score = fuzzyScore(item.desc, entry.desc);
+        if(score > bestScore && score >= 0.72) {
+          bestScore = score; bestEntry = entry; bestKey = key;
+        }
+      }
+    }
+    if(bestEntry) {
+      return {
+        entry: bestEntry,
+        matchType: 'fuzzy',
+        confidence: bestScore,
+        key: bestKey,
+        fuzzyScore: bestScore
+      };
+    }
+  }
+
+  return null;
+}
+
+// Get cross-vendor price comparison for an item
+function getCrossVendorPrices(itemNo, currentVendorKey, currentUnitCost) {
+  const db = loadDB();
+  const vendors = {};
+  
+  Object.keys(db).forEach(key => {
+    const [vk, ino] = key.split('|');
+    if(ino !== itemNo) return;
+    const entries = (db[key]||[]).filter(e=>e.unitCost>0);
+    if(!entries.length) return;
+    const latest = entries[entries.length-1];
+    vendors[vk] = { cost: latest.unitCost, date: latest.date, desc: latest.desc };
+  });
+
+  if(Object.keys(vendors).length < 2) return null;
+
+  const sorted = Object.entries(vendors).sort((a,b)=>a[1].cost-b[1].cost);
+  const cheapest = sorted[0];
+  const mostExpensive = sorted[sorted.length-1];
+  const currentRank = sorted.findIndex(([vk])=>vk===currentVendorKey)+1;
+  const cheaperCount = sorted.filter(([vk,v])=>v.cost<currentUnitCost).length;
+  
+  return {
+    vendors,
+    cheapestVendor: cheapest[0],
+    cheapestCost: cheapest[1].cost,
+    mostExpensiveVendor: mostExpensive[0],
+    mostExpensiveCost: mostExpensive[1].cost,
+    currentRank,
+    totalVendors: sorted.length,
+    cheaperCount,
+    savings: currentUnitCost - cheapest[1].cost
+  };
+}
+
+// ═══════════ DEMO INVOICE ═══════════
+const DEMO={
+  vendor:'U.S. Trading Company',invoiceNo:'7479337',date:'Aug 29, 2025',
+  docType:'invoice',customer:'Thameelay Market',total:10960.79,
+  items:[
+    {item:'12006',desc:'DF Sour BBS (S) Jar',size:'12X2LBS',qty:4,caseCost:33.00,cat:'other',isNew:false,isOOS:false},
+    {item:'12006',desc:'DF Sour BBS (S) Jar',size:'12X2LBS',qty:0,caseCost:0,cat:'other',isNew:false,isOOS:false},
+    {item:'12143',desc:'DF Bamboo Shoot Tip (Short)',size:'1X44LBS',qty:1,caseCost:45.00,cat:'other',isNew:false,isOOS:false},
+    {item:'12207',desc:'999 Baby Bamboo Shoot (L)',size:'12X42.5OZ',qty:10,caseCost:54.01,cat:'other',isNew:false,isOOS:false},
+    {item:'12207',desc:'999 Baby Bamboo Shoot (L)',size:'12X42.5OZ',qty:0,caseCost:0,cat:'other',isNew:false,isOOS:false},
+    {item:'13350',desc:'Black Mushroom in Brine',size:'24X15OZ',qty:2,caseCost:170.00,cat:'other',isNew:false,isOOS:false},
+    {item:'16147',desc:'999 Tall Sardine Tomato Sauce',size:'24X15OZ',qty:3,caseCost:52.00,cat:'other',isNew:false,isOOS:false},
+    {item:'16153',desc:'999 Oval Sardine/Chili Grn',size:'24X15OZ',qty:3,caseCost:52.00,cat:'other',isNew:false,isOOS:false},
+    {item:'15047',desc:'DF Sweet/Sour Makok w/Chili',size:'48X10.58OZ',qty:0,caseCost:75.00,cat:'other',isNew:false,isOOS:true},
+    {item:'32060',desc:'HB Black Grass Jelly',size:'24X19OZ',qty:1,caseCost:44.00,cat:'candy',isNew:false,isOOS:false},
+    {item:'32321',desc:'Coconut Gel Lychee Flavor',size:'24X12.7OZ',qty:1,caseCost:36.00,cat:'candy',isNew:false,isOOS:false},
+    {item:'33105',desc:'Chao Thai Coconut Powder',size:'100X2OZ',qty:2,caseCost:63.00,cat:'other',isNew:false,isOOS:false},
+    {item:'34021',desc:'HB Orange Drink Plastic',size:'30X14.9OZ',qty:10,caseCost:34.00,cat:'bev',isNew:false,isOOS:false},
+    {item:'34209',desc:'Tasco Thai Tea Drink',size:'24X16.9OZ',qty:10,caseCost:34.01,cat:'bev',isNew:false,isOOS:false},
+    {item:'34209',desc:'Tasco Thai Tea Drink',size:'24X16.9OZ',qty:0,caseCost:0,cat:'bev',isNew:false,isOOS:false},
+    {item:'34620',desc:'Mirinda Sarsi',size:'4 X (6X10.82',qty:1,caseCost:26.50,cat:'bev',isNew:true,isOOS:false},
+    {item:'34670',desc:'Fanta Orange Soda',size:'24X10.14OZ',qty:3,caseCost:32.50,cat:'bev',isNew:true,isOOS:false},
+    {item:'34671',desc:'Fanta Grape Soda',size:'24X10.14OZ',qty:3,caseCost:32.50,cat:'bev',isNew:true,isOOS:false},
+    {item:'35701',desc:'DF Beetle Car Jelly Cup',size:'6X43.2OZ',qty:1,caseCost:40.00,cat:'candy',isNew:false,isOOS:false},
+    {item:'35717',desc:'DF Jelly Mini Handbag',size:'24X7.93OZ',qty:1,caseCost:36.00,cat:'candy',isNew:false,isOOS:false},
+    {item:'35727',desc:'DF Jelly Stick',size:'8X42.32OZ',qty:1,caseCost:42.00,cat:'candy',isNew:false,isOOS:false},
+    {item:'35738',desc:'DF Tropical Mini Jelly',size:'12X44PCS',qty:1,caseCost:30.00,cat:'candy',isNew:false,isOOS:false},
+    {item:'35747',desc:'DF Rabbit Jelly Cup',size:'6X24.8OZ',qty:1,caseCost:40.00,cat:'candy',isNew:false,isOOS:false},
+    {item:'36400',desc:'DF Pineapple Cracker',size:'12X14OZ',qty:1,caseCost:45.00,cat:'snacks',isNew:false,isOOS:false},
+    {item:'36405',desc:'DF Durian Cracker',size:'12X14OZ',qty:1,caseCost:45.00,cat:'snacks',isNew:false,isOOS:false},
+    {item:'36600',desc:'Morning Breadstick Cheese',size:'16X9.16OZ',qty:1,caseCost:55.00,cat:'snacks',isNew:false,isOOS:false},
+    {item:'36601',desc:'Morning Breadstick Milk',size:'16X9.16OZ',qty:3,caseCost:55.00,cat:'snacks',isNew:false,isOOS:false},
+    {item:'36650',desc:'DF Sweetened Crispy Breadstick',size:'12X8.8OZ',qty:1,caseCost:40.00,cat:'snacks',isNew:true,isOOS:false},
+    {item:'37312',desc:'JHC Banana Chip Tray',size:'36X5.95OZ',qty:3,caseCost:70.00,cat:'snacks',isNew:false,isOOS:false},
+    {item:'37517',desc:"Lay's Miang Kham Chips",size:'48X1.76OZ',qty:3,caseCost:65.00,cat:'snacks',isNew:false,isOOS:false},
+    {item:'41001',desc:'Dragonfly Jasmine Rice 50LB',size:'1X50LBS',qty:10,caseCost:48.00,cat:'dry',isNew:false,isOOS:false},
+    {item:'41002',desc:'Dragonfly Jasmine Rice 25LB',size:'1X25LBS',qty:10,caseCost:26.00,cat:'dry',isNew:false,isOOS:false},
+    {item:'42094',desc:'DF Jiangxi Rice Vermicelli',size:'60X14OZ',qty:1,caseCost:80.00,cat:'dry',isNew:false,isOOS:false},
+    {item:'46081',desc:'DF Bean Vermicelli 8pcs',size:'50X10.5OZ',qty:2,caseCost:110.00,cat:'dry',isNew:false,isOOS:false},
+    {item:'51430',desc:'Red Lime Stone',size:'48X3.5OZ',qty:2,caseCost:36.00,cat:'other',isNew:false,isOOS:false},
+    {item:'51669',desc:'DF Prawn Cracker Color',size:'4X5LBS',qty:1,caseCost:52.00,cat:'snacks',isNew:false,isOOS:false},
+    {item:'56009',desc:'DF Tapioca Boba Mix Color',size:'18X24.5OZ',qty:2,caseCost:46.00,cat:'other',isNew:true,isOOS:false},
+    {item:'56125',desc:'JHC Tapioca Pearls S',size:'50X14OZ',qty:1,caseCost:65.00,cat:'other',isNew:false,isOOS:false},
+    {item:'68177',desc:'Super Power 5in1 Coffee Mix',size:'20X20PKG',qty:1,caseCost:140.00,cat:'bev',isNew:false,isOOS:false},
+    {item:'68178',desc:'Super Power 6in1 Coffee Mix',size:'20X20PKG',qty:1,caseCost:160.00,cat:'bev',isNew:false,isOOS:false},
+    {item:'68179',desc:'Super Coffee 3in1 Rich',size:'24X30PKG',qty:1,caseCost:160.00,cat:'bev',isNew:false,isOOS:false},
+    {item:'68194',desc:'Joyluck 3in1 Thai Tea',size:'30X1.23OZ',qty:2,caseCost:108.00,cat:'bev',isNew:false,isOOS:false},
+    {item:'71341',desc:'FZ Fish Cake',size:'10X2.2LBS',qty:2,caseCost:90.00,cat:'frozen',isNew:false,isOOS:false},
+    {item:'71418',desc:'FZ Whole Shrimp 9/12',size:'12X2LBS',qty:10,caseCost:120.00,cat:'frozen',isNew:false,isOOS:false},
+    {item:'73335',desc:'FZ Monthong Durian Seedless',size:'24X14OZ',qty:1,caseCost:260.00,cat:'frozen',isNew:false,isOOS:false},
+    {item:'73672',desc:'FZ Mozzarella Cheese Corn Dog',size:'20X14.1OZ',qty:2,caseCost:120.00,cat:'frozen',isNew:true,isOOS:false},
+    {item:'503000',desc:'Pallet Charge',size:'1X1',qty:3,caseCost:12.00,cat:'other',isNew:false,isOOS:false},
+  ]
+};
+
+// ═══════════ INIT ═══════════
+migrateDB();
+checkApiOnLoad();
+renderTargets();
+renderHistory();
+renderTracker('all');
+renderVendors();
+updateNavCounts();
+updateExportSummary();
+</script>
+</body>
+</html>
