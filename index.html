@@ -1817,31 +1817,26 @@ function checkConnFmt(v){
 }
 
 // Lazy-load Neon's official serverless driver from CDN
-let _neonSql = null;
-async function getNeonSql(){
-  if(_neonSql) return _neonSql;
-  const conn = getDbConn();
-  if(!conn) throw new Error('No database connection configured');
-  // Dynamic import of Neon's serverless driver (designed for browsers)
-  const mod = await import('https://esm.sh/@neondatabase/serverless@0.10.4');
-  _neonSql = mod.neon(conn);
-  return _neonSql;
+let _neonModule = null;
+async function loadNeonModule(){
+  if(_neonModule) return _neonModule;
+  _neonModule = await import('https://esm.sh/@neondatabase/serverless@0.10.4');
+  return _neonModule;
 }
 
 // Execute SQL via Neon's serverless driver - works in browser
+// The neon() function returns a tagged template, but supports .query() when configured
 async function neonQuery(sql, params){
   const conn = getDbConn();
   if(!conn) throw new Error('No database connection configured');
   try {
-    const mod = await import('https://esm.sh/@neondatabase/serverless@0.10.4');
-    const sqlClient = mod.neon(conn);
-    // The driver supports parameterized queries via tagged template
-    // For our use case, we need to use the .query() method for dynamic SQL
-    const rows = await sqlClient.query(sql, params || []);
-    return { rows: Array.isArray(rows) ? rows : (rows.rows || []) };
+    const mod = await loadNeonModule();
+    // Use Pool API which supports .query() with parameterized SQL
+    const pool = new mod.Pool({connectionString: conn});
+    const result = await pool.query(sql, params || []);
+    // Pool returns {rows: [...], rowCount: N}
+    return { rows: result.rows || [] };
   } catch(err) {
-    // Reset cached driver on error
-    _neonSql = null;
     throw new Error('Database error: ' + (err.message || err.toString()));
   }
 }
