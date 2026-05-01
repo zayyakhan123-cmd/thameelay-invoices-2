@@ -1816,39 +1816,34 @@ function checkConnFmt(v){
   else h.innerHTML='<span style="color:var(--amber)">⚠ Expected format: postgresql://...</span>';
 }
 
-// Parse connection string to get Neon HTTP API endpoint
-function parseNeonConn(connStr){
-  try{
-    // postgresql://user:password@host/dbname?sslmode=require
-    const m=connStr.match(/postgresql:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)/);
-    if(!m) return null;
-    return {user:m[1],password:m[2],host:m[3],database:m[4]};
-  }catch(e){return null;}
+// Lazy-load Neon's official serverless driver from CDN
+let _neonSql = null;
+async function getNeonSql(){
+  if(_neonSql) return _neonSql;
+  const conn = getDbConn();
+  if(!conn) throw new Error('No database connection configured');
+  // Dynamic import of Neon's serverless driver (designed for browsers)
+  const mod = await import('https://esm.sh/@neondatabase/serverless@0.10.4');
+  _neonSql = mod.neon(conn);
+  return _neonSql;
 }
 
-// Execute SQL via Neon HTTP API
+// Execute SQL via Neon's serverless driver - works in browser
 async function neonQuery(sql, params){
-  const conn=getDbConn();
+  const conn = getDbConn();
   if(!conn) throw new Error('No database connection configured');
-  const parsed=parseNeonConn(conn);
-  if(!parsed) throw new Error('Could not parse connection string');
-  
-  // Neon HTTP API endpoint
-  const url=`https://${parsed.host}/sql`;
-  const resp=await fetch(url,{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'Authorization':'Basic '+btoa(parsed.user+':'+parsed.password),
-      'Neon-Connection-String':conn,
-    },
-    body:JSON.stringify({query:sql, params:params||[]})
-  });
-  if(!resp.ok){
-    const err=await resp.text();
-    throw new Error('Database error: '+err);
+  try {
+    const mod = await import('https://esm.sh/@neondatabase/serverless@0.10.4');
+    const sqlClient = mod.neon(conn);
+    // The driver supports parameterized queries via tagged template
+    // For our use case, we need to use the .query() method for dynamic SQL
+    const rows = await sqlClient.query(sql, params || []);
+    return { rows: Array.isArray(rows) ? rows : (rows.rows || []) };
+  } catch(err) {
+    // Reset cached driver on error
+    _neonSql = null;
+    throw new Error('Database error: ' + (err.message || err.toString()));
   }
-  return await resp.json();
 }
 
 async function testDbConn(){
