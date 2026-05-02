@@ -1391,7 +1391,7 @@ async function processSingleFile(file){
   try{const inv=await extractInvoice(file);show('extracting',false);loadInvoice(inv);}
   catch(err){
     show('extracting',false);show('dz-wrap',true);
-    if(err.message!=='no_api_key') alert('Extraction failed: '+err.message+'. Check your API key in Settings.');
+    if(err.message!=='no_api_key') alert('Extraction failed: '+err.message);
   }
 }
 
@@ -1523,7 +1523,7 @@ async function extractInvoice(file){
   const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
   const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,messages:[{role:'user',content:[
+ body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:16000,messages:[{role:'user',content:[
       {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
       {type:'text',text:AI_PROMPT}
     ]}]})
