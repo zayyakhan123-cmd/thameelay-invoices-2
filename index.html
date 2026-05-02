@@ -410,8 +410,70 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
   .main{padding:16px}
   .banner{grid-template-columns:1fr 1fr}
   .b-cell{border-right:1px solid var(--border)!important;border-bottom:1px solid var(--border)}
-  .b-cell:nth-child(2n){border-right:none!important}
+  .b-cell:nth-child(2n):not(:last-child){border-right:none!important}
 }
+
+/* ─── UPLOAD PROGRESS (multi-step) ───────────────── */
+.up-prog{margin-top:12px;padding:14px;background:var(--c1l);border:1px solid var(--c1);border-radius:var(--rl)}
+.up-prog-file{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(59,130,246,.25)}
+.up-prog-file-ico{width:28px;height:28px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.up-prog-file-name{font-size:12px;font-weight:600;color:var(--c1d);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+.up-prog-file-meta{font-size:10px;color:var(--c1d);opacity:.75}
+.up-step{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:11px;color:var(--text3);transition:all .2s}
+.up-step.done{color:var(--greend)}
+.up-step.active{color:var(--c1d);font-weight:600}
+.up-step-ico{width:20px;height:20px;border-radius:50%;background:#fff;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:700}
+.up-step.done .up-step-ico{background:var(--green);border-color:var(--green);color:#fff}
+.up-step.done .up-step-ico::before{content:'✓'}
+.up-step.active .up-step-ico{border-color:var(--c1);background:var(--c1);color:#fff;animation:up-pulse 1.2s infinite}
+.up-step.active .up-step-ico::before{content:'';width:8px;height:8px;border-radius:50%;background:#fff;animation:up-spin 1s linear infinite}
+@keyframes up-pulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}50%{box-shadow:0 0 0 6px rgba(59,130,246,0)}}
+@keyframes up-spin{0%{transform:scale(1);opacity:1}50%{transform:scale(.5);opacity:.6}100%{transform:scale(1);opacity:1}}
+.up-step-num{display:none}
+.up-step:not(.done):not(.active) .up-step-ico{font-size:9px;color:var(--text4)}
+.up-prog-err{margin-top:10px;padding:10px;background:var(--redbg);border:1px solid var(--red);border-radius:var(--r);color:var(--redd);font-size:11px}
+
+/* ─── TOAST ─────────────────────────────────────── */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:12px 16px;box-shadow:var(--sh-lg);font-size:12px;display:flex;align-items:center;gap:10px;min-width:240px;max-width:380px;pointer-events:auto;animation:toast-in .3s ease-out;border-left:4px solid var(--c1)}
+.toast.success{border-left-color:var(--green)}
+.toast.error{border-left-color:var(--red)}
+.toast.warn{border-left-color:var(--amber)}
+.toast-ico{font-size:18px;flex-shrink:0}
+.toast-body{flex:1;color:var(--text);font-weight:500;line-height:1.4}
+.toast-x{cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:2px 4px;border-radius:4px}
+.toast-x:hover{background:var(--bg3);color:var(--text)}
+.toast.fade{animation:toast-out .3s ease-out forwards}
+@keyframes toast-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toast-out{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(20px)}}
+
+/* ─── DASHBOARD APPROVE BUTTONS ─────────────────── */
+.db-act-cell{display:flex;flex-direction:column;gap:4px;align-items:stretch;min-width:90px}
+.db-act-btn{font-size:10px;font-weight:600;padding:5px 8px;border-radius:5px;border:1px solid var(--border2);background:#fff;cursor:pointer;transition:all .12s;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:-.005em}
+.db-act-btn:hover{transform:translateY(-1px);box-shadow:var(--sh-sm)}
+.db-act-btn.approve{background:var(--green);color:#fff;border-color:var(--green)}
+.db-act-btn.approve:hover{background:var(--greend);border-color:var(--greend)}
+.db-act-btn.reject{background:#fff;color:var(--red);border-color:var(--red)}
+.db-act-btn.reject:hover{background:var(--redbg)}
+.db-act-status{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;text-align:center;letter-spacing:.02em;text-transform:uppercase}
+.db-act-status.approved{background:var(--greenl);color:var(--greend);border:1px solid var(--green)}
+.db-act-status.rejected{background:var(--redl);color:var(--redd);border:1px solid var(--red)}
+.db-act-status.pending{background:var(--amberl);color:var(--amberd);border:1px solid var(--amber)}
+.db-act-undo{font-size:9px;color:var(--text3);cursor:pointer;text-decoration:underline;margin-top:2px}
+.db-act-undo:hover{color:var(--c1)}
+
+/* ─── DASHBOARD BULK BAR ────────────────────────── */
+.db-bulk{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;flex-wrap:wrap}
+.db-bulk-info{font-size:11px;color:var(--text2);font-weight:500}
+.db-bulk-info b{color:var(--text);font-family:var(--font-mono)}
+.db-bulk-spacer{flex:1;min-width:0}
+.db-bulk-btn{font-size:11px;font-weight:600;padding:6px 12px;border-radius:5px;border:1px solid var(--border2);background:#fff;cursor:pointer;color:var(--text2);transition:all .12s;display:flex;align-items:center;gap:5px}
+.db-bulk-btn:hover{background:var(--bg4);border-color:var(--border3)}
+.db-bulk-btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.db-bulk-btn.primary:hover{background:var(--greend);border-color:var(--greend)}
+.db-bulk-btn.warn{background:#fff;color:var(--red);border-color:var(--red)}
+.db-bulk-btn.warn:hover{background:var(--redbg)}
+.db-bulk-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
 </style>
 </head>
 <body>
@@ -543,9 +605,19 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
           <button class="bp" style="font-size:11px;padding:5px 12px" onclick="processQueue()">▶ Process All</button>
         </div>
       </div>
-      <div id="db-extracting" style="display:none;margin-top:12px;padding:10px;background:var(--c1l);border-radius:8px;font-size:11px;color:var(--c1d)">
-        <div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-        <div style="margin-top:4px">Extracting invoice...</div>
+      <div id="db-extracting" class="up-prog" style="display:none">
+        <div class="up-prog-file">
+          <div class="up-prog-file-ico">📄</div>
+          <div style="min-width:0;flex:1">
+            <div class="up-prog-file-name" id="db-up-name">filename.pdf</div>
+            <div class="up-prog-file-meta" id="db-up-meta">Processing...</div>
+          </div>
+        </div>
+        <div class="up-step" data-step="reading"><div class="up-step-ico"></div><div>Reading file</div></div>
+        <div class="up-step" data-step="extracting"><div class="up-step-ico"></div><div>AI extracting line items</div></div>
+        <div class="up-step" data-step="parsing"><div class="up-step-ico"></div><div>Parsing response</div></div>
+        <div class="up-step" data-step="classifying"><div class="up-step-ico"></div><div>Matching to price history</div></div>
+        <div class="up-prog-err" id="db-up-err" style="display:none"></div>
       </div>
     </div>
 
@@ -563,6 +635,14 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
           <button class="tbl-btn">⬇ Export</button>
         </div>
       </div>
+      <div class="db-bulk" id="db-bulk-bar" style="display:none">
+        <div class="db-bulk-info"><b id="db-bulk-pending">0</b> pending · <b id="db-bulk-approved" style="color:var(--green)">0</b> approved · <b id="db-bulk-rejected" style="color:var(--red)">0</b> rejected</div>
+        <div class="db-bulk-spacer"></div>
+        <button class="db-bulk-btn primary" onclick="dbApproveSafe()" title="Approve all items where Recommended Action is Do Nothing">✓ Approve Safe Items</button>
+        <button class="db-bulk-btn primary" onclick="dbApproveAll()">✓✓ Approve All</button>
+        <button class="db-bulk-btn warn" onclick="dbRejectAll()">✕ Reject All</button>
+        <button class="db-bulk-btn" onclick="goTo('approve')">→ Full Approvals Page</button>
+      </div>
       <div class="tw">
         <table>
           <thead><tr>
@@ -575,9 +655,10 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
             <th>Projected<br>Margin</th>
             <th>Suggested<br>Retail</th>
             <th>Confidence /<br>Review Flag</th>
+            <th style="text-align:center">Action</th>
           </tr></thead>
           <tbody id="db-approval-body">
-            <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--text3)">
+            <tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text3)">
               <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
               <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
               <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
@@ -1198,6 +1279,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 </div>
 </main>
 </div>
+<div class="toast-wrap" id="toast-wrap"></div>
 <script>
 // ═══════════ CONSTANTS ═══════════
 const TARGETS={snacks:30,candy:40,frozen:35,bev:30,dry:30,other:30};
@@ -1387,17 +1469,32 @@ function handleFiles(e){
 }
 
 async function processSingleFile(file){
-  show('dz-wrap',false);show('extracting',true);
-  try{const inv=await extractInvoice(file);show('extracting',false);loadInvoice(inv);}
+  show('dz-wrap',false);
+  startUploadProgress(file);
+  try{
+    const inv=await extractInvoice(file, setUploadStep);
+    setUploadStep('classifying');
+    await new Promise(r=>setTimeout(r,200));
+    finishUploadProgress(true);
+    loadInvoice(inv);
+    const cnt = inv && inv.items ? inv.items.filter(i=>i._rt===0||i._rt===RT.PURCHASED).length : 0;
+    showToast('success', `✅ Invoice loaded — ${cnt} items ready to review below`);
+  }
   catch(err){
-    show('extracting',false);show('dz-wrap',true);
-    if(err.message!=='no_api_key') alert('Extraction failed: '+err.message);
+    if(err.message==='no_api_key'){ finishUploadProgress(false); show('dz-wrap',true); return; }
+    finishUploadProgress(false, err.message);
+    show('dz-wrap',true);
+    showToast('error', 'Extraction failed: '+err.message, 8000);
   }
 }
 
 function loadDemo(){
   show('dz-wrap',false);show('extracting',true);
-  setTimeout(()=>{show('extracting',false);loadInvoice(JSON.parse(JSON.stringify(DEMO)));},1100);
+  setTimeout(()=>{
+    show('extracting',false);
+    loadInvoice(JSON.parse(JSON.stringify(DEMO)));
+    showToast('success','✅ Demo invoice loaded — review prices below');
+  },1100);
 }
 
 function addToQueue(files){
@@ -1513,7 +1610,8 @@ IMPORTANT RULES:
 Return ONLY raw JSON with no markdown, no backticks, no explanation:
 {"vendor":"","invoiceNo":"","date":"","docType":"invoice","customer":"","total":0,"items":[{"item":"","desc":"","size":"","qty":0,"caseCost":0.00,"cat":"other","isNew":false,"isOOS":false}]}`;
 
-async function extractInvoice(file){
+async function extractInvoice(file, onStep){
+  const step=(s)=>{ if(typeof onStep==='function') onStep(s); };
   const key=AI_KEY(); if(!key){
     // No API key — redirect to settings instead of silently loading demo
     show('extracting',false); show('dz-wrap',true);
@@ -1521,7 +1619,9 @@ async function extractInvoice(file){
     showBanner('⚠ No API key saved. Enter your key below to extract real invoices — or use the demo button.','var(--amberl)','var(--amberd)');
     throw new Error('no_api_key');
   }
+  step('reading');
   const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+  step('extracting');
   const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:16000,messages:[{role:'user',content:[
@@ -1529,6 +1629,7 @@ async function extractInvoice(file){
       {type:'text',text:AI_PROMPT}
     ]}]})
   });
+  step('parsing');
   const data=await resp.json();
   if(data.type==='error') throw new Error(data.error&&data.error.message?data.error.message:'API error');
   if(data.stop_reason==='max_tokens') throw new Error('Response truncated — invoice has too many line items. Try splitting the PDF or raising max_tokens.');
@@ -1717,10 +1818,35 @@ function renderApprovals(filter){
 }
 
 function updateRetail(k,v){if(APPROVALS[k])APPROVALS[k].retailPrice=v;const p=document.querySelector('#af-pills .pill.on');renderApprovals(p?p.dataset.af:'all');}
-function setAp(k,s){if(APPROVALS[k])APPROVALS[k].status=s;updateApprovalCounts();const p=document.querySelector('#af-pills .pill.on');renderApprovals(p?p.dataset.af:'all');updateExportSummary();}
-function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');updateExportSummary();}
-function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');updateExportSummary();}
-function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');updateExportSummary();}
+function setAp(k,s){if(APPROVALS[k])APPROVALS[k].status=s;updateApprovalCounts();const p=document.querySelector('#af-pills .pill.on');if(p)renderApprovals(p.dataset.af);renderDashboardTable();updateExportSummary();}
+function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('success', `✅ Approved ${Object.keys(APPROVALS).length} items`);}
+function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
+function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();}
+
+// Dashboard-only bulk actions
+function dbApproveAll(){
+  if(!INV||!Object.keys(APPROVALS).length){showToast('warn','Nothing to approve yet — upload an invoice first');return;}
+  bulkApprove();
+}
+function dbRejectAll(){
+  if(!INV||!Object.keys(APPROVALS).length){showToast('warn','Nothing to reject');return;}
+  if(!confirm('Reject all '+Object.keys(APPROVALS).length+' items?'))return;
+  rejectAll();
+}
+function dbApproveSafe(){
+  if(!INV){showToast('warn','Upload an invoice first');return;}
+  const vk=normV(INV.vendor); let n=0;
+  Object.keys(APPROVALS).forEach(k=>{
+    const item=INV.items.find(i=>i.item===k);if(!item)return;
+    const ch=detectChange(item,vk,INV.invoiceNo);
+    const isSafe = (ch.status==='no_change'||ch.status==='no_history'||(Math.abs(ch.pct||0)<=2)) && (item._conf||1)>=0.7;
+    if(isSafe){APPROVALS[k].status='approved';n++;}
+  });
+  updateApprovalCounts();renderDashboardTable();
+  const p=document.querySelector('#af-pills .pill.on');if(p)renderApprovals(p.dataset.af);
+  updateExportSummary();
+  showToast('success', n>0 ? `✅ Approved ${n} safe item${n!==1?'s':''}` : 'No safe items to auto-approve');
+}
 function toggleSelAll(v){document.querySelectorAll('.apchk').forEach(c=>c.checked=v);}
 function updateApprovalCounts(){
   const vals=Object.values(APPROVALS);
@@ -2111,6 +2237,73 @@ function showBanner(msg,bg,color){
   b.style.display='block';b.textContent=msg;
   b.style.background=bg;b.style.color=color;b.style.border='1px solid '+color;
   setTimeout(()=>{if(b)b.style.display='none';},5000);
+}
+
+// ── Toast notifications ─────────────────────────
+function showToast(kind, msg, dur){
+  const wrap = document.getElementById('toast-wrap');
+  if(!wrap) return;
+  const ico = {success:'✅', error:'⚠️', warn:'⚡', info:'ℹ️'}[kind] || 'ℹ️';
+  const t = document.createElement('div');
+  t.className = 'toast ' + (kind||'info');
+  t.innerHTML = `<div class="toast-ico">${ico}</div><div class="toast-body">${msg}</div><div class="toast-x">×</div>`;
+  t.querySelector('.toast-x').onclick = ()=>{ t.classList.add('fade'); setTimeout(()=>t.remove(),300); };
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.classList.add('fade'); setTimeout(()=>t.remove(),300); }, dur||4500);
+}
+
+// ── Upload progress (multi-step) ────────────────
+function startUploadProgress(file){
+  const box = document.getElementById('db-extracting');
+  if(!box) return;
+  box.style.display = 'block';
+  const nameEl = document.getElementById('db-up-name');
+  const metaEl = document.getElementById('db-up-meta');
+  const errEl = document.getElementById('db-up-err');
+  if(errEl){ errEl.style.display='none'; errEl.textContent=''; }
+  if(nameEl) nameEl.textContent = file.name;
+  if(metaEl){
+    const sz = file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+' MB' : Math.max(1,Math.round(file.size/1024))+' KB';
+    metaEl.textContent = sz + ' · ' + (file.type || 'PDF');
+  }
+  box.querySelectorAll('.up-step').forEach(s=>s.classList.remove('done','active'));
+  // also show extracting on the upload page if user navigated there
+  show('extracting', true);
+}
+function setUploadStep(stepKey){
+  const box = document.getElementById('db-extracting');
+  if(!box) return;
+  const order = ['reading','extracting','parsing','classifying'];
+  const idx = order.indexOf(stepKey);
+  box.querySelectorAll('.up-step').forEach(el=>{
+    const i = order.indexOf(el.dataset.step);
+    el.classList.remove('done','active');
+    if(i < idx) el.classList.add('done');
+    else if(i === idx) el.classList.add('active');
+  });
+  const meta = document.getElementById('db-up-meta');
+  if(meta){
+    const labels = {reading:'Reading file...', extracting:'AI extracting items...', parsing:'Parsing response...', classifying:'Matching to history...'};
+    meta.textContent = labels[stepKey] || 'Processing...';
+  }
+}
+function finishUploadProgress(success, errMsg){
+  const box = document.getElementById('db-extracting');
+  if(!box){ show('extracting',false); return; }
+  if(success){
+    box.querySelectorAll('.up-step').forEach(s=>{s.classList.remove('active');s.classList.add('done');});
+    const meta = document.getElementById('db-up-meta');
+    if(meta) meta.textContent = 'Done';
+    setTimeout(()=>{ box.style.display='none'; }, 700);
+  } else {
+    const errEl = document.getElementById('db-up-err');
+    if(errEl && errMsg){
+      errEl.style.display = 'block';
+      errEl.textContent = '⚠ ' + errMsg;
+    }
+    setTimeout(()=>{ box.style.display='none'; }, 4000);
+  }
+  show('extracting', false);
 }
 
 function checkApiOnLoad(){
@@ -2777,19 +2970,38 @@ function renderDashboardTable(){
   const tbody = document.getElementById('db-approval-body');
   if(!tbody) return;
   
+  const bulkBar = document.getElementById('db-bulk-bar');
+  
   if(!INV){
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:48px;color:var(--text3)">
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
       <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
       <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
     </td></tr>`;
     document.getElementById('db-pager').style.display='none';
+    if(bulkBar) bulkBar.style.display='none';
+    const pill = document.getElementById('db-action-pill');
+    if(pill) pill.textContent = '0 Action Required';
     return;
   }
   
   const purch = INV.items.filter(i=>i._rt===RT.PURCHASED && i.qty>0);
   const vk = normV(INV.vendor);
   const search = (document.getElementById('db-search')?.value || '').toLowerCase();
+  
+  // Update bulk bar counts
+  if(bulkBar){
+    bulkBar.style.display = 'flex';
+    const vals = Object.values(APPROVALS);
+    const pCnt = vals.filter(v=>v.status==='pending').length;
+    const aCnt = vals.filter(v=>v.status==='approved').length;
+    const rCnt = vals.filter(v=>v.status==='rejected').length;
+    document.getElementById('db-bulk-pending').textContent = pCnt;
+    document.getElementById('db-bulk-approved').textContent = aCnt;
+    document.getElementById('db-bulk-rejected').textContent = rCnt;
+    const pill = document.getElementById('db-action-pill');
+    if(pill) pill.textContent = pCnt + ' Pending';
+  }
   
   let rows = purch.map(item=>{
     const ch = detectChange(item, vk, INV.invoiceNo);
@@ -2817,7 +3029,7 @@ function renderDashboardTable(){
   }
   
   if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No items match "${search}"</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text3)">No items match "${search}"</td></tr>`;
     return;
   }
   
@@ -2902,6 +3114,26 @@ function renderDashboardTable(){
       retailHtml = `<div class="retail-cell">${f2(ru)}</div><div class="retail-was">(No change)</div>`;
     }
     
+    // Approval action cell
+    const apStatus = (APPROVALS[item.item] && APPROVALS[item.item].status) || 'pending';
+    let actionCell = '';
+    if(apStatus === 'approved'){
+      actionCell = `<div class="db-act-cell">
+        <span class="db-act-status approved">✓ Approved</span>
+        <span class="db-act-undo" onclick="setAp('${item.item}','pending')">Undo</span>
+      </div>`;
+    } else if(apStatus === 'rejected'){
+      actionCell = `<div class="db-act-cell">
+        <span class="db-act-status rejected">✕ Rejected</span>
+        <span class="db-act-undo" onclick="setAp('${item.item}','pending')">Undo</span>
+      </div>`;
+    } else {
+      actionCell = `<div class="db-act-cell">
+        <button class="db-act-btn approve" onclick="setAp('${item.item}','approved')">✓ Approve</button>
+        <button class="db-act-btn reject" onclick="setAp('${item.item}','rejected')">✕ Reject</button>
+      </div>`;
+    }
+    
     return `<tr>
       <td>
         <div class="itm-cell">
@@ -2928,6 +3160,7 @@ function renderDashboardTable(){
         <span class="conf-pill ${confClass}">${confLabel}</span>
         <span class="conf-shield">${confShield}</span>
       </td>
+      <td style="vertical-align:middle">${actionCell}</td>
     </tr>`;
   }).join('');
   
