@@ -1471,8 +1471,7 @@ async function processQueue(){
         <button onclick="reloadInv('${r.inv.vendor}','${r.inv.invoiceNo}')" style="font-size:11px;padding:4px 10px">Review →</button>
       </div>
     </div>`).join('');
-  if(done.length){INV=done[0].inv;document.getElementById('hbadge').textContent=INV.vendor+' #'+INV.invoiceNo+' · '+INV.date;}
-  updateNavCounts();
+if(done.length){INV=done[0].inv;const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=INV.vendor+' #'+INV.invoiceNo+' · '+INV.date;}  updateNavCounts();
 }
 
 function resetUpload(){
@@ -1539,8 +1538,7 @@ function loadInvoice(inv){
   if(!inv.docType)inv.docType='invoice';
   classifyInvoice(inv);
   INV=inv;
-  document.getElementById('hbadge').textContent=inv.vendor+' #'+inv.invoiceNo+' · '+inv.date;
-  const vk=normV(inv.vendor);
+const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=inv.vendor+' #'+inv.invoiceNo+' · '+inv.date;  const vk=normV(inv.vendor);
   APPROVALS={};
   inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{
     const ch=detectChange(i,vk,inv.invoiceNo);
