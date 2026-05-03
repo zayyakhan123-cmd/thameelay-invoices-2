@@ -413,6 +413,17 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
   .b-cell:nth-child(2n):not(:last-child){border-right:none!important}
 }
 
+/* ─── DASHBOARD COMPACT UPLOAD ──────────────────── */
+.dash-upload-row{margin-bottom:18px}
+.dash-upload-grid{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:end}
+.dash-upload-actions{display:flex;flex-direction:column;gap:6px}
+.dz-mini-h{padding:14px 16px;margin-bottom:0}
+.dash-row-full{margin-bottom:18px}
+@media(max-width:880px){
+  .dash-upload-grid{grid-template-columns:1fr}
+  .dash-upload-actions{margin-top:6px}
+}
+
 /* ─── UPLOAD PROGRESS (multi-step) ───────────────── */
 .up-prog{margin-top:12px;padding:14px;background:var(--c1l);border:1px solid var(--c1);border-radius:var(--rl)}
 .up-prog-file{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(59,130,246,.25)}
@@ -572,56 +583,61 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
     </div>
   </div>
 
-  <!-- 2. UPLOAD + APPROVALS ROW -->
-  <div class="dash-row">
-    <!-- Upload card -->
-    <div class="card">
-      <div class="card-hd">
-        <div class="card-t">
+  <!-- 2. UPLOAD CARD (compact horizontal) -->
+  <div class="card dash-upload-row">
+    <div class="dash-upload-grid">
+      <div>
+        <div class="card-t" style="margin-bottom:8px">
           <span class="card-t-num">1</span>
           <div class="ctit">Upload Invoice</div>
         </div>
+        <div class="dz-mini dz-mini-h" id="dropzone">
+          <div style="display:flex;align-items:center;gap:10px;justify-content:center">
+            <div class="dz-mini-icon" style="font-size:22px;margin:0">☁️</div>
+            <div style="text-align:left">
+              <div class="dz-mini-title">Drag &amp; drop invoice files here</div>
+              <div class="dz-mini-sub">PDF, JPG, PNG up to 20MB</div>
+            </div>
+          </div>
+          <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
+        </div>
       </div>
-      <div class="dz-mini" id="dropzone">
-        <div class="dz-mini-icon">☁️</div>
-        <div class="dz-mini-title">Drag &amp; drop invoice files here</div>
-        <div class="dz-mini-sub">PDF, JPG, PNG up to 20MB</div>
-        <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
-      </div>
-      <div class="brow" style="margin-top:10px;flex-direction:column;gap:6px">
+      <div class="dash-upload-actions">
         <button class="bp" style="width:100%;justify-content:center" onclick="document.getElementById('file-in').click()">📁 Choose Files</button>
-        <div class="btn-grid-3" style="width:100%">
-          <button onclick="processQueue()" style="justify-content:center">▶ Process All</button>
-          <button onclick="loadDemo()" style="justify-content:center">▶ Demo Invoice</button>
+        <div class="btn-grid-3" style="width:100%;margin-top:0">
+          <button onclick="processQueue()" style="justify-content:center">▶ Process</button>
+          <button onclick="loadDemo()" style="justify-content:center">▶ Demo</button>
           <button onclick="clearQueue()" style="justify-content:center;color:var(--red)">🗑 Clear</button>
         </div>
       </div>
-      <div id="db-queue-wrap" style="display:none">
-        <div style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:14px;margin-bottom:6px" id="db-queue-title">Queue (0)</div>
-        <div id="db-queue-list" class="q-list"></div>
-        <div class="q-progress" style="display:none" id="db-q-progress">
-          <span class="mn" id="db-q-counter">0 of 0 ready to process</span>
-          <div class="q-progress-bar"><div class="q-progress-fill" id="db-q-fill" style="width:0%"></div></div>
-          <button class="bp" style="font-size:11px;padding:5px 12px" onclick="processQueue()">▶ Process All</button>
-        </div>
-      </div>
-      <div id="db-extracting" class="up-prog" style="display:none">
-        <div class="up-prog-file">
-          <div class="up-prog-file-ico">📄</div>
-          <div style="min-width:0;flex:1">
-            <div class="up-prog-file-name" id="db-up-name">filename.pdf</div>
-            <div class="up-prog-file-meta" id="db-up-meta">Processing...</div>
-          </div>
-        </div>
-        <div class="up-step" data-step="reading"><div class="up-step-ico"></div><div>Reading file</div></div>
-        <div class="up-step" data-step="extracting"><div class="up-step-ico"></div><div>AI extracting line items</div></div>
-        <div class="up-step" data-step="parsing"><div class="up-step-ico"></div><div>Parsing response</div></div>
-        <div class="up-step" data-step="classifying"><div class="up-step-ico"></div><div>Matching to price history</div></div>
-        <div class="up-prog-err" id="db-up-err" style="display:none"></div>
+    </div>
+    <div id="db-queue-wrap" style="display:none">
+      <div style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:14px;margin-bottom:6px" id="db-queue-title">Queue (0)</div>
+      <div id="db-queue-list" class="q-list"></div>
+      <div class="q-progress" style="display:none" id="db-q-progress">
+        <span class="mn" id="db-q-counter">0 of 0 ready to process</span>
+        <div class="q-progress-bar"><div class="q-progress-fill" id="db-q-fill" style="width:0%"></div></div>
+        <button class="bp" style="font-size:11px;padding:5px 12px" onclick="processQueue()">▶ Process All</button>
       </div>
     </div>
+    <div id="db-extracting" class="up-prog" style="display:none">
+      <div class="up-prog-file">
+        <div class="up-prog-file-ico">📄</div>
+        <div style="min-width:0;flex:1">
+          <div class="up-prog-file-name" id="db-up-name">filename.pdf</div>
+          <div class="up-prog-file-meta" id="db-up-meta">Processing...</div>
+        </div>
+      </div>
+      <div class="up-step" data-step="reading"><div class="up-step-ico"></div><div>Reading file</div></div>
+      <div class="up-step" data-step="extracting"><div class="up-step-ico"></div><div>AI extracting line items</div></div>
+      <div class="up-step" data-step="parsing"><div class="up-step-ico"></div><div>Parsing response</div></div>
+      <div class="up-step" data-step="classifying"><div class="up-step-ico"></div><div>Matching to price history</div></div>
+      <div class="up-prog-err" id="db-up-err" style="display:none"></div>
+    </div>
+  </div>
 
-    <!-- Price Approvals -->
+  <!-- 3. APPROVALS CARD (full width) -->
+  <div class="dash-row-full">
     <div class="card">
       <div class="card-hd">
         <div class="card-t">
@@ -638,10 +654,10 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
       <div class="db-bulk" id="db-bulk-bar" style="display:none">
         <div class="db-bulk-info"><b id="db-bulk-pending">0</b> pending · <b id="db-bulk-approved" style="color:var(--green)">0</b> approved · <b id="db-bulk-rejected" style="color:var(--red)">0</b> rejected</div>
         <div class="db-bulk-spacer"></div>
-        <button class="db-bulk-btn primary" onclick="dbApproveSafe()" title="Approve all items where Recommended Action is Do Nothing">✓ Approve Safe Items</button>
-        <button class="db-bulk-btn primary" onclick="dbApproveAll()">✓✓ Approve All</button>
+        <button class="db-bulk-btn primary" onclick="dbApproveSafe()" title="Approve all items where Recommended Action is Do Nothing">✓ Safe</button>
+        <button class="db-bulk-btn primary" onclick="dbApproveAll()" title="Approve every item">✓✓ All</button>
         <button class="db-bulk-btn warn" onclick="dbRejectAll()">✕ Reject All</button>
-        <button class="db-bulk-btn" onclick="goTo('approve')">→ Full Approvals Page</button>
+        <button class="db-bulk-btn" onclick="goTo('approve')" title="Open detailed approvals page">→ Details</button>
       </div>
       <div class="tw">
         <table>
@@ -1458,14 +1474,69 @@ DZ.addEventListener('drop',e=>{
   e.preventDefault();DZ.classList.remove('over');
   const files=Array.from(e.dataTransfer.files).filter(f=>f.type==='application/pdf'||f.type.startsWith('image/'));
   if(!files.length)return;
-  if(files.length===1)processSingleFile(files[0]); else addToQueue(files);
+  routeFiles(files);
 });
 
 // ═══════════ UPLOAD FLOW ═══════════
 function handleFiles(e){
   const files=Array.from(e.target.files);
   if(!files.length)return;
-  if(files.length===1)processSingleFile(files[0]); else addToQueue(files);
+  routeFiles(files);
+  e.target.value=''; // allow re-selecting the same file
+}
+
+// ── Duplicate detection ────────────────────────────
+// Returns: {fileMatch, invoiceMatches} – fileMatch is the prior invoice with same filename
+function checkDuplicate(file){
+  const hist = loadHist();
+  if(!hist.length) return null;
+  const fname = file.name.toLowerCase().trim();
+  // Match by stored uploaded filename
+  const fileMatch = hist.find(h => h._uploadedAs && h._uploadedAs.toLowerCase().trim() === fname);
+  if(fileMatch) return {kind:'file', match:fileMatch};
+  // Fallback: filename contains an existing invoice number
+  const fnameNoExt = fname.replace(/\.[^.]+$/,'');
+  const numMatch = hist.find(h => h.invoiceNo && fnameNoExt.includes(String(h.invoiceNo).toLowerCase()));
+  if(numMatch) return {kind:'numFromName', match:numMatch};
+  return null;
+}
+
+function routeFiles(files){
+  // Check each file for duplicates
+  const dups = [];
+  const fresh = [];
+  files.forEach(f=>{
+    const d = checkDuplicate(f);
+    if(d) dups.push({file:f, dup:d}); else fresh.push(f);
+  });
+  if(dups.length){
+    const lines = dups.map(d=>{
+      const m=d.dup.match;
+      const date = m.savedAt ? new Date(m.savedAt).toLocaleDateString() : (m.date||'unknown date');
+      return `  • ${d.file.name}  →  ${m.vendor} #${m.invoiceNo} (uploaded ${date})`;
+    }).join('\n');
+    const ok = confirm(
+      `${dups.length===1?'This file appears to':'These files appear to'} have been uploaded before:\n\n${lines}\n\n` +
+      `Re-uploading will overwrite the existing record${dups.length!==1?'s':''} but won't duplicate price history.\n\n` +
+      `Click OK to process anyway, or Cancel to skip ${dups.length===1?'it':'them'}.`
+    );
+    if(ok){
+      const all = [...fresh, ...dups.map(d=>d.file)];
+      processFileList(all);
+    } else if(fresh.length){
+      processFileList(fresh);
+      showToast('warn', `Skipped ${dups.length} duplicate file${dups.length!==1?'s':''}`);
+    } else {
+      showToast('warn','All files were duplicates — nothing uploaded');
+    }
+  } else {
+    processFileList(files);
+  }
+}
+
+function processFileList(files){
+  if(!files.length) return;
+  if(files.length===1) processSingleFile(files[0]); else addToQueue(files);
 }
 
 async function processSingleFile(file){
@@ -1473,10 +1544,12 @@ async function processSingleFile(file){
   startUploadProgress(file);
   try{
     const inv=await extractInvoice(file, setUploadStep);
+    if(inv) inv._uploadedAs = file.name;
     setUploadStep('classifying');
     await new Promise(r=>setTimeout(r,200));
     finishUploadProgress(true);
     loadInvoice(inv);
+    saveCurrentInvoiceToHistory();
     const cnt = inv && inv.items ? inv.items.filter(i=>i._rt===0||i._rt===RT.PURCHASED).length : 0;
     showToast('success', `✅ Invoice loaded — ${cnt} items ready to review below`);
   }
@@ -1486,6 +1559,19 @@ async function processSingleFile(file){
     show('dz-wrap',true);
     showToast('error', 'Extraction failed: '+err.message, 8000);
   }
+}
+
+// Save the currently loaded invoice to history (so duplicate detection works on next upload)
+function saveCurrentInvoiceToHistory(){
+  if(!INV) return;
+  const hist=loadHist();
+  const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor);
+  if(idx>=0) hist.splice(idx,1);
+  hist.unshift({...INV, savedAt:new Date().toISOString()});
+  saveHist(hist);
+  saveInvoiceToDB(INV);
+  updateNavCounts();
+  renderHistory();
 }
 
 function loadDemo(){
@@ -1536,6 +1622,7 @@ async function processQueue(){
     addLog(`[${i+1}/${total}] Extracting ${FILE_QUEUE[i].name}...`);
     try{
       const inv=await extractInvoice(FILE_QUEUE[i].file);
+      inv._uploadedAs = FILE_QUEUE[i].name;
       classifyInvoice(inv);
       FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=inv;
       const {saved,skipped}=saveInvoiceToDB(inv);
