@@ -1397,13 +1397,13 @@ function getPrevCost(vk,itemNo,curInvNo){
 }
 
 // ═══════════ PRICE CHANGE DETECTION ═══════════
-// Uses only valid purchased rows. Compares current unit cost vs most recent prior invoice.
-function detectChange(item,vk,curInvNo){
+// Uses only valid purchased rows. Compares current unit cost vs most recent prior invoice (by date).
+function detectChange(item,vk,curInvNo,curInvDate){
   if(item._rt!==RT.PURCHASED) return {status:'excluded'};
   const curr=unitCost(item);
   
   // Use fuzzy matching engine — finds same item across invoices AND vendors
-  const match=findBestHistoryMatch(item,vk,curInvNo);
+  const match=findBestHistoryMatch(item,vk,curInvNo,curInvDate);
   if(!match) return {status:'no_history',curr};
   
   const prev=match.entry;
@@ -1629,7 +1629,7 @@ async function processQueue(){
       const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===inv.invoiceNo&&h.vendor===inv.vendor);
       if(idx>=0)hist.splice(idx,1);hist.unshift({...inv,savedAt:new Date().toISOString()});saveHist(hist);
       const vk=normV(inv.vendor);
-      const ups=inv.items.filter(it=>it._rt===RT.PURCHASED&&it.qty>0).filter(it=>detectChange(it,vk,inv.invoiceNo).status==='increase').length;
+      const ups=inv.items.filter(it=>it._rt===RT.PURCHASED&&it.qty>0).filter(it=>detectChange(it,vk,inv.invoiceNo,inv.date).status==='increase').length;
       results.push({inv,saved,skipped,ups});
       addLog(`  ✅ ${inv.vendor} #${inv.invoiceNo} · ${inv.date} · ${saved} products · ${ups} increases`,'#10b981');
     }catch(err){
@@ -1736,7 +1736,7 @@ function loadInvoice(inv){
   const vk=normV(inv.vendor);
   APPROVALS={};
   inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{
-    const ch=detectChange(i,vk,inv.invoiceNo);
+    const ch=detectChange(i,vk,inv.invoiceNo,inv.date);
     APPROVALS[i.item]={status:'pending',retailPrice:retailUnit(i),change:ch,
       desc:i.desc,cat:i.cat,size:i.size,qty:i.qty,caseCost:i.caseCost};
   });
@@ -1761,7 +1761,7 @@ function renderVerify(filter){
   const charges=INV.items.filter(i=>i._rt===RT.CHARGE);
   const malformed=INV.items.filter(i=>i._rt===RT.MALFORMED);
   const newItems=INV.items.filter(i=>i._isNew&&i._rt===RT.PURCHASED);
-  const increases=purchased.filter(i=>detectChange(i,vk,INV.invoiceNo).status==='increase');
+  const increases=purchased.filter(i=>detectChange(i,vk,INV.invoiceNo,INV.date).status==='increase');
 
   document.getElementById('verify-sub').textContent=`${INV.vendor} · ${INV.docType==='sales_order'?'⚠ Sales Order':'Invoice'} #${INV.invoiceNo} · ${INV.date} · ${INV.items.length} total lines`;
 
@@ -1790,7 +1790,7 @@ function renderVerify(filter){
   document.getElementById('v-body').innerHTML=data.map(i=>{
     const cu=i.caseCost>0?(i.caseCost/(i._u||1)):0;
     const isPurch=i._rt===RT.PURCHASED&&i.qty>0;
-    const ch=isPurch?detectChange(i,vk,INV.invoiceNo):null;
+    const ch=isPurch?detectChange(i,vk,INV.invoiceNo,INV.date):null;
     let chCell='<span style="color:var(--text3);font-size:11px">—</span>';
     if(ch){
       const matchBadge=ch.matchType==='cross_vendor'?'<span class="tag tp" style="font-size:9px">cross-vendor</span>':ch.matchType==='fuzzy'?`<span class="tag ta" style="font-size:9px">${Math.round((ch.matchConf||0)*100)}% match</span>`:'';
@@ -1925,7 +1925,7 @@ function dbApproveSafe(){
   const vk=normV(INV.vendor); let n=0;
   Object.keys(APPROVALS).forEach(k=>{
     const item=INV.items.find(i=>i.item===k);if(!item)return;
-    const ch=detectChange(item,vk,INV.invoiceNo);
+    const ch=detectChange(item,vk,INV.invoiceNo,INV.date);
     const isSafe = (ch.status==='no_change'||ch.status==='no_history'||(Math.abs(ch.pct||0)<=2)) && (item._conf||1)>=0.7;
     if(isSafe){APPROVALS[k].status='approved';n++;}
   });
@@ -2110,7 +2110,7 @@ function buildAlerts(){
   const vk=normV(INV.vendor);
   const alerts=[];
   INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{
-    const ch=detectChange(i,vk,INV.invoiceNo);
+    const ch=detectChange(i,vk,INV.invoiceNo,INV.date);
     if(ch.status==='increase'){
       const pct=ch.pct||0;
       if(pct>10)alerts.push({sev:'red',ico:'🚨',title:`Cost spike: ${i.desc}`,detail:`+${pct.toFixed(1)}% — ${f2(ch.prev)} → ${f2(ch.curr)}/unit. Review retail price urgently.`});
@@ -2522,13 +2522,26 @@ function fuzzyScore(a, b) {
 
 // Find best matching history entry for an item
 // Handles: same item# (exact), fuzzy description match (cross-vendor)
-function findBestHistoryMatch(item, currentVendorKey, currentInvNo) {
+function findBestHistoryMatch(item, currentVendorKey, currentInvNo, currentInvDate) {
   const db = loadDB();
   const allKeys = Object.keys(db);
   
+  // Helper: keep only entries that are NOT the current invoice AND (if a date is given) dated strictly before it.
+  // This makes change detection independent of upload order — an older invoice uploaded later
+  // still compares against entries dated before it, not after.
+  const curTs = currentInvDate ? new Date(currentInvDate).getTime() : null;
+  const isPrior = e => {
+    if(e.invoiceNo === currentInvNo) return false;
+    if(!(e.unitCost > 0)) return false;
+    if(curTs == null) return true; // no date → fall back to legacy behavior
+    const t = new Date(e.date).getTime();
+    if(isNaN(t)) return true; // unparseable date → keep, don't drop history silently
+    return t < curTs;
+  };
+  
   // 1. EXACT: same vendor + same item number (most reliable)
   const exactKey = currentVendorKey + '|' + item.item;
-  const exactHist = (db[exactKey]||[]).filter(e=>e.invoiceNo!==currentInvNo&&e.unitCost>0);
+  const exactHist = (db[exactKey]||[]).filter(isPrior);
   if(exactHist.length) {
     return {
       entry: exactHist[exactHist.length-1],
@@ -2541,7 +2554,7 @@ function findBestHistoryMatch(item, currentVendorKey, currentInvNo) {
   // 2. SAME ITEM# different vendor (cross-vendor comparison)
   const sameItemOtherVendor = allKeys
     .filter(k => k !== exactKey && k.endsWith('|'+item.item))
-    .flatMap(k => (db[k]||[]).filter(e=>e.unitCost>0).map(e=>({...e, _key:k})));
+    .flatMap(k => (db[k]||[]).filter(isPrior).map(e=>({...e, _key:k})));
   
   if(sameItemOtherVendor.length) {
     const latest = sameItemOtherVendor.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
@@ -2559,7 +2572,7 @@ function findBestHistoryMatch(item, currentVendorKey, currentInvNo) {
   if(item.desc && item.desc.length > 5) {
     let bestScore = 0, bestEntry = null, bestKey = null;
     for(const key of allKeys) {
-      const entries = (db[key]||[]).filter(e=>e.invoiceNo!==currentInvNo&&e.unitCost>0&&e.desc);
+      const entries = (db[key]||[]).filter(e=>isPrior(e)&&e.desc);
       for(const entry of entries) {
         const score = fuzzyScore(item.desc, entry.desc);
         if(score > bestScore && score >= 0.72) {
@@ -3016,7 +3029,7 @@ function renderSummaryBanner(){
   let estLoss=0, projGain=0;
   
   purch.forEach(item=>{
-    const ch = detectChange(item, vk, INV.invoiceNo);
+    const ch = detectChange(item, vk, INV.invoiceNo, INV.date);
     const cu = unitCost(item);
     const ru = retailUnit(item);
     const margin = ru>0 ? ((ru-cu)/ru)*100 : 0;
@@ -3091,7 +3104,7 @@ function renderDashboardTable(){
   }
   
   let rows = purch.map(item=>{
-    const ch = detectChange(item, vk, INV.invoiceNo);
+    const ch = detectChange(item, vk, INV.invoiceNo, INV.date);
     const cu = unitCost(item);
     const ru = retailUnit(item);
     const projMargin = ru>0 ? ((ru-cu)/ru)*100 : 0;
@@ -3329,7 +3342,7 @@ function renderDashboardVendors(){
   if(INV){
     const vk = normV(INV.vendor);
     INV.items.filter(i=>i._rt===RT.PURCHASED && i.qty>0).forEach(item=>{
-      const ch = detectChange(item, vk, INV.invoiceNo);
+      const ch = detectChange(item, vk, INV.invoiceNo, INV.date);
       if(ch.status==='increase' && Math.abs(ch.pct)>2){
         if(V[INV.vendor]) V[INV.vendor].atRisk++;
       }
