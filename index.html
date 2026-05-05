@@ -2242,9 +2242,9 @@ function getExportRows(){
 function buildCSV(rows){
   const fmt=document.getElementById('pos-fmt')?.value||'generic';
   let h,fn;
-  if(fmt==='generic'){h=['Item#','Description','Retail Price'];fn=r=>[r.no,`"${r.desc}"`,r.retail.toFixed(2)];}
+  if(fmt==='generic'){h=['Item#','Description','Size','Case Cost','Unit Cost','Retail Price'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.box.toFixed(2),r.unit.toFixed(2),r.retail.toFixed(2)];}
   else if(fmt==='detailed'){h=['Item#','Description','Size','Units/Case','Category','Cost/Box','Cost/Unit','Markup%','Retail/Unit','Retail/Box','Profit/Unit','Margin'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.upc,`"${r.cat}"`,r.box.toFixed(2),r.unit.toFixed(2),r.mk+'%',r.retail.toFixed(2),(r.retail*r.upc).toFixed(2),r.profit,r.margin];}
-  else{h=['SKU','Name','Retail','Cost'];fn=r=>[r.no,`"${r.desc}"`,r.retail.toFixed(2),r.unit.toFixed(2)];}
+  else{h=['SKU','Name','Size','Case Cost','Unit Cost','Retail'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.box.toFixed(2),r.unit.toFixed(2),r.retail.toFixed(2)];}
   return [h.join(','),...rows.map(r=>fn(r).join(','))].join('\n');
 }
 function updateExportSummary(){
@@ -4650,8 +4650,10 @@ async function pcExportPDF(){
   const PAGE_W = 612, PAGE_H = 792;
   const MARGIN = 30;
   const cardW = (PAGE_W - MARGIN*2 - (cols-1)*12) / cols;
-  const cardH = cardW * 1.35;
-  const perPage = cols * Math.floor((PAGE_H - MARGIN*2) / (cardH + 12));
+  // Card height: image area (square) + ~52pt for name/price/unit text
+  const imgH = cardW * 0.78;  // image slightly shorter than wide for compactness
+  const cardH = imgH + 52;
+  const perPage = cols * Math.floor((PAGE_H - MARGIN*2) / (cardH + 8));
   
   // Pre-load all images as data URLs (avoids CORS issues with jsPDF)
   // First try with crossOrigin='anonymous' (required for canvas/toDataURL).
@@ -4710,14 +4712,13 @@ async function pcExportPDF(){
     const col = onPage % cols;
     const row = Math.floor(onPage / cols);
     const x = MARGIN + col*(cardW+12);
-    const y = MARGIN + row*(cardH+12);
+    const y = MARGIN + row*(cardH+8);
     
     // Card border
     doc.setDrawColor(220); doc.setLineWidth(0.5);
     doc.roundedRect(x, y, cardW, cardH, 6, 6, 'S');
     
-    // Image area
-    const imgH = cardW;
+    // Image area (imgH already computed above as cardW * 0.78)
     if(dataUrls[i]){
       try{
         doc.addImage(dataUrls[i], 'JPEG', x+6, y+6, cardW-12, imgH-12);
@@ -4733,19 +4734,19 @@ async function pcExportPDF(){
     }
     
     // Name
-    doc.setTextColor(20); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    const nameY = y + imgH + 18;
+    doc.setTextColor(20); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    const nameY = y + imgH + 14;
     doc.text(it.name, x+cardW/2, nameY, {align:'center', maxWidth: cardW-12});
     
     // Price
     const retail = (it.retailOverride != null) ? it.retailOverride : pcRetailFor(it.cost);
-    doc.setTextColor(20,150,80); doc.setFontSize(18);
-    doc.text(`$${retail.toFixed(2)}`, x+cardW/2, nameY+22, {align:'center'});
+    doc.setTextColor(20,150,80); doc.setFontSize(15);
+    doc.text(`$${retail.toFixed(2)}`, x+cardW/2, nameY+18, {align:'center'});
     
     // Unit
     const unitLbl = {lb:'per lb',bunch:'per bunch',each:'each'}[it.unit] || '';
-    doc.setTextColor(120); doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    doc.text(unitLbl, x+cardW/2, nameY+36, {align:'center'});
+    doc.setTextColor(120); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    doc.text(unitLbl, x+cardW/2, nameY+30, {align:'center'});
   }
   
   const filename = `produce-catalog-${new Date().toISOString().split('T')[0]}.pdf`;
