@@ -3913,10 +3913,21 @@ function pcLoadHost(){ return localStorage.getItem('tm_pc_host') || ''; }
 function pcSaveHostUrl(u){ try{ localStorage.setItem('tm_pc_host', u); }catch(e){} }
 function pcImgUrl(item){
   if(!item) return '';
-  if(item.image && (item.image.startsWith('http://')||item.image.startsWith('https://')||item.image.startsWith('data:'))) return item.image;
+  if(item.image && (item.image.startsWith('http://')||item.image.startsWith('https://')||item.image.startsWith('data:'))) return pcRewriteForCors(item.image);
   const pattern = pcLoadHost();
   if(!pattern || !item.image) return '';
-  return pattern.replace('{slug}', item.image.replace(/\.jpg$/,'').replace(/\.png$/,'').replace(/\.jpeg$/,''));
+  const url = pattern.replace('{slug}', item.image.replace(/\.jpg$/,'').replace(/\.png$/,'').replace(/\.jpeg$/,''));
+  return pcRewriteForCors(url);
+}
+
+// GitHub's "github.com/.../blob/...?raw=true" URLs redirect to raw.githubusercontent.com
+// but don't send proper CORS headers on the redirect, which breaks canvas-based PDF
+// image embedding. The direct raw.githubusercontent.com URL does support CORS, so rewrite.
+function pcRewriteForCors(url){
+  if(!url) return url;
+  const m = url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)(\?.*)?$/);
+  if(m) return `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}/${m[4]}`;
+  return url;
 }
 
 // Seed Truong catalog on first load
@@ -4643,23 +4654,47 @@ async function pcExportPDF(){
   const perPage = cols * Math.floor((PAGE_H - MARGIN*2) / (cardH + 12));
   
   // Pre-load all images as data URLs (avoids CORS issues with jsPDF)
+  // First try with crossOrigin='anonymous' (required for canvas/toDataURL).
+  // If the image loads but the canvas becomes tainted, toDataURL throws and we fall back.
   const loadImg = (src) => new Promise((res)=>{
     if(!src){ res(null); return; }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = ()=>{
+    const tryLoad = (useCors) => new Promise((resolve)=>{
+      const img = new Image();
+      if(useCors) img.crossOrigin = 'anonymous';
+      img.onload = ()=>{
+        try{
+          const cv = document.createElement('canvas');
+          const max = 600;
+          const ratio = Math.min(max/img.width, max/img.height, 1);
+          cv.width = Math.round(img.width*ratio);
+          cv.height = Math.round(img.height*ratio);
+          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+          resolve(cv.toDataURL('image/jpeg', 0.85));
+        } catch(e){
+          // tainted canvas (no CORS headers) — caller will try fetch fallback
+          resolve(null);
+        }
+      };
+      img.onerror = ()=>resolve(null);
+      img.src = src;
+    });
+    tryLoad(true).then(async d=>{
+      if(d) return res(d);
+      // Fallback: try fetching the bytes ourselves and converting via FileReader.
+      // This also fails on CORS but at least we logged a clear reason.
       try{
-        const cv = document.createElement('canvas');
-        const max = 600;
-        const ratio = Math.min(max/img.width, max/img.height, 1);
-        cv.width = Math.round(img.width*ratio);
-        cv.height = Math.round(img.height*ratio);
-        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-        res(cv.toDataURL('image/jpeg', 0.85));
-      } catch(e){ res(null); }
-    };
-    img.onerror = ()=>res(null);
-    img.src = src;
+        const r = await fetch(src, {mode:'cors'});
+        if(!r.ok) throw new Error('http '+r.status);
+        const blob = await r.blob();
+        const reader = new FileReader();
+        reader.onload = ()=>res(reader.result);
+        reader.onerror = ()=>res(null);
+        reader.readAsDataURL(blob);
+      } catch(err){
+        console.warn('Image fetch failed for', src, err.message);
+        res(null);
+      }
+    });
   });
   
   // Sequentially load images (gentle on browser)
@@ -4715,7 +4750,12 @@ async function pcExportPDF(){
   
   const filename = `produce-catalog-${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
-  showToast('success', `✅ Saved ${filename}`);
+  const failed = dataUrls.filter(d=>!d).length;
+  if(failed > 0){
+    showToast('warn', `⚠ PDF saved but ${failed}/${items.length} image${failed!==1?'s':''} couldn't load. Check the host URL or browser console.`, 8000);
+  } else {
+    showToast('success', `✅ Saved ${filename}`);
+  }
 }
 
 
