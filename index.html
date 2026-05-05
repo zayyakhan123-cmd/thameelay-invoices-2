@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Thameelay · Invoice Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <style>
 /* ─────────────────────────────────────────────
    THAMEELAY · Enterprise grocery pricing assistant
@@ -299,6 +302,7 @@ button:hover{background:var(--bg3);color:var(--text)}
 .tp{background:var(--purplel);color:#6d28d9}
 .tk{background:var(--pinkl);color:#be185d}
 .tt{background:var(--teall);color:#0f766e}
+.tn{background:var(--redbg);color:var(--redd)}
 .tgr{background:var(--bg4);color:var(--text3)}
 
 /* ─── INPUTS ───────────────────────────────────── */
@@ -413,6 +417,91 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
   .b-cell:nth-child(2n):not(:last-child){border-right:none!important}
 }
 
+/* ─── PRODUCE MATCHER ───────────────────────────── */
+.pc-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
+.pc-tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;display:flex;align-items:center;gap:6px;margin-bottom:-1px}
+.pc-tab:hover{color:var(--text2)}
+.pc-tab.on{color:var(--c1d);border-bottom-color:var(--c1)}
+.pc-tab-pane{display:none}
+.pc-tab-pane.on{display:block}
+.pc-add-grid{display:grid;grid-template-columns:160px 1fr;gap:16px;align-items:start}
+.pc-add-img{width:160px;height:160px;border:2px dashed var(--border2);border-radius:var(--rl);display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg3);transition:all .15s;overflow:hidden;position:relative}
+.pc-add-img:hover{border-color:var(--c1);background:var(--c1l)}
+.pc-add-img img{width:100%;height:100%;object-fit:cover}
+.pc-add-img #pc-add-img-prev{text-align:center;padding:12px}
+.pc-add-fields{display:flex;flex-direction:column;gap:0}
+.pc-catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;padding:6px}
+.pc-cat-card{background:#fff;border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;display:flex;flex-direction:column;transition:all .15s;position:relative}
+.pc-cat-card:hover{border-color:var(--c1);box-shadow:var(--sh-md);transform:translateY(-1px)}
+.pc-cat-img{width:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pc-cat-img img{width:100%;height:100%;object-fit:cover}
+.pc-cat-img-empty{font-size:36px;opacity:.3}
+.pc-cat-body{padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:4px}
+.pc-cat-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+.pc-cat-meta{font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.04em}
+.pc-cat-aliases{font-size:11px;color:var(--text3);font-style:italic;line-height:1.3}
+.pc-cat-actions{display:flex;gap:4px;padding:0 8px 8px}
+.pc-cat-actions button{flex:1;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid var(--border2);background:#fff;cursor:pointer;color:var(--text2);font-weight:600}
+.pc-cat-actions button:hover{background:var(--bg4)}
+.pc-cat-actions button.del{color:var(--red);border-color:var(--red)}
+.pc-cat-actions button.del:hover{background:var(--redbg)}
+.pc-results-list{display:flex;flex-direction:column;gap:10px}
+.pc-row{display:grid;grid-template-columns:1fr 18px 1fr 110px;gap:14px;align-items:center;padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--rl)}
+.pc-row.high{border-left:4px solid var(--green)}
+.pc-row.med{border-left:4px solid var(--amber)}
+.pc-row.low{border-left:4px solid var(--red)}
+.pc-row.none{border-left:4px solid var(--text4);background:var(--bg3)}
+.pc-row-l{display:flex;align-items:center;gap:10px;min-width:0}
+.pc-row-l-body{min-width:0;flex:1}
+.pc-row-l-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+.pc-row-l-cost{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
+.pc-row-arrow{font-size:18px;color:var(--text4);text-align:center}
+.pc-row-r{display:flex;align-items:center;gap:10px;min-width:0}
+.pc-row-r-img{width:54px;height:54px;border-radius:8px;background:var(--bg3);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border)}
+.pc-row-r-img img{width:100%;height:100%;object-fit:cover}
+.pc-row-r-img-empty{font-size:22px;opacity:.4}
+.pc-row-r-body{min-width:0;flex:1}
+.pc-row-r-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+.pc-row-r-name select{width:100%;font-size:12px;padding:4px 6px;border-radius:5px;border:1px solid var(--border2);background:#fff}
+.pc-row-r-price{font-size:12px;font-family:var(--font-mono);color:var(--green);font-weight:700;margin-top:2px}
+.pc-row-r-no{color:var(--text3);font-style:italic;font-size:12px}
+.pc-row-r-add{font-size:10px;color:var(--c1);text-decoration:underline;cursor:pointer;margin-top:2px}
+.pc-conf{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.pc-conf-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.02em}
+.pc-conf-pill.high{background:var(--greenl);color:var(--greend);border:1px solid var(--green)}
+.pc-conf-pill.med{background:var(--amberl);color:var(--amberd);border:1px solid var(--amber)}
+.pc-conf-pill.low{background:var(--redl);color:var(--redd);border:1px solid var(--red)}
+.pc-conf-pill.none{background:var(--bg4);color:var(--text3);border:1px solid var(--border2)}
+.pc-conf-score{font-size:9px;color:var(--text3);font-family:var(--font-mono)}
+.pc-pdf-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.pc-pdf-card{background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;text-align:center}
+.pc-pdf-card img{width:100%;aspect-ratio:1;object-fit:cover}
+.pc-pdf-card-img-empty{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.3;background:var(--bg3)}
+.pc-pdf-card-name{padding:8px 6px 2px;font-size:12px;font-weight:700;color:var(--text)}
+.pc-pdf-card-price{padding:0 6px 8px;font-size:14px;font-weight:700;color:var(--green);font-family:var(--font-mono)}
+.pc-pdf-card-unit{font-size:10px;color:var(--text3);font-weight:500;font-family:var(--font-sans)}
+@media(max-width:768px){
+  .pc-row{grid-template-columns:1fr;gap:8px}
+  .pc-row-arrow{display:none}
+  .pc-add-grid{grid-template-columns:1fr}
+  .pc-add-img{width:100%;max-width:200px;margin:0 auto}
+}
+
+/* ─── COST/UNIT COMPARISON CELLS ─────────────────── */
+.cmp-cell{display:flex;flex-direction:column;gap:2px;font-family:var(--font-mono);font-size:11px;line-height:1.3;min-width:88px}
+.cmp-row{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.cmp-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-family:var(--font-sans);font-weight:600;width:34px;flex-shrink:0}
+.cmp-val{font-weight:600;color:var(--text2)}
+.cmp-val.now{color:var(--text)}
+.cmp-delta{font-size:10px;font-weight:700;margin-top:2px;padding:1px 5px;border-radius:3px;display:inline-block;width:fit-content}
+.cmp-delta.up{background:var(--redl);color:var(--redd)}
+.cmp-delta.down{background:var(--greenl);color:var(--greend)}
+.cmp-delta.flat{background:var(--bg4);color:var(--text3)}
+.cmp-none{color:var(--text4);font-style:italic;font-family:var(--font-sans);font-size:11px}
+.units-cell{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text);text-align:center;min-width:48px}
+.units-cell .u-sub{display:block;font-size:9px;color:var(--text3);font-weight:500;font-family:var(--font-sans);margin-top:2px;line-height:1.2}
+.units-cell.warn{color:var(--amberd)}
+
 /* ─── DASHBOARD COMPACT UPLOAD ──────────────────── */
 .dash-upload-row{margin-bottom:18px}
 .dash-upload-grid{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:end}
@@ -526,6 +615,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
     <a data-pg="tracker"><span class="sico">📈</span>Price Tracker</a>
     <a data-pg="vendors"><span class="sico">🏪</span>Vendor Insights</a>
     <a data-pg="alerts"><span class="sico">🔔</span>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
+    <a data-pg="produce"><span class="sico">🥬</span>Produce Matcher <span class="scnt" id="pc-cnt">0</span></a>
   </div>
   <div class="sg"><div class="slabel">History</div>
     <a data-pg="history"><span class="sico">🗂</span>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
@@ -646,7 +736,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
           <span class="act-pill" id="db-action-pill">0 Action Required</span>
         </div>
         <div class="tbl-search">
-          <div class="tbl-search-input"><input type="text" placeholder="Search items..." id="db-search" oninput="renderDashboardTable()"></div>
+          <div class="tbl-search-input"><input type="text" placeholder="Search items..." id="db-search" oninput="dbSearchDebounced()"></div>
           <button class="tbl-btn">⚏ Filters</button>
           <button class="tbl-btn">⬇ Export</button>
         </div>
@@ -663,6 +753,9 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
         <table>
           <thead><tr>
             <th>Item</th>
+            <th>Case Cost<br>(Prev → Now)</th>
+            <th>Units<br>per Case</th>
+            <th>Unit Cost<br>(Prev → Now)</th>
             <th>Price Change<br>Needed</th>
             <th>Recommended<br>Action</th>
             <th>Recommendation Reason</th>
@@ -674,7 +767,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
             <th style="text-align:center">Action</th>
           </tr></thead>
           <tbody id="db-approval-body">
-            <tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text3)">
+            <tr><td colspan="13" style="text-align:center;padding:48px;color:var(--text3)">
               <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
               <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
               <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
@@ -1293,16 +1386,181 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
     </div>
   </div>
 </div>
+
+<!-- ═══════════ PRODUCE MATCHER ═══════════ -->
+<div class="pg" id="pg-produce">
+  <div class="pgh">
+    <div class="pgt">Produce Matcher</div>
+    <div class="pgs">Match invoice items to your photo catalog · 50% markup → rounded to $.49 / $.99 · Export PDF price tag catalog</div>
+  </div>
+
+  <div class="pc-tabs">
+    <div class="pc-tab on" data-pct="match" onclick="pcTab('match')">📋 Match Invoice</div>
+    <div class="pc-tab" data-pct="catalog" onclick="pcTab('catalog')">🥬 Catalog <span class="scnt" id="pc-cat-cnt">0</span></div>
+    <div class="pc-tab" data-pct="export" onclick="pcTab('export')">📄 Export PDF</div>
+  </div>
+
+  <!-- TAB: MATCH INVOICE -->
+  <div class="pc-tab-pane on" id="pc-pane-match">
+    <div class="card">
+      <div class="card-hd"><div class="card-t"><span class="card-t-num">1</span><div class="ctit">Upload Produce Invoice</div></div></div>
+      <div class="dz-mini" id="pc-dropzone" style="margin-bottom:10px">
+        <div class="dz-mini-icon">🥕</div>
+        <div class="dz-mini-title">Drag &amp; drop a produce invoice (PDF or image)</div>
+        <div class="dz-mini-sub">Will extract item names + per-piece/per-bunch costs</div>
+        <input type="file" id="pc-file-in" accept=".pdf,image/*" style="display:none" onchange="pcHandleFile(event)">
+      </div>
+      <div class="brow" style="gap:8px">
+        <button class="bp" onclick="document.getElementById('pc-file-in').click()">📁 Choose File</button>
+        <button onclick="pcLoadDemo()">▶ Demo Invoice</button>
+      </div>
+      <div id="pc-extracting" class="up-prog" style="display:none">
+        <div class="up-prog-file">
+          <div class="up-prog-file-ico">🥬</div>
+          <div style="min-width:0;flex:1">
+            <div class="up-prog-file-name" id="pc-up-name">filename.pdf</div>
+            <div class="up-prog-file-meta" id="pc-up-meta">Processing...</div>
+          </div>
+        </div>
+        <div class="up-step" data-step="reading"><div class="up-step-ico"></div><div>Reading file</div></div>
+        <div class="up-step" data-step="extracting"><div class="up-step-ico"></div><div>AI extracting produce items</div></div>
+        <div class="up-step" data-step="matching"><div class="up-step-ico"></div><div>Matching to catalog photos</div></div>
+        <div class="up-prog-err" id="pc-up-err" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="card" id="pc-results-card" style="display:none">
+      <div class="card-hd">
+        <div class="card-t"><span class="card-t-num">2</span><div class="ctit">Review Matches</div><span class="act-pill" id="pc-results-summary">0 items</span></div>
+        <div class="brow" style="gap:6px">
+          <button class="db-bulk-btn primary" onclick="pcAcceptAllHigh()">✓ Accept all High</button>
+          <button class="db-bulk-btn" onclick="pcResetMatches()">↺ Reset</button>
+        </div>
+      </div>
+      <div id="pc-results-list" class="pc-results-list"></div>
+    </div>
+  </div>
+
+  <!-- TAB: CATALOG -->
+  <div class="pc-tab-pane" id="pc-pane-catalog">
+    <div class="card" id="pc-host-card">
+      <div class="card-hd"><div class="card-t"><div class="ctit">📷 Photo Host (Truong Catalog)</div></div></div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px">
+        The Truong catalog ships with <b>297 produce items</b> ready to use. Photos load from the URL you set below.
+        Use <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:11px">{slug}</code> as the placeholder for each item's filename.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+        <div class="ig" style="flex:1;min-width:280px;margin:0">
+          <label>Photo URL pattern</label>
+          <input id="pc-host-pattern" type="text" placeholder="https://raw.githubusercontent.com/USER/REPO/main/produce-photos/{slug}.jpg">
+        </div>
+        <button class="bp" onclick="pcSaveHost()">Save</button>
+        <button onclick="pcTestHost()">Test</button>
+      </div>
+      <div id="pc-host-status" style="font-size:11px;margin-top:8px;color:var(--text3)"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-t"><div class="ctit">Add Custom Catalog Item</div></div>
+      </div>
+      <div class="pc-add-grid">
+        <div class="pc-add-img" id="pc-add-img-box" onclick="document.getElementById('pc-img-in').click()">
+          <div id="pc-add-img-prev">
+            <div style="font-size:36px;opacity:.4">📷</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:6px">Click to upload photo</div>
+          </div>
+          <input type="file" id="pc-img-in" accept="image/*" style="display:none" onchange="pcOnImage(event)">
+        </div>
+        <div class="pc-add-fields">
+          <div class="ig"><label>Item name</label><input id="pc-add-name" type="text" placeholder="e.g. Gongura Leaves"></div>
+          <div class="ig"><label>Aliases (comma-separated, optional)</label><input id="pc-add-aliases" type="text" placeholder="e.g. gongora, sorrel leaves, pulicha keerai"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="ig"><label>Unit type</label>
+              <select id="pc-add-unit">
+                <option value="lb">per pound (lb)</option>
+                <option value="bunch">per bunch</option>
+                <option value="each">per piece (each)</option>
+              </select>
+            </div>
+            <div class="ig"><label>Default cost (optional)</label><input id="pc-add-cost" type="number" step="0.01" min="0" placeholder="leave blank"></div>
+          </div>
+          <div class="brow" style="gap:8px;margin-top:6px">
+            <button class="bp" onclick="pcCatalogAdd()">+ Add Item</button>
+            <button onclick="pcCatalogClearForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-t"><div class="ctit">Catalog</div><span class="act-pill" id="pc-cat-summary">0 items</span></div>
+        <div class="tbl-search">
+          <div class="tbl-search-input"><input type="text" id="pc-cat-search" placeholder="Search catalog..." oninput="pcRenderCatalog()"></div>
+        </div>
+      </div>
+      <div id="pc-catalog-grid" class="pc-catalog-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
+          <div style="font-size:32px;opacity:.4;margin-bottom:8px">🥬</div>
+          <div style="font-weight:600;color:var(--text2)">No catalog items yet</div>
+          <div style="font-size:11px">Add your first produce item using the form above</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: EXPORT -->
+  <div class="pc-tab-pane" id="pc-pane-export">
+    <div class="card">
+      <div class="card-hd"><div class="card-t"><div class="ctit">Catalog PDF Export</div></div></div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px">
+        Generates a printable PDF with one card per matched item: photo, name, retail price (cost × 1.5 rounded to $.49 / $.99), and unit label.
+        Uses prices from the most recent matched invoice. Items not yet matched appear with their last known cost.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px">
+        <div class="ig" style="margin:0"><label>Cards per row</label>
+          <select id="pc-pdf-cols">
+            <option value="2">2 (large)</option>
+            <option value="3" selected>3 (medium)</option>
+            <option value="4">4 (small)</option>
+          </select>
+        </div>
+        <div class="ig" style="margin:0"><label>Markup %</label>
+          <input id="pc-pdf-markup" type="number" step="1" min="0" max="500" value="50">
+        </div>
+        <div class="ig" style="margin:0"><label>Price rounding</label>
+          <select id="pc-pdf-round">
+            <option value="x9_x99" selected>Nearest $.49 / $.99 (up)</option>
+            <option value="exact">Exact (no rounding)</option>
+          </select>
+        </div>
+        <div class="ig" style="margin:0"><label>Source</label>
+          <select id="pc-pdf-source">
+            <option value="matched" selected>Last matched invoice items</option>
+            <option value="catalog">Entire catalog (default cost)</option>
+          </select>
+        </div>
+      </div>
+      <div class="brow" style="gap:8px">
+        <button class="bp" onclick="pcExportPDF()">📄 Generate PDF</button>
+        <button onclick="pcPdfPreview()">👁 Preview cards</button>
+      </div>
+      <div id="pc-pdf-preview" class="pc-pdf-preview" style="margin-top:16px"></div>
+    </div>
+  </div>
+</div>
+
 </main>
 </div>
 <div class="toast-wrap" id="toast-wrap"></div>
 <script>
 // ═══════════ CONSTANTS ═══════════
-const TARGETS={snacks:30,candy:40,frozen:35,bev:30,dry:30,other:30};
-const CLABEL={snacks:'Snacks & dry',candy:'Candy/Jelly',frozen:'Frozen',bev:'Beverage',dry:'Rice & noodles',other:'Other'};
-const CCLS={snacks:'ta',candy:'tk',frozen:'tb',bev:'tp',dry:'tt',other:'tgr'};
-const CAT_COLS={snacks:'#f59e0b',candy:'#ec4899',frozen:'#3b82f6',bev:'#8b5cf6',dry:'#14b8a6',other:'#94a3b8'};
-const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2'};
+const TARGETS={snacks:30,candy:40,frozen:35,bev:30,dry:30,sauce:30,other:30};
+const CLABEL={snacks:'Snacks & dry',candy:'Candy/Jelly',frozen:'Frozen',bev:'Beverage',dry:'Rice & noodles',sauce:'Sauces & condiments',other:'Other'};
+const CCLS={snacks:'ta',candy:'tk',frozen:'tb',bev:'tp',dry:'tt',sauce:'tn',other:'tgr'};
+const CAT_COLS={snacks:'#f59e0b',candy:'#ec4899',frozen:'#3b82f6',bev:'#8b5cf6',dry:'#14b8a6',sauce:'#dc2626',other:'#94a3b8'};
+const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last'};
 
 // ═══════════ ROW CLASSIFICATION ENGINE ═══════════
 const RT={PURCHASED:'purchased',OOS:'oos',ZERO_DUP:'zero_dup',CHARGE:'charge',MALFORMED:'malformed'};
@@ -1337,12 +1595,20 @@ function classifyRow(item,allItems){
   return {rt:RT.PURCHASED,conf,notes,u,isNew};
 }
 
+// Sauces & condiments often get force-fit into "other" or "snacks" by the AI.
+// This pattern post-corrects items where the description clearly indicates a sauce/condiment.
+const SAUCE_RE = /\b(sauc|fish\s*sauce|soy\s*sauce|oyster|sriracha|sambal|hoisin|chili\s*(paste|oil|garlic)|curry\s*paste|shrimp\s*paste|crab\s*paste|galingale|galangal|peppercorn|pickled\s*chil|tamarind\s*paste|vinegar|seasoning|miso|gochujang|nam\s*pla|nuoc\s*mam|paste|condiment)\b/i;
+
 function classifyInvoice(inv){
   inv.items.forEach(item=>{
     const r=classifyRow(item,inv.items);
     item._rt=r.rt; item._conf=r.conf; item._notes=r.notes||[];
     item._u=r.u||parseUnitsRobust(item.size).u;
     item._isNew=r.isNew||false;
+    // Post-AI category correction: catch sauces miscategorized as other/snacks
+    if(item.desc && SAUCE_RE.test(item.desc) && (item.cat==='other'||item.cat==='snacks')){
+      item.cat='sauce';
+    }
   });
   return inv;
 }
@@ -1358,10 +1624,14 @@ function normV(v){return (v||'').toLowerCase().replace(/[^a-z0-9]/g,'').substrin
 // ═══════════ STORAGE ═══════════
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-function loadHist(){return lsGet(SK.HIST)||[];}
-function saveHist(a){lsSet(SK.HIST,a);}
-function loadDB(){return lsGet(SK.PRICE)||{};}
-function saveDB(d){lsSet(SK.PRICE,d);}
+// In-memory cache: avoids re-parsing localStorage JSON on every render (was happening 30+ times per page load).
+// Caches are invalidated on every save.
+const _CACHE = {hist:null, db:null};
+function loadHist(){ if(_CACHE.hist===null) _CACHE.hist = lsGet(SK.HIST)||[]; return _CACHE.hist; }
+function saveHist(a){ _CACHE.hist = a; lsSet(SK.HIST,a); }
+function loadDB(){ if(_CACHE.db===null) _CACHE.db = lsGet(SK.PRICE)||{}; return _CACHE.db; }
+function saveDB(d){ _CACHE.db = d; lsSet(SK.PRICE,d); }
+function invalidateCache(){ _CACHE.hist = null; _CACHE.db = null; }
 
 // ═══════════ PRICE HISTORY — ONLY PURCHASED ROWS ═══════════
 function saveInvoiceToDB(inv){
@@ -1416,6 +1686,7 @@ function detectChange(item,vk,curInvNo,curInvDate){
   
   return {
     status,prev:prev.unitCost,curr,diff,pct,
+    prevCase:prev.caseCost||0, prevUnits:prev.units||1,
     prevInv:prev.invoiceNo,prevDate:prev.date,
     matchType:match.matchType,
     matchConf:match.confidence,
@@ -1463,6 +1734,8 @@ function goTo(id){
   if(id==='vendors')renderVendors();
   if(id==='alerts')renderAlerts();
   if(id==='history')renderHistory();
+  if(id==='pricing')renderTargets();
+  if(id==='produce')pcOpenPage();
 }
 document.querySelectorAll('nav a[data-pg]').forEach(a=>a.addEventListener('click',()=>goTo(a.dataset.pg)));
 
@@ -1678,13 +1951,14 @@ FOR EACH LINE ITEM extract ALL of these fields:
 - size: pack size EXACTLY as printed (e.g. "12X2LBS", "4 X (6X10.82", "1X50LBS", "30X14.9OZ")
 - qty: cases ordered (use 0 if OOS or not shipped)
 - caseCost: the UNIT PRICE column (price per case), use 0 if blank
-- cat: snacks OR candy OR frozen OR bev OR dry OR other
+- cat: snacks OR candy OR frozen OR bev OR dry OR sauce OR other
   snacks=crackers/chips/cookies/breadsticks/biscuits/wafers/puffs
   candy=jelly/pudding/gummies/candy/chocolate/sweets/mochi
   frozen=anything marked FZ or FROZEN
   bev=drinks/juice/soda/coffee/tea/syrup/coconut water/energy drinks
   dry=rice/noodles/vermicelli/pasta/flour/starch/tapioca
-  other=sauces/condiments/mushroom/seafood/canned goods/spices/misc/charges
+  sauce=sauces/condiments/fish sauce/soy sauce/oyster sauce/sriracha/sambal/chili paste/curry paste/crab paste/shrimp paste/galingale/peppercorn/pickled chili/spices/seasonings/vinegar/marinades
+  other=mushroom/seafood/canned goods/produce/dairy/misc/charges (anything that doesn't fit above)
 - isNew: true if description contains *NEW* or NEW
 - isOOS: true if quantity is 0 or row says OOS
 
@@ -2243,6 +2517,7 @@ function updateNavCounts(){
 function clearAllData(){
   if(!confirm('Delete ALL saved data? This cannot be undone.'))return;
   Object.values(SK).forEach(k=>localStorage.removeItem(k));
+  invalidateCache();
   renderHistory();renderTracker('all');renderVendors();updateNavCounts();
 }
 
@@ -3066,6 +3341,10 @@ function renderSummaryBanner(){
 }
 
 // 2. PRICE APPROVALS TABLE (the hero)
+// Debounced search to avoid rebuilding the entire approvals table on every keystroke
+let _dbSearchT=null;
+function dbSearchDebounced(){ clearTimeout(_dbSearchT); _dbSearchT=setTimeout(renderDashboardTable, 150); }
+
 function renderDashboardTable(){
   const tbody = document.getElementById('db-approval-body');
   if(!tbody) return;
@@ -3073,7 +3352,7 @@ function renderDashboardTable(){
   const bulkBar = document.getElementById('db-bulk-bar');
   
   if(!INV){
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text3)">
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:48px;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
       <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
       <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
@@ -3129,7 +3408,7 @@ function renderDashboardTable(){
   }
   
   if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text3)">No items match "${search}"</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text3)">No items match "${search}"</td></tr>`;
     return;
   }
   
@@ -3233,6 +3512,54 @@ function renderDashboardTable(){
         <button class="db-act-btn reject" onclick="setAp('${item.item}','rejected')">✕ Reject</button>
       </div>`;
     }
+
+    // Case cost / unit cost / units cells
+    const curUnits = item._u || parseUnitsRobust(item.size).u || 1;
+    const curCase = item.caseCost || 0;
+    const curUnit = unitCost(item);
+    const hasPrev = (ch.status==='increase'||ch.status==='decrease'||ch.status==='no_change') && ch.prev>0;
+    
+    // Case cost cell
+    let caseCellHtml;
+    if(hasPrev && ch.prevCase){
+      const cDiff = curCase - ch.prevCase;
+      const cPct = ch.prevCase>0 ? (cDiff/ch.prevCase*100) : 0;
+      const dClass = Math.abs(cDiff)<0.005?'flat':cDiff>0?'up':'down';
+      const dArrow = Math.abs(cDiff)<0.005?'•':cDiff>0?'▲':'▼';
+      caseCellHtml = `<div class="cmp-cell">
+        <div class="cmp-row"><span class="cmp-lbl">Prev</span><span class="cmp-val">${f2(ch.prevCase)}</span></div>
+        <div class="cmp-row"><span class="cmp-lbl">Now</span><span class="cmp-val now">${f2(curCase)}</span></div>
+        <span class="cmp-delta ${dClass}">${dArrow} ${cDiff>=0?'+':''}${f2(cDiff).replace('$','$')} (${cPct>=0?'+':''}${cPct.toFixed(1)}%)</span>
+      </div>`;
+    } else {
+      caseCellHtml = `<div class="cmp-cell">
+        <div class="cmp-row"><span class="cmp-lbl">Now</span><span class="cmp-val now">${f2(curCase)}</span></div>
+        <div class="cmp-none">No prior</div>
+      </div>`;
+    }
+    
+    // Units cell — flag if prior had a different number of units (parser drift)
+    const unitsWarn = hasPrev && ch.prevUnits>0 && ch.prevUnits!==curUnits;
+    const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Units per case'}">${curUnits}${unitsWarn?` <span style="color:var(--amber)">⚠</span>`:''}<span class="u-sub">${item.size||''}${unitsWarn?`<br>was ${ch.prevUnits}`:''}</span></div>`;
+    
+    // Unit cost cell
+    let unitCellHtml;
+    if(hasPrev){
+      const uDiff = curUnit - ch.prev;
+      const uPct = ch.prev>0 ? (uDiff/ch.prev*100) : 0;
+      const dClass = Math.abs(uDiff)<0.0005?'flat':uDiff>0?'up':'down';
+      const dArrow = Math.abs(uDiff)<0.0005?'•':uDiff>0?'▲':'▼';
+      unitCellHtml = `<div class="cmp-cell">
+        <div class="cmp-row"><span class="cmp-lbl">Prev</span><span class="cmp-val">${f2(ch.prev)}</span></div>
+        <div class="cmp-row"><span class="cmp-lbl">Now</span><span class="cmp-val now">${f2(curUnit)}</span></div>
+        <span class="cmp-delta ${dClass}">${dArrow} ${uDiff>=0?'+':''}${f2(uDiff)} (${uPct>=0?'+':''}${uPct.toFixed(1)}%)</span>
+      </div>`;
+    } else {
+      unitCellHtml = `<div class="cmp-cell">
+        <div class="cmp-row"><span class="cmp-lbl">Now</span><span class="cmp-val now">${f2(curUnit)}</span></div>
+        <div class="cmp-none">No prior</div>
+      </div>`;
+    }
     
     return `<tr>
       <td>
@@ -3244,6 +3571,9 @@ function renderDashboardTable(){
           </div>
         </div>
       </td>
+      <td>${caseCellHtml}</td>
+      <td>${unitsHtml}</td>
+      <td>${unitCellHtml}</td>
       <td>${chgHtml}</td>
       <td>${actHtml}</td>
       <td><div class="reason-cell">${reasonHtml}</div></td>
@@ -3563,6 +3893,762 @@ function updatePageHeader(pgId){
   if(sEl) sEl.textContent = s;
 }
 
+// ═══════════════════════════════════════════════════════════
+// PRODUCE MATCHER
+// ═══════════════════════════════════════════════════════════
+const PC_TRUONG_CATALOG = [{"s":"a-choy","n":"A CHOY","a":"yu choy|yau choy|you choy|celtuce|ah choy","u":"lb"},{"s":"a-choy-sum","n":"A CHOY SUM","a":"choy sum|yu choy sum|flowering yu choy","u":"lb"},{"s":"on-choy","n":"ON CHOY","a":"ong choy|water spinach|kangkong|kangkung|rau muong|swamp cabbage","u":"lb"},{"s":"broccoli","n":"BROCCOLI","a":"fresh broccoli","u":"lb"},{"s":"cabbage","n":"CABBAGE","a":"green cabbage|head cabbage","u":"lb"},{"s":"taiwan-cabbage","n":"TAIWAN CABBAGE","a":"flat cabbage|sweetheart cabbage","u":"lb"},{"s":"green-callaloo","n":"GREEN CALLALOO","a":"amaranth|amaranth leaves|green amaranth|chinese spinach","u":"lb"},{"s":"red-callaloo","n":"RED CALLALOO","a":"red amaranth|red amaranth leaves","u":"lb"},{"s":"cauliflower","n":"CAULIFLOWER","a":"white cauliflower","u":"each"},{"s":"chinese-cauliflower","n":"CHINESE CAULIFLOWER","a":"fioretto|loose cauliflower","u":"lb"},{"s":"yellow-chive","n":"YELLOW CHIVE","a":"yellow garlic chive|gau wong","u":"lb"},{"s":"chive-flower","n":"CHIVE FLOWER","a":"garlic chive flower|flowering chive","u":"lb"},{"s":"green-chive","n":"GREEN CHIVE","a":"garlic chive|gau choy|nira","u":"lb"},{"s":"taiwan-bok-choy","n":"TAIWAN BOK CHOY","a":"taiwan pak choy","u":"lb"},{"s":"long-bok-choy","n":"LONG BOK CHOY","a":"long pak choi","u":"lb"},{"s":"bok-choy","n":"BOK CHOY","a":"pak choi|pak choy|white cabbage|baak choi","u":"lb"},{"s":"gai-choy","n":"GAI CHOY","a":"mustard greens|indian mustard|sarson","u":"lb"},{"s":"baby-gai-choy","n":"BABY GAI CHOY","a":"baby mustard|baby mustard greens","u":"lb"},{"s":"shanghai-choy","n":"SHANGHAI CHOY","a":"shanghai bok choy|shanghai pak choy","u":"lb"},{"s":"shanghai-choy-tip","n":"SHANGHAI CHOY TIP","a":"baby shanghai bok choy","u":"lb"},{"s":"mini-napa","n":"MINI NAPA","a":"mini napa cabbage","u":"lb"},{"s":"baby-napa","n":"BABY NAPA","a":"baby napa cabbage","u":"lb"},{"s":"long-napa","n":"LONG NAPA","a":"long napa cabbage","u":"lb"},{"s":"napa","n":"NAPA","a":"napa cabbage|chinese cabbage|wong bok","u":"lb"},{"s":"gai-lan","n":"GAI LAN","a":"chinese broccoli|kai lan|kai-lan|chinese kale","u":"lb"},{"s":"snow-pea-leaves","n":"SNOW PEA LEAVES","a":"pea shoots|pea tips|dou miao|tau miu","u":"lb"},{"s":"snow-pea-leaves-king","n":"SNOW PEA LEAVES KING","a":"king pea shoots|large pea shoots","u":"lb"},{"s":"rootless-spinach","n":"ROOTLESS SPINACH","a":"fresh spinach|baby spinach","u":"lb"},{"s":"taiwan-spinach","n":"TAIWAN SPINACH","a":"malabar spinach|taiwanese spinach","u":"lb"},{"s":"vietnamese-spinach","n":"VIETNAMESE SPINACH","a":"mong toi|rau mong toi|vine spinach","u":"lb"},{"s":"american-celery","n":"AMERICAN CELERY","a":"celery|green celery|pascal celery","u":"bunch"},{"s":"chinese-celery","n":"CHINESE CELERY","a":"kun choy|leaf celery|kintsai","u":"bunch"},{"s":"garlic-stem","n":"GARLIC STEM","a":"garlic scapes|garlic shoot|garlic chive flower stalk","u":"bunch"},{"s":"cello-lettuce","n":"CELLO LETTUCE","a":"iceberg lettuce|crisphead","u":"each"},{"s":"green-leaf-lettuce","n":"GREEN LEAF LETTUCE","a":"leaf lettuce|green lettuce","u":"each"},{"s":"red-leaf-lettuce","n":"RED LEAF LETTUCE","a":"red lettuce","u":"each"},{"s":"romaine-lettuce","n":"ROMAINE LETTUCE","a":"cos lettuce","u":"each"},{"s":"watercress","n":"WATERCRESS","a":"xi yang cai","u":"each"},{"s":"u-choy-tip","n":"U CHOY TIP","a":"baby yu choy|baby yu choy tip|baby choy tip","u":"lb"},{"s":"u-choy-sum","n":"U CHOY SUM","a":"yu choy sum|flowering choy|choy sum","u":"lb"},{"s":"n-u-choy-tip","n":"N U CHOY TIP","a":"baby nai bai|baby milk cabbage tip","u":"lb"},{"s":"n-u-choy","n":"N U CHOY","a":"nai bai|milk cabbage|butterhead bok choy","u":"lb"},{"s":"tan-ho","n":"TAN HO","a":"tong ho|chrysanthemum greens|garland chrysanthemum|shungiku","u":"lb"},{"s":"boniato-leaves","n":"BONIATO LEAVES","a":"sweet potato leaves|camote tops|kamote tops","u":"lb"},{"s":"gongura-leaves","n":"GONGURA LEAVES","a":"gongora|gongora leaves|sorrel leaves|pulicha keerai|ambada|pundi soppu","u":"lb"},{"s":"menthy-leaves","n":"MENTHY LEAVES","a":"methi|methi leaves|fenugreek leaves|fenugreek","u":"bunch"},{"s":"malongai-leaves","n":"MALONGAI LEAVES","a":"malunggay|moringa leaves|drumstick leaves|sajna","u":"bunch"},{"s":"pan-leaves","n":"PAN LEAVES","a":"betel leaves|paan|paan leaves|vetrilai","u":"lb"},{"s":"savila-aloe-leaves","n":"SAVILA ALOE LEAVES","a":"aloe leaves|aloe vera leaves|aloe vera","u":"lb"},{"s":"taro-leaves","n":"TARO LEAVES","a":"callaloo|dasheen leaves|kalo leaves|arvi leaves","u":"lb"},{"s":"pumpkin-leaves","n":"PUMPKIN LEAVES","a":"squash leaves|kalabasa leaves","u":"lb"},{"s":"bitter-melon-leaves","n":"BITTER MELON LEAVES","a":"ampalaya leaves|karela leaves","u":"lb"},{"s":"yuca-leaves","n":"YUCA LEAVES","a":"cassava leaves|manioc leaves","u":"lb"},{"s":"banana-leaves","n":"BANANA LEAVES","a":"kela patta|daun pisang","u":"lb"},{"s":"pandan-leaves","n":"PANDAN LEAVES","a":"screwpine leaves|la dua|bai toey","u":"lb"},{"s":"flat-romano-bean","n":"FLAT ROMANO BEAN","a":"romano bean|italian flat bean","u":"lb"},{"s":"guar-bean","n":"GUAR BEAN","a":"cluster bean|guvar|gawar phali","u":"lb"},{"s":"bean-sprouts","n":"BEAN SPROUTS","a":"mung bean sprouts|taugeh|gia","u":"lb"},{"s":"cranberry-bean","n":"CRANBERRY BEAN","a":"borlotti bean|roman bean","u":"lb"},{"s":"drumstick","n":"DRUMSTICK","a":"moringa pod|sajna|munagakaya|sigaru phali","u":"lb"},{"s":"white-long-bean","n":"WHITE LONG BEAN","a":"white yard long bean","u":"lb"},{"s":"green-long-bean","n":"GREEN LONG BEAN","a":"yard long bean|snake bean|asparagus bean|dau gok|bodi","u":"lb"},{"s":"purple-long-bean","n":"PURPLE LONG BEAN","a":"purple yard long bean","u":"lb"},{"s":"snow-pea","n":"SNOW PEA","a":"snow peas|sugar pea|mange tout","u":"lb"},{"s":"sugar-snap","n":"SUGAR SNAP","a":"sugar snap pea|snap pea","u":"lb"},{"s":"valor-bean-long","n":"VALOR BEAN LONG","a":"valor papdi long|long papdi","u":"lb"},{"s":"valor-bean-flat","n":"VALOR BEAN FLAT","a":"valor papdi|papdi|hyacinth bean|lablab|surti papdi","u":"lb"},{"s":"green-bean","n":"GREEN BEAN","a":"string beans|french beans|haricot vert","u":"lb"},{"s":"wing-bean","n":"WING BEAN","a":"winged bean|goa bean|sigarilyas|asparagus pea","u":"lb"},{"s":"chayote","n":"CHAYOTE","a":"mirliton|cho cho|sayote|su su","u":"lb"},{"s":"cucumber","n":"CUCUMBER","a":"american cucumber|slicing cucumber","u":"lb"},{"s":"pickle-choice","n":"PICKLE CHOICE","a":"pickling cucumber|kirby cucumber","u":"lb"},{"s":"tindora-cucumber","n":"TINDORA CUCUMBER","a":"tindora|ivy gourd|kovakkai|tendli|kundru","u":"lb"},{"s":"parvol-bean","n":"PARVOL BEAN","a":"parwal|pointed gourd|patol","u":"lb"},{"s":"persian-cucumber","n":"PERSIAN CUCUMBER","a":"mini cucumber|baby cucumber","u":"lb"},{"s":"seedless-cucumber","n":"SEEDLESS CUCUMBER","a":"english cucumber|hot house cucumber","u":"each"},{"s":"american-okra","n":"AMERICAN OKRA","a":"okra|lady finger|bhindi|bamia","u":"lb"},{"s":"indian-okra","n":"INDIAN OKRA","a":"bhindi|lady finger|okra|vendakkai","u":"lb"},{"s":"chinese-okra","n":"CHINESE OKRA","a":"sing qua|luffa|loofah|angled luffa|silk squash","u":"lb"},{"s":"taiwan-okra","n":"TAIWAN OKRA","a":"smooth luffa|sponge gourd","u":"lb"},{"s":"bitter-melon","n":"BITTER MELON","a":"karela|bitter gourd|ampalaya|kho qua|fu gua","u":"lb"},{"s":"indian-bitter-melon","n":"INDIAN BITTER MELON","a":"indian karela|small bitter gourd","u":"lb"},{"s":"dosekai","n":"DOSEKAI","a":"indian round melon|budama dosakaya|tinda","u":"lb"},{"s":"winter-melon","n":"WINTER MELON","a":"ash gourd|wax gourd|tung qua|petha|kundol","u":"lb"},{"s":"zucchini","n":"ZUCCHINI","a":"courgette|green squash","u":"lb"},{"s":"kabocha","n":"KABOCHA","a":"japanese pumpkin|green kabocha|nankin","u":"lb"},{"s":"yellow-calabaza","n":"YELLOW CALABAZA","a":"calabaza|caribbean pumpkin|auyama","u":"lb"},{"s":"fuzzy-squash","n":"FUZZY SQUASH","a":"mo qua|hairy gourd|fuzzy melon","u":"lb"},{"s":"grey-squash","n":"GREY SQUASH","a":"mexican squash|grey zucchini|cousa squash","u":"lb"},{"s":"opo-squash","n":"OPO SQUASH","a":"bottle gourd|lauki|calabash|lopo|doodhi","u":"lb"},{"s":"bengali-squash","n":"BENGALI SQUASH","a":"lau|bengali bottle gourd","u":"lb"},{"s":"snake-gourd","n":"SNAKE GOURD","a":"padwal|padval|chichinda|pudalankai","u":"lb"},{"s":"american-eggplant","n":"AMERICAN EGGPLANT","a":"eggplant|globe eggplant|aubergine|baingan","u":"lb"},{"s":"chinese-eggplant","n":"CHINESE EGGPLANT","a":"long purple eggplant|asian eggplant","u":"lb"},{"s":"filipino-eggplant","n":"FILIPINO EGGPLANT","a":"talong|long eggplant","u":"lb"},{"s":"indian-eggplant","n":"INDIAN EGGPLANT","a":"baby eggplant|small round eggplant|baingan|brinjal","u":"lb"},{"s":"thai-eggplant","n":"THAI EGGPLANT","a":"green thai eggplant|makhuea phuang|apple eggplant","u":"lb"},{"s":"white-thai-eggplant","n":"WHITE THAI EGGPLANT","a":"white eggplant|pea eggplant","u":"lb"},{"s":"banana-flower","n":"BANANA FLOWER","a":"banana blossom|bunga pisang|vazhaipoo|mocha","u":"lb"},{"s":"banana-stem","n":"BANANA STEM","a":"banana trunk|thor|plantain stem","u":"lb"},{"s":"breadfruit","n":"BREADFRUIT","a":"ulu|uto|rimas","u":"lb"},{"s":"carrot","n":"CARROT","a":"fresh carrot|orange carrot","u":"lb"},{"s":"lo-bok","n":"LO BOK","a":"daikon|white radish|chinese radish|mooli|daikon radish","u":"lb"},{"s":"green-lo-bok","n":"GREEN LO BOK","a":"green radish|green daikon|qing luo bo","u":"lb"},{"s":"daikon","n":"DAIKON","a":"lo bok|white radish|mooli","u":"lb"},{"s":"daikon-with-leaves","n":"DAIKON WITH LEAVES","a":"daikon with tops","u":"lb"},{"s":"garlic-package","n":"GARLIC PACKAGE","a":"packaged garlic|garlic 5pc","u":"each"},{"s":"garlic-loose","n":"GARLIC LOOSE","a":"garlic|garlic bulbs|fresh garlic","u":"lb"},{"s":"garlic-peeled","n":"GARLIC PEELED","a":"peeled garlic","u":"each"},{"s":"ginger","n":"GINGER","a":"fresh ginger|ginger root|adrak","u":"lb"},{"s":"galanga","n":"GALANGA","a":"galangal|kha|blue ginger|thai ginger|lengkuas","u":"lb"},{"s":"yellow-turmeric","n":"YELLOW TURMERIC","a":"turmeric|fresh turmeric|haldi","u":"lb"},{"s":"white-turmeric","n":"WHITE TURMERIC","a":"zedoary|amba haldi|mango ginger","u":"lb"},{"s":"gobo-root","n":"GOBO ROOT","a":"burdock|burdock root|woo bong","u":"lb"},{"s":"lotus-root","n":"LOTUS ROOT","a":"renkon|lin ngao","u":"lb"},{"s":"nagaimo-taishan","n":"NAGAIMO TAISHAN","a":"chinese yam|mountain yam|shan yao|taro yam","u":"lb"},{"s":"nagaimo-japan","n":"NAGAIMO JAPAN","a":"japanese mountain yam|yamaimo","u":"lb"},{"s":"taro-root-edo","n":"TARO ROOT EDO","a":"eddo|small taro|malanga eddo","u":"lb"},{"s":"taro-root","n":"TARO ROOT","a":"taro|dasheen|kalo|arvi|kachu","u":"lb"},{"s":"yautia-blanca","n":"YAUTIA BLANCA","a":"white malanga|yautia|tannia","u":"lb"},{"s":"yautia-lila","n":"YAUTIA LILA","a":"purple malanga|lila yautia","u":"lb"},{"s":"shallot-onion-5lb","n":"SHALLOT ONION 5LB","a":"shallots|small red onion|echalote|hom daeng","u":"lb"},{"s":"shallot-onion-1lb","n":"SHALLOT ONION 1LB","a":"shallots|small red onion","u":"each"},{"s":"yellow-onion-package","n":"YELLOW ONION PACKAGE","a":"yellow onion|bag onion","u":"each"},{"s":"yellow-onion","n":"YELLOW ONION","a":"onion|spanish onion|brown onion","u":"lb"},{"s":"red-onion-package","n":"RED ONION PACKAGE","a":"red onion bag","u":"each"},{"s":"red-onion","n":"RED ONION","a":"purple onion|spanish red onion","u":"lb"},{"s":"jumbo-white-onion","n":"JUMBO WHITE ONION","a":"white onion|large white onion","u":"lb"},{"s":"green-onion","n":"GREEN ONION","a":"scallion|spring onion|cong","u":"each"},{"s":"knob-onion","n":"KNOB ONION","a":"spring onion with bulb|baby onion","u":"each"},{"s":"beijing-long-onion","n":"BEIJING LONG ONION","a":"leek-like onion|long green onion|da cong","u":"lb"},{"s":"idaho-potato","n":"IDAHO POTATO","a":"russet potato|baking potato","u":"lb"},{"s":"red-potato","n":"RED POTATO","a":"red bliss potato","u":"lb"},{"s":"new-potato","n":"NEW POTATO","a":"baby potato|creamer potato|white potato","u":"lb"},{"s":"yampi","n":"YAMPI","a":"name|yam|cush cush","u":"lb"},{"s":"yuca-wax","n":"YUCA WAX","a":"yuca|cassava|manioc|tapioca root|mogo","u":"lb"},{"s":"japanese-yam","n":"JAPANESE YAM","a":"murasaki yam|red sweet potato|satsumaimo","u":"lb"},{"s":"purple-yam","n":"PURPLE YAM","a":"ube|purple sweet potato","u":"lb"},{"s":"garnet-yam","n":"GARNET YAM","a":"red garnet sweet potato","u":"lb"},{"s":"sweet-yam","n":"SWEET YAM","a":"sweet potato|orange sweet potato","u":"lb"},{"s":"boniato-bag","n":"BONIATO BAG","a":"boniato|cuban sweet potato|white sweet potato|batata","u":"lb"},{"s":"ghana-name","n":"GHANA NAME","a":"ghana yam|african yam|true yam","u":"lb"},{"s":"costa-rica-name","n":"COSTA RICA NAME","a":"costa rica yam","u":"lb"},{"s":"espino-name","n":"ESPINO NAME","a":"colombia yam|colombian yam","u":"lb"},{"s":"yellow-name","n":"YELLOW NAME","a":"yellow yam","u":"lb"},{"s":"purple-name-ube","n":"PURPLE NAME UBE","a":"ube yam|purple yam|ube","u":"lb"},{"s":"beets","n":"BEETS","a":"beetroot|red beets","u":"lb"},{"s":"kohlrabi","n":"KOHLRABI","a":"german turnip|knol-khol|kohlrabi bulb","u":"lb"},{"s":"kohlrabi-bunch","n":"KOHLRABI BUNCH","a":"kohlrabi with leaves|kohlrabi tops","u":"each"},{"s":"water-chestnut","n":"WATER CHESTNUT","a":"fresh water chestnut|mati","u":"lb"},{"s":"korean-chestnut","n":"KOREAN CHESTNUT","a":"chestnut|sweet chestnut","u":"lb"},{"s":"fresh-walnut","n":"FRESH WALNUT","a":"green walnut|wet walnut","u":"lb"},{"s":"fresh-bamboo-shoot","n":"FRESH BAMBOO SHOOT","a":"bamboo shoot|fresh bamboo","u":"lb"},{"s":"dry-peanut","n":"DRY PEANUT","a":"dry peanuts|raw peanuts in shell","u":"lb"},{"s":"fresh-peanut","n":"FRESH PEANUT","a":"green peanuts|fresh peanuts in shell","u":"lb"},{"s":"roasted-peanuts","n":"ROASTED PEANUTS","a":"quemado peanuts|roasted peanuts in shell","u":"lb"},{"s":"sunchoke","n":"SUNCHOKE","a":"jerusalem artichoke|topinambour","u":"lb"},{"s":"jicama","n":"JICAMA","a":"mexican turnip|yam bean|sengkuang|singkamas","u":"lb"},{"s":"gingko-nut","n":"GINGKO NUT","a":"ginkgo nut|baigo|pak quo","u":"each"},{"s":"bamboo-salad","n":"BAMBOO SALAD","a":"bamboo salad pack|bamboo shoot salad","u":"each"},{"s":"lotus-root-package","n":"LOTUS ROOT PACKAGE","a":"lotus root pack|pre-cut lotus root","u":"each"},{"s":"taro-root-peeled","n":"TARO ROOT PEELED","a":"peeled taro|pre-peeled taro","u":"lb"},{"s":"ajies-dulce-pepper","n":"AJIES DULCE PEPPER","a":"aji dulce|sweet pepper|aji cachucha","u":"lb"},{"s":"banana-pepper","n":"BANANA PEPPER","a":"hungarian wax pepper|yellow wax pepper","u":"lb"},{"s":"cubanelle-pepper","n":"CUBANELLE PEPPER","a":"italian frying pepper","u":"lb"},{"s":"finger-hot-pepper","n":"FINGER HOT PEPPER","a":"long green chili|cayenne pepper","u":"lb"},{"s":"jalapeno-pepper","n":"JALAPENO PEPPER","a":"jalapeno|green jalapeno","u":"lb"},{"s":"orange-habanero-pepper","n":"ORANGE HABANERO PEPPER","a":"habanero|orange habanero","u":"lb"},{"s":"red-habanero-pepper","n":"RED HABANERO PEPPER","a":"red habanero|scotch bonnet","u":"lb"},{"s":"green-habanero-pepper","n":"GREEN HABANERO PEPPER","a":"green habanero|unripe habanero","u":"lb"},{"s":"long-hot-pepper","n":"LONG HOT PEPPER","a":"long hot|italian long hot","u":"lb"},{"s":"poblano-pepper","n":"POBLANO PEPPER","a":"poblano|pasilla|ancho when dried","u":"lb"},{"s":"green-bell-pepper","n":"GREEN BELL PEPPER","a":"green pepper|bell pepper|capsicum","u":"lb"},{"s":"red-bell-pepper","n":"RED BELL PEPPER","a":"red pepper|red bell|red capsicum","u":"lb"},{"s":"green-thai-hot-pepper","n":"GREEN THAI HOT PEPPER","a":"thai chili|birds eye chili|green thai chili|prik kee noo","u":"lb"},{"s":"red-thai-hot-pepper","n":"RED THAI HOT PEPPER","a":"red thai chili|red birds eye|cayenne","u":"lb"},{"s":"serrano-pepper","n":"SERRANO PEPPER","a":"serrano|chili serrano","u":"lb"},{"s":"roma-tomato","n":"ROMA TOMATO","a":"plum tomato|italian tomato","u":"lb"},{"s":"tomato","n":"TOMATO","a":"round tomato|slicing tomato|beefsteak","u":"lb"},{"s":"cherry-tomato","n":"CHERRY TOMATO","a":"grape tomato|small tomato","u":"lb"},{"s":"tomatillo","n":"TOMATILLO","a":"miltomate|husk tomato|mexican husk tomato","u":"lb"},{"s":"tomato-on-vine","n":"TOMATO ON VINE","a":"vine tomato|cluster tomato|tov","u":"lb"},{"s":"king-oyster-mushroom","n":"KING OYSTER MUSHROOM","a":"king trumpet|king oyster|eringi","u":"lb"},{"s":"mini-king-oyster-mushroom","n":"MINI KING OYSTER MUSHROOM","a":"mini king trumpet","u":"each"},{"s":"oyster-mushroom","n":"OYSTER MUSHROOM","a":"oyster mushrooms|pleurotus","u":"lb"},{"s":"oyster-mushroom-pack","n":"OYSTER MUSHROOM PACK","a":"packaged oyster mushroom","u":"each"},{"s":"enoki-mushroom","n":"ENOKI MUSHROOM","a":"enoki|enokitake|golden needle mushroom","u":"each"},{"s":"shiitake-mushroom","n":"SHIITAKE MUSHROOM","a":"shitake|shiitake|black mushroom|dong gu","u":"lb"},{"s":"shiitake-mushroom-pack","n":"SHIITAKE MUSHROOM PACK","a":"shiitake pack|packaged shiitake","u":"each"},{"s":"white-shemeji-mushroom","n":"WHITE SHEMEJI MUSHROOM","a":"white shimeji|beech mushroom|bunashimeji","u":"each"},{"s":"brown-shemeji-mushroom","n":"BROWN SHEMEJI MUSHROOM","a":"brown shimeji|brown beech mushroom","u":"each"},{"s":"maitake-mushroom","n":"MAITAKE MUSHROOM","a":"maitake|hen of the woods","u":"each"},{"s":"seafood-mushroom","n":"SEAFOOD MUSHROOM","a":"seafood mushroom pack","u":"each"},{"s":"mix-mushroom","n":"MIX MUSHROOM","a":"mushroom mix|assorted mushroom","u":"each"},{"s":"mint","n":"MINT","a":"fresh mint|spearmint|pudina|rau hung","u":"bunch"},{"s":"dap-ca","n":"DAP CA","a":"fish mint|rau diep ca|vietnamese fish mint","u":"bunch"},{"s":"rau-ram","n":"RAU RAM","a":"vietnamese coriander|vietnamese mint|laksa leaf","u":"bunch"},{"s":"thai-basil","n":"THAI BASIL","a":"holy basil|horapa|asian basil","u":"bunch"},{"s":"ngo-om","n":"NGO OM","a":"rice paddy herb|limnophila aromatica","u":"bunch"},{"s":"la-ti-to","n":"LA TI TO","a":"perilla|shiso|red shiso|tia to","u":"bunch"},{"s":"bac-ha","n":"BAC HA","a":"taro stem|elephant ear stem","u":"bunch"},{"s":"sha-poo","n":"SHA POO","a":"wild betel leaf|cha plu","u":"bunch"},{"s":"cha-om","n":"CHA OM","a":"acacia leaves|chaom|thai acacia","u":"bunch"},{"s":"e-too","n":"E TOO","a":"lemon basil|sweet basil|maenglak","u":"bunch"},{"s":"kased","n":"KASED","a":"cassia leaves|sweet cassia","u":"bunch"},{"s":"ka-pao","n":"KA PAO","a":"holy basil|tulsi","u":"bunch"},{"s":"pak-kad","n":"PAK KAD","a":"thai mustard|thai mustard greens","u":"bunch"},{"s":"pennyworth","n":"PENNYWORTH","a":"gotu kola|pennywort|asiatic pennywort","u":"bunch"},{"s":"curry-leaves","n":"CURRY LEAVES","a":"kadi patta|meetha neem|karuveppilai","u":"bunch"},{"s":"kaffir-lime-leaves","n":"KAFFIR LIME LEAVES","a":"makrut lime leaves|bai makrut","u":"bunch"},{"s":"thyme-leaves","n":"THYME LEAVES","a":"fresh thyme","u":"bunch"},{"s":"cilantro","n":"CILANTRO","a":"coriander leaves|dhania|kothmir|rau mui|pak chee","u":"bunch"},{"s":"culantro","n":"CULANTRO","a":"saw-leaf herb|long coriander|ngo gai|shadow beni|recao","u":"bunch"},{"s":"plain-parsley","n":"PLAIN PARSLEY","a":"italian parsley|flat leaf parsley","u":"bunch"},{"s":"curly-parsley","n":"CURLY PARSLEY","a":"parsley|common parsley","u":"bunch"},{"s":"dill-weed","n":"DILL WEED","a":"fresh dill|shibet","u":"bunch"},{"s":"lemongrass","n":"LEMONGRASS","a":"sereh|takrai|sa|serai","u":"lb"},{"s":"red-banana","n":"RED BANANA","a":"red dacca banana","u":"lb"},{"s":"banana","n":"BANANA","a":"cavendish banana|yellow banana","u":"lb"},{"s":"baby-banana","n":"BABY BANANA","a":"lady finger banana|nino banana","u":"lb"},{"s":"burro-banana","n":"BURRO BANANA","a":"horse banana|platano burro","u":"lb"},{"s":"manzano-banana","n":"MANZANO BANANA","a":"apple banana|cuatrofilos","u":"lb"},{"s":"thai-banana","n":"THAI BANANA","a":"nam wah|pisang awak","u":"lb"},{"s":"plantain","n":"PLANTAIN","a":"cooking banana|green plantain|platano","u":"lb"},{"s":"hawaii-plantain","n":"HAWAII PLANTAIN","a":"hawaiian plantain","u":"lb"},{"s":"avocado-hass","n":"AVOCADO HASS","a":"hass avocado","u":"each"},{"s":"avocado-florida","n":"AVOCADO FLORIDA","a":"florida avocado|green avocado","u":"each"},{"s":"soursop","n":"SOURSOP","a":"guanabana|graviola|mang cau xiem|durian belanda","u":"lb"},{"s":"green-coconut","n":"GREEN COCONUT","a":"young thai coconut|fresh young coconut","u":"each"},{"s":"dried-coconut","n":"DRIED COCONUT","a":"mature coconut|brown coconut|old coconut|nariyal","u":"each"},{"s":"young-coconut","n":"YOUNG COCONUT","a":"young coconut","u":"each"},{"s":"mini-coconut","n":"MINI COCONUT","a":"mini young coconut","u":"each"},{"s":"white-coconut","n":"WHITE COCONUT","a":"white shaved coconut","u":"each"},{"s":"red-guava","n":"RED GUAVA","a":"pink guava|tropical guava","u":"lb"},{"s":"thai-guava","n":"THAI GUAVA","a":"white guava|crystal guava","u":"lb"},{"s":"yellow-dragon-fruit","n":"YELLOW DRAGON FRUIT","a":"yellow pitaya|yellow pitahaya","u":"lb"},{"s":"red-dragon-fruit","n":"RED DRAGON FRUIT","a":"red flesh dragon fruit|pitaya|pitahaya","u":"lb"},{"s":"white-dragon-fruit","n":"WHITE DRAGON FRUIT","a":"white flesh dragon fruit|pitaya blanca","u":"lb"},{"s":"june-plum","n":"JUNE PLUM","a":"ambarella|amra|kedondong|golden apple","u":"lb"},{"s":"cherry-plum","n":"CHERRY PLUM","a":"plum|red plum","u":"lb"},{"s":"sugar-plum","n":"SUGAR PLUM","a":"sweet plum","u":"lb"},{"s":"jujube","n":"JUJUBE","a":"indian jujube|ber|tao|green jujube","u":"lb"},{"s":"honey-jujube","n":"HONEY JUJUBE","a":"honey ber|sweet jujube","u":"lb"},{"s":"lime","n":"LIME","a":"key lime|persian lime","u":"each"},{"s":"lemon","n":"LEMON","a":"yellow lemon|eureka lemon","u":"each"},{"s":"lychee","n":"LYCHEE","a":"litchi|lichee","u":"lb"},{"s":"longan","n":"LONGAN","a":"dragon eye|nhan","u":"lb"},{"s":"mangosteen","n":"MANGOSTEEN","a":"mang cut|queen of fruits","u":"lb"},{"s":"cherimoya","n":"CHERIMOYA","a":"custard apple|sitafal","u":"lb"},{"s":"green-mango","n":"GREEN MANGO","a":"raw mango|unripe mango|kachi am","u":"lb"},{"s":"baby-green-mango","n":"BABY GREEN MANGO","a":"baby raw mango","u":"lb"},{"s":"ataulfo-mango","n":"ATAULFO MANGO","a":"honey mango|champagne mango|manila mango","u":"each"},{"s":"kent-mango","n":"KENT MANGO","a":"mango|large mango","u":"each"},{"s":"baby-ataulfo-mango","n":"BABY ATAULFO MANGO","a":"baby ataulfo|mini ataulfo","u":"each"},{"s":"sweet-thai-mango","n":"SWEET THAI MANGO","a":"nam dok mai|thai mango","u":"each"},{"s":"pineapple","n":"PINEAPPLE","a":"fresh pineapple","u":"each"},{"s":"sugar-cane","n":"SUGAR CANE","a":"cane|gan zhe","u":"each"},{"s":"yali-pear","n":"YALI PEAR","a":"ya pear|yali asian pear","u":"each"},{"s":"fragrant-pear","n":"FRAGRANT PEAR","a":"xiang li|aromatic pear","u":"lb"},{"s":"singo-pear-pack","n":"SINGO PEAR PACK","a":"singo pear box|asian pear pack","u":"each"},{"s":"singo-pear","n":"SINGO PEAR","a":"shingo pear|asian pear|korean pear","u":"each"},{"s":"golden-pear-pack","n":"GOLDEN PEAR PACK","a":"golden pear box","u":"each"},{"s":"golden-pear","n":"GOLDEN PEAR","a":"hosui pear|asian pear","u":"each"},{"s":"golden-kiwi","n":"GOLDEN KIWI","a":"gold kiwi|sungold kiwi","u":"each"},{"s":"korean-melon","n":"KOREAN MELON","a":"chamoe|oriental melon","u":"lb"},{"s":"cantaloupe-melon","n":"CANTALOUPE MELON","a":"cantaloupe|rockmelon|muskmelon","u":"each"},{"s":"hami-melon","n":"HAMI MELON","a":"hami|snow melon","u":"each"},{"s":"red-mini-watermelon","n":"RED MINI WATERMELON","a":"mini watermelon|baby watermelon|personal watermelon","u":"each"},{"s":"yellow-mini-watermelon","n":"YELLOW MINI WATERMELON","a":"yellow watermelon|mini yellow watermelon","u":"each"},{"s":"green-papaya","n":"GREEN PAPAYA","a":"raw papaya|unripe papaya|du du xanh","u":"lb"},{"s":"ripe-papaya","n":"RIPE PAPAYA","a":"papaya|mexican papaya|maradol papaya","u":"lb"},{"s":"hachiya-persimmon","n":"HACHIYA PERSIMMON","a":"hachiya|astringent persimmon","u":"lb"},{"s":"fuyu-persimmon","n":"FUYU PERSIMMON","a":"fuyu|sharon fruit","u":"lb"},{"s":"golden-apple","n":"GOLDEN APPLE","a":"mutsu apple|crispin apple","u":"each"},{"s":"fuji-apple","n":"FUJI APPLE","a":"fuji","u":"each"},{"s":"star-fruit","n":"STAR FRUIT","a":"carambola|belimbing","u":"lb"},{"s":"orange","n":"ORANGE","a":"navel orange|valencia orange","u":"each"},{"s":"honey-tangerine","n":"HONEY TANGERINE","a":"honey murcott|tangelo","u":"each"},{"s":"kumquat","n":"KUMQUAT","a":"cumquat|tac|kim quat","u":"lb"},{"s":"red-globe-grape","n":"RED GLOBE GRAPE","a":"red grape|globe grape","u":"lb"},{"s":"fresh-date","n":"FRESH DATE","a":"barhi date|yellow date|fresh dates","u":"lb"},{"s":"green-tamarind","n":"GREEN TAMARIND","a":"fresh tamarind|imli|me chua","u":"lb"},{"s":"sweet-dried-tamarind","n":"SWEET DRIED TAMARIND","a":"dried tamarind|sweet tamarind|me ngot","u":"each"},{"s":"rambutan","n":"RAMBUTAN","a":"hairy lychee|chom chom","u":"lb"},{"s":"pomelo-round","n":"POMELO ROUND","a":"pomelo|pummelo|buntan|buoi","u":"each"},{"s":"pomelo-long-white","n":"POMELO LONG WHITE","a":"white pomelo|long white pomelo","u":"each"},{"s":"pomelo-long-red","n":"POMELO LONG RED","a":"red pomelo|pink pomelo|long red pomelo","u":"each"},{"s":"passion-fruit","n":"PASSION FRUIT","a":"lilikoi|maracuya|chanh day","u":"each"},{"s":"mamey","n":"MAMEY","a":"mamey sapote|zapote|sapote rojo","u":"lb"},{"s":"sapote","n":"SAPOTE","a":"white sapote|sapote blanco","u":"lb"},{"s":"star-apple","n":"STAR APPLE","a":"caimito|milk fruit|vu sua","u":"lb"},{"s":"baby-jackfruit","n":"BABY JACKFRUIT","a":"young jackfruit|green jackfruit|mit non","u":"lb"},{"s":"jackfruit","n":"JACKFRUIT","a":"kathal|nangka|mit|langka","u":"lb"},{"s":"yellow-peach","n":"YELLOW PEACH","a":"peach","u":"each"},{"s":"white-peach","n":"WHITE PEACH","a":"white-flesh peach|nectarine","u":"lb"},{"s":"wax-apple","n":"WAX APPLE","a":"java apple|rose apple|mountain apple|tambis","u":"lb"},{"s":"quenepa","n":"QUENEPA","a":"spanish lime|mamoncillo|genip|kenip","u":"lb"}];
+
+let PC_LAST_MATCHED = null; // {invoiceLines:[{name,cost,unit,catalogId,confidence,...}], when}
+let _PC_SEEDED = false;
+let _PC_ADD_IMG = null;
+
+// Storage helpers
+function pcLoadCatalog(){ return lsGet(SK.PC_CAT) || []; }
+function pcSaveCatalog(c){ lsSet(SK.PC_CAT, c); }
+function pcLoadMap(){ return lsGet(SK.PC_MAP) || {}; }
+function pcSaveMap(m){ lsSet(SK.PC_MAP, m); }
+function pcId(){ return 'pc_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
+function pcLoadHost(){ return localStorage.getItem('tm_pc_host') || ''; }
+function pcSaveHostUrl(u){ try{ localStorage.setItem('tm_pc_host', u); }catch(e){} }
+function pcImgUrl(item){
+  if(!item) return '';
+  if(item.image && (item.image.startsWith('http://')||item.image.startsWith('https://')||item.image.startsWith('data:'))) return item.image;
+  const pattern = pcLoadHost();
+  if(!pattern || !item.image) return '';
+  return pattern.replace('{slug}', item.image.replace(/\.jpg$/,'').replace(/\.png$/,'').replace(/\.jpeg$/,''));
+}
+
+// Seed Truong catalog on first load
+function pcSeed(){
+  if(_PC_SEEDED) return;
+  _PC_SEEDED = true;
+  const existing = pcLoadCatalog();
+  // Only seed if no items exist (or none are tagged truong)
+  const hasTruong = existing.some(x => x.source === 'truong');
+  if(hasTruong) return;
+  const seeded = PC_TRUONG_CATALOG.map(x => ({
+    id: 'tr_' + x.s,
+    name: x.n,
+    aliases: x.a ? x.a.split('|') : [],
+    unit: x.u,
+    cost: 0,
+    image: x.s + '.jpg',
+    source: 'truong',
+    addedAt: new Date().toISOString()
+  }));
+  pcSaveCatalog([...seeded, ...existing]);
+}
+
+// Tabs
+function pcTab(t){
+  document.querySelectorAll('.pc-tab').forEach(el=>el.classList.toggle('on', el.dataset.pct===t));
+  document.querySelectorAll('.pc-tab-pane').forEach(el=>el.classList.remove('on'));
+  const pane=document.getElementById('pc-pane-'+t); if(pane) pane.classList.add('on');
+  if(t==='catalog') pcRenderCatalog();
+  if(t==='export') pcPdfPreview();
+}
+
+function pcOpenPage(){
+  pcSeed();
+  const host = pcLoadHost();
+  const inp = document.getElementById('pc-host-pattern');
+  if(inp) inp.value = host;
+  pcRenderCatalog();
+  if(PC_LAST_MATCHED) pcRenderResults();
+  pcUpdateNavCount();
+}
+
+function pcUpdateNavCount(){
+  const n = pcLoadCatalog().length;
+  const a = document.getElementById('pc-cnt'); if(a) a.textContent = n;
+  const b = document.getElementById('pc-cat-cnt'); if(b) b.textContent = n;
+  const c = document.getElementById('pc-cat-summary'); if(c) c.textContent = `${n} item${n!==1?'s':''}`;
+}
+
+// Host configuration
+function pcSaveHost(){
+  const v = (document.getElementById('pc-host-pattern').value||'').trim();
+  if(v && !v.includes('{slug}')){
+    showToast('warn','URL pattern must include {slug} placeholder');
+    return;
+  }
+  pcSaveHostUrl(v);
+  showToast('success', v ? '✅ Photo host saved' : 'Photo host cleared');
+  pcRenderCatalog();
+  if(PC_LAST_MATCHED) pcRenderResults();
+}
+function pcTestHost(){
+  const v = (document.getElementById('pc-host-pattern').value||'').trim();
+  const status = document.getElementById('pc-host-status');
+  if(!v){ status.textContent = 'Enter a URL pattern first.'; return; }
+  if(!v.includes('{slug}')){ status.innerHTML = '<span style="color:var(--red)">⚠ Pattern must include {slug}</span>'; return; }
+  const testUrl = v.replace('{slug}','a-choy');
+  status.innerHTML = `Testing… <code style="font-size:10px">${testUrl}</code>`;
+  const img = new Image();
+  img.onload = ()=>{ status.innerHTML = `<span style="color:var(--green)">✅ Image loaded successfully (${img.naturalWidth}×${img.naturalHeight})</span>`; };
+  img.onerror = ()=>{ status.innerHTML = `<span style="color:var(--red)">⚠ Could not load test image. Check the URL is public and the file exists.</span>`; };
+  img.src = testUrl;
+}
+
+// Image upload + compression for custom catalog items
+function pcOnImage(e){
+  const f=e.target.files[0]; if(!f) return;
+  pcCompressImage(f, 480, 0.82).then(dataUrl=>{
+    _PC_ADD_IMG = dataUrl;
+    const box = document.getElementById('pc-add-img-prev');
+    box.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+  }).catch(err=>{ showToast('error','Image error: '+err.message); });
+}
+function pcCompressImage(file, maxSide, quality){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const ratio = Math.min(maxSide/img.width, maxSide/img.height, 1);
+        const w = Math.round(img.width*ratio), h = Math.round(img.height*ratio);
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        res(cv.toDataURL('image/jpeg', quality));
+      };
+      img.onerror=()=>rej(new Error('image decode failed'));
+      img.src=r.result;
+    };
+    r.onerror=()=>rej(new Error('file read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+// Catalog CRUD
+function pcCatalogClearForm(){
+  document.getElementById('pc-add-name').value='';
+  document.getElementById('pc-add-aliases').value='';
+  document.getElementById('pc-add-cost').value='';
+  document.getElementById('pc-add-unit').value='lb';
+  _PC_ADD_IMG=null;
+  document.getElementById('pc-add-img-prev').innerHTML=`<div style="font-size:36px;opacity:.4">📷</div><div style="font-size:11px;color:var(--text3);margin-top:6px">Click to upload photo</div>`;
+  delete document.getElementById('pc-add-name').dataset.editId;
+}
+function pcCatalogAdd(){
+  const name = document.getElementById('pc-add-name').value.trim();
+  if(!name){ showToast('warn','Item name is required'); return; }
+  const aliases = document.getElementById('pc-add-aliases').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const unit = document.getElementById('pc-add-unit').value;
+  const cost = parseFloat(document.getElementById('pc-add-cost').value)||0;
+  const cat = pcLoadCatalog();
+  const editId = document.getElementById('pc-add-name').dataset.editId;
+  if(editId){
+    const idx = cat.findIndex(x=>x.id===editId);
+    if(idx>=0){
+      cat[idx] = {...cat[idx], name, aliases, unit, cost, ...(_PC_ADD_IMG?{image:_PC_ADD_IMG}:{}) };
+      pcSaveCatalog(cat);
+      showToast('success', `✅ Updated "${name}"`);
+    }
+  } else {
+    cat.push({ id: pcId(), name, aliases, unit, cost, image:_PC_ADD_IMG||null, source:'custom', addedAt:new Date().toISOString() });
+    pcSaveCatalog(cat);
+    showToast('success', `✅ Added "${name}"`);
+  }
+  pcCatalogClearForm();
+  pcRenderCatalog();
+  pcUpdateNavCount();
+}
+function pcCatalogEdit(id){
+  const item = pcLoadCatalog().find(x=>x.id===id); if(!item) return;
+  document.getElementById('pc-add-name').value = item.name;
+  document.getElementById('pc-add-name').dataset.editId = id;
+  document.getElementById('pc-add-aliases').value = (item.aliases||[]).join(', ');
+  document.getElementById('pc-add-unit').value = item.unit||'lb';
+  document.getElementById('pc-add-cost').value = item.cost||'';
+  const url = pcImgUrl(item);
+  if(url){
+    document.getElementById('pc-add-img-prev').innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`;
+  }
+  document.getElementById('pc-add-name').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function pcCatalogDelete(id){
+  const item = pcLoadCatalog().find(x=>x.id===id); if(!item) return;
+  if(!confirm(`Delete "${item.name}" from catalog?`)) return;
+  pcSaveCatalog(pcLoadCatalog().filter(x=>x.id!==id));
+  pcRenderCatalog(); pcUpdateNavCount();
+  showToast('warn',`Removed "${item.name}"`);
+}
+
+function pcRenderCatalog(){
+  const grid = document.getElementById('pc-catalog-grid');
+  if(!grid) return;
+  const search = (document.getElementById('pc-cat-search')?.value || '').trim().toLowerCase();
+  const cat = pcLoadCatalog();
+  let filtered = cat;
+  if(search){
+    filtered = cat.filter(x=>{
+      if(x.name.toLowerCase().includes(search)) return true;
+      if((x.aliases||[]).some(a=>a.toLowerCase().includes(search))) return true;
+      return false;
+    });
+  }
+  if(!filtered.length){
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
+      <div style="font-size:32px;opacity:.4;margin-bottom:8px">🔍</div>
+      <div style="font-weight:600;color:var(--text2)">${search?'No matches for "'+search+'"':'No catalog items yet'}</div>
+    </div>`;
+    return;
+  }
+  // Cap render at 200 to prevent UI lag with full catalog
+  const cap = 200;
+  const slice = filtered.slice(0, cap);
+  const unitLabel = {lb:'/ lb',bunch:'/ bunch',each:'each'};
+  grid.innerHTML = slice.map(x=>{
+    const url = pcImgUrl(x);
+    const imgHtml = url
+      ? `<img src="${url}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-cat-img-empty&quot;>📷</div>'">`
+      : `<div class="pc-cat-img-empty">📦</div>`;
+    const aliasText = (x.aliases||[]).slice(0,3).join(', ');
+    return `<div class="pc-cat-card">
+      <div class="pc-cat-img">${imgHtml}</div>
+      <div class="pc-cat-body">
+        <div class="pc-cat-name">${x.name}</div>
+        <div class="pc-cat-meta">${unitLabel[x.unit]||x.unit}${x.cost?' · $'+x.cost.toFixed(2):''}</div>
+        ${aliasText?`<div class="pc-cat-aliases">aka ${aliasText}${(x.aliases||[]).length>3?' +'+((x.aliases.length)-3)+' more':''}</div>`:''}
+      </div>
+      <div class="pc-cat-actions">
+        <button onclick="pcCatalogEdit('${x.id}')">Edit</button>
+        <button class="del" onclick="pcCatalogDelete('${x.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('') + (filtered.length>cap?`<div style="grid-column:1/-1;text-align:center;padding:14px;color:var(--text3);font-size:12px">Showing ${cap} of ${filtered.length} items — refine your search to see more</div>`:'');
+}
+
+// ── Fuzzy matching ──────────────────────────────
+function pcNormalize(s){ return (s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function pcTokenize(s){ return pcNormalize(s).split(' ').filter(t=>t.length>1); }
+
+// Lightweight token-based similarity
+function pcScore(invoiceText, catalogItem){
+  const inv = pcNormalize(invoiceText);
+  if(!inv) return 0;
+  const candidates = [catalogItem.name, ...(catalogItem.aliases||[])];
+  let best = 0;
+  for(const cand of candidates){
+    const c = pcNormalize(cand);
+    if(!c) continue;
+    // Direct contains
+    if(inv === c) { best = Math.max(best, 1.0); continue; }
+    if(inv.includes(c) || c.includes(inv)) { best = Math.max(best, 0.92); continue; }
+    // Token overlap
+    const invToks = new Set(inv.split(' '));
+    const cToks = new Set(c.split(' '));
+    let overlap = 0;
+    for(const t of cToks) if(invToks.has(t)) overlap++;
+    const ratio = overlap / Math.max(cToks.size, invToks.size);
+    // Partial token overlap (prefix)
+    let partial = 0;
+    for(const ct of cToks){
+      for(const it of invToks){
+        if(ct.length>=4 && it.length>=4 && (ct.startsWith(it) || it.startsWith(ct))) { partial += 0.5; break; }
+      }
+    }
+    const partRatio = partial / Math.max(cToks.size, invToks.size);
+    const score = Math.max(ratio, partRatio*0.85);
+    if(score > best) best = score;
+  }
+  return best;
+}
+
+// ── LOCAL FALLBACK: simple fuzzy match (used when AI unavailable or for the saved mapping check) ──
+function pcMatchLineLocal(text){
+  const cat = pcLoadCatalog();
+  if(!cat.length) return null;
+  const map = pcLoadMap();
+  const normT = pcNormalize(text);
+  if(map[normT]){
+    const m = cat.find(x=>x.id===map[normT]);
+    if(m) return {item:m, score:1.0, fromMap:true};
+  }
+  let bestScore = 0, bestItem = null;
+  for(const item of cat){
+    const s = pcScore(text, item);
+    if(s > bestScore){ bestScore = s; bestItem = item; }
+  }
+  if(!bestItem) return null;
+  return {item:bestItem, score:bestScore, fromMap:false};
+}
+
+// ── AI-POWERED BATCH MATCHER ──
+// Sends ALL invoice produce lines + the full catalog name list to Claude in ONE call.
+// Returns a map of {invoiceText -> {catalogId, confidence}}.
+// Falls back to local fuzzy match if API is unavailable.
+async function pcAiMatch(invoiceTexts){
+  const cat = pcLoadCatalog();
+  if(!cat.length || !invoiceTexts.length) return {};
+  
+  const key = AI_KEY();
+  if(!key){
+    // No API key — fall back to local fuzzy
+    const out = {};
+    for(const t of invoiceTexts){
+      const m = pcMatchLineLocal(t);
+      out[t] = m ? {catalogId:m.item.id, score:m.score, fromMap:m.fromMap} : {catalogId:null, score:0};
+    }
+    return out;
+  }
+  
+  // Honor saved manual mappings up front (no API call needed for those)
+  const map = pcLoadMap();
+  const out = {};
+  const remaining = [];
+  for(const t of invoiceTexts){
+    const normT = pcNormalize(t);
+    if(map[normT]){
+      const m = cat.find(x=>x.id===map[normT]);
+      if(m){ out[t] = {catalogId:m.id, score:1.0, fromMap:true}; continue; }
+    }
+    remaining.push(t);
+  }
+  if(!remaining.length) return out;
+  
+  // Build catalog list for the prompt — id + name (aliases not needed; AI handles variants)
+  const catList = cat.map(c => `${c.id}: ${c.name}`).join('\n');
+  const lineList = remaining.map((t,i) => `${i+1}. ${t}`).join('\n');
+  
+  const prompt = `You are a produce-matching assistant for an Asian/Latin grocery store.
+Given invoice line items and a catalog of produce, match each invoice line to the BEST catalog entry.
+
+Handle:
+- Spelling variants (Gongora → Gongura Leaves)
+- Alternate names across cuisines (Karela = Bitter Melon, Lady Finger = Okra, Methi = Fenugreek)
+- Translations (cilantro = coriander, dhania, kothmir)
+- Spelling errors and abbreviations
+
+For EACH invoice line, return:
+- the catalog id (e.g. "tr_cilantro") OR "none" if no good match
+- confidence: "high" (very confident), "medium" (likely), "low" (guess), "none" (no match)
+
+Respond with ONLY a JSON object, no prose. Format:
+{"matches":[{"line":1,"id":"tr_xxx","confidence":"high"}, ...]}
+
+CATALOG:
+${catList}
+
+INVOICE LINES:
+${lineList}`;
+  
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:8000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await resp.json();
+    if(data.type === 'error') throw new Error(data.error?.message || 'API error');
+    const raw = data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}');
+    if(s<0||e<0) throw new Error('No JSON in matcher response');
+    const parsed = JSON.parse(raw.substring(s,e+1));
+    const confScore = {high:0.95, medium:0.75, low:0.5, none:0};
+    for(const m of (parsed.matches||[])){
+      const idx = (m.line||0) - 1;
+      if(idx<0 || idx>=remaining.length) continue;
+      const text = remaining[idx];
+      const id = m.id && m.id !== 'none' ? m.id : null;
+      const item = id ? cat.find(x=>x.id===id) : null;
+      out[text] = {
+        catalogId: item ? id : null,
+        score: confScore[m.confidence] ?? 0,
+        confidence: m.confidence || 'none',
+        fromMap: false
+      };
+    }
+    // Backfill any line the AI didn't return
+    for(const t of remaining){
+      if(!(t in out)) out[t] = {catalogId:null, score:0, confidence:'none'};
+    }
+    return out;
+  } catch(err){
+    console.warn('AI matching failed, falling back to local fuzzy:', err);
+    showToast('warn','AI matching unavailable — using local match. '+err.message, 6000);
+    for(const t of remaining){
+      const m = pcMatchLineLocal(t);
+      out[t] = m ? {catalogId:m.item.id, score:m.score, fromMap:m.fromMap} : {catalogId:null, score:0};
+    }
+    return out;
+  }
+}
+
+function pcConfBucket(score){
+  if(score >= 0.85) return 'high';
+  if(score >= 0.65) return 'med';
+  if(score >= 0.40) return 'low';
+  return 'none';
+}
+
+// ── Upload + match flow ─────────────────────────
+async function pcHandleFile(e){
+  const f = e.target.files[0]; if(!f) return;
+  e.target.value = '';
+  await pcProcessFile(f);
+}
+async function pcProcessFile(file){
+  const box = document.getElementById('pc-extracting');
+  if(box) box.style.display='block';
+  const errEl = document.getElementById('pc-up-err');
+  if(errEl){ errEl.style.display='none'; errEl.textContent=''; }
+  const nameEl = document.getElementById('pc-up-name');
+  const metaEl = document.getElementById('pc-up-meta');
+  if(nameEl) nameEl.textContent = file.name;
+  if(metaEl) metaEl.textContent = (file.size>1024*1024 ? (file.size/1024/1024).toFixed(1)+' MB' : Math.round(file.size/1024)+' KB');
+  pcSetStep('reading');
+  try{
+    pcSetStep('extracting');
+    const inv = await extractInvoice(file);
+    pcSetStep('matching');
+    const lines = await pcExtractProduceLines(inv);
+    PC_LAST_MATCHED = { lines, when: new Date().toISOString(), invoice: inv };
+    pcSaveLast();
+    setTimeout(()=>{
+      box.querySelectorAll('.up-step').forEach(s=>{s.classList.remove('active');s.classList.add('done');});
+      setTimeout(()=>{ box.style.display='none'; }, 600);
+    }, 200);
+    pcRenderResults();
+    showToast('success', `✅ Matched ${lines.length} produce items`);
+  } catch(err){
+    if(errEl){ errEl.style.display='block'; errEl.textContent='⚠ '+err.message; }
+    showToast('error','Extraction failed: '+err.message, 8000);
+  }
+}
+function pcSetStep(stepKey){
+  const box = document.getElementById('pc-extracting'); if(!box) return;
+  const order = ['reading','extracting','matching'];
+  const idx = order.indexOf(stepKey);
+  box.querySelectorAll('.up-step').forEach(el=>{
+    const i = order.indexOf(el.dataset.step);
+    el.classList.remove('done','active');
+    if(i<idx) el.classList.add('done');
+    else if(i===idx) el.classList.add('active');
+  });
+}
+function pcSaveLast(){
+  if(PC_LAST_MATCHED){
+    try{ lsSet(SK.PC_LAST, {lines: PC_LAST_MATCHED.lines, when: PC_LAST_MATCHED.when}); }catch(e){}
+  }
+}
+
+async function pcExtractProduceLines(inv){
+  const items = (inv.items||[]).filter(it => it._rt===RT.PURCHASED && it.qty>0);
+  if(!items.length) return [];
+  const cat = pcLoadCatalog();
+  // Build text for each item
+  const texts = items.map(it => it.desc + (it.size?' '+it.size:''));
+  // Batch match all at once
+  const matches = await pcAiMatch(texts);
+  
+  const lines = [];
+  items.forEach((it, idx)=>{
+    const text = texts[idx];
+    const m = matches[text] || {catalogId:null, score:0, confidence:'none'};
+    const catItem = m.catalogId ? cat.find(x=>x.id===m.catalogId) : null;
+    const cost = unitCost(it) || it.unitCost || 0;
+    const conf = m.confidence || pcConfBucket(m.score);
+    lines.push({
+      invoiceText: it.desc,
+      invoiceSize: it.size||'',
+      cost: cost,
+      qty: it.qty,
+      catalogId: catItem ? catItem.id : null,
+      catalogName: catItem ? catItem.name : null,
+      score: m.score || 0,
+      confidence: conf,
+      fromMap: m.fromMap || false,
+      remember: false
+    });
+  });
+  return lines;
+}
+
+// ── Match result rendering ──────────────────────
+function pcRenderResults(){
+  const card = document.getElementById('pc-results-card');
+  const list = document.getElementById('pc-results-list');
+  if(!card || !list) return;
+  if(!PC_LAST_MATCHED || !PC_LAST_MATCHED.lines.length){
+    card.style.display='none';
+    return;
+  }
+  card.style.display='block';
+  const summary = document.getElementById('pc-results-summary');
+  const buckets = {high:0,med:0,low:0,none:0};
+  for(const l of PC_LAST_MATCHED.lines) buckets[l.confidence]++;
+  if(summary) summary.textContent = `${PC_LAST_MATCHED.lines.length} items · ${buckets.high} high · ${buckets.med} med · ${buckets.low+buckets.none} review`;
+  
+  const cat = pcLoadCatalog();
+  const catOptions = cat.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  
+  list.innerHTML = PC_LAST_MATCHED.lines.map((line, idx)=>{
+    const conf = line.confidence;
+    const matched = line.catalogId ? cat.find(x=>x.id===line.catalogId) : null;
+    const url = matched ? pcImgUrl(matched) : '';
+    const imgHtml = matched
+      ? (url ? `<img src="${url}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-row-r-img-empty&quot;>📷</div>'">` : `<div class="pc-row-r-img-empty">📦</div>`)
+      : `<div class="pc-row-r-img-empty">❓</div>`;
+    const retail = pcRetailFor(line.cost);
+    const unitLbl = matched ? ({lb:'/ lb',bunch:'/ bunch',each:'each'}[matched.unit]||'') : '';
+    const confPill = {high:'High',med:'Medium',low:'Low',none:'No Match'}[conf];
+    const confScore = line.score>0 ? `${(line.score*100).toFixed(0)}%` : '';
+    return `<div class="pc-row ${conf}">
+      <div class="pc-row-l">
+        <div class="pc-row-l-body">
+          <div class="pc-row-l-name">${line.invoiceText}</div>
+          <div class="pc-row-l-cost">${line.invoiceSize?line.invoiceSize+' · ':''}cost $${line.cost.toFixed(2)}</div>
+        </div>
+      </div>
+      <div class="pc-row-arrow">→</div>
+      <div class="pc-row-r">
+        <div class="pc-row-r-img">${imgHtml}</div>
+        <div class="pc-row-r-body">
+          <div class="pc-row-r-name">
+            <select onchange="pcOverride(${idx}, this.value)">
+              <option value="">— No match (skip) —</option>
+              ${catOptions.replace(`value="${line.catalogId}"`, `value="${line.catalogId}" selected`)}
+            </select>
+          </div>
+          ${matched ? `<div class="pc-row-r-price">$${retail.toFixed(2)} ${unitLbl}</div>` : '<div class="pc-row-r-no">No catalog match</div>'}
+          ${matched && conf!=='high' ? `<label style="font-size:10px;color:var(--text3);display:flex;gap:4px;align-items:center;margin-top:4px;cursor:pointer"><input type="checkbox" ${line.remember?'checked':''} onchange="pcRememberToggle(${idx})"> Remember "${line.invoiceText.substring(0,30)}" → ${matched.name}</label>` : ''}
+        </div>
+      </div>
+      <div class="pc-conf">
+        <span class="pc-conf-pill ${conf}">${confPill}</span>
+        ${confScore?`<span class="pc-conf-score">${confScore}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function pcOverride(idx, catalogId){
+  if(!PC_LAST_MATCHED) return;
+  const line = PC_LAST_MATCHED.lines[idx];
+  if(!line) return;
+  if(!catalogId){
+    line.catalogId = null; line.catalogName = null; line.confidence = 'none'; line.score = 0;
+  } else {
+    const item = pcLoadCatalog().find(x=>x.id===catalogId);
+    if(item){
+      line.catalogId = catalogId; line.catalogName = item.name; line.confidence = 'high'; line.score = 1.0;
+    }
+  }
+  pcSaveLast();
+  pcRenderResults();
+}
+function pcRememberToggle(idx){
+  if(!PC_LAST_MATCHED) return;
+  const line = PC_LAST_MATCHED.lines[idx]; if(!line) return;
+  line.remember = !line.remember;
+  if(line.remember && line.catalogId){
+    const map = pcLoadMap();
+    map[pcNormalize(line.invoiceText)] = line.catalogId;
+    pcSaveMap(map);
+    showToast('success', `🧠 Will remember "${line.invoiceText.substring(0,40)}"`);
+  } else if(!line.remember){
+    const map = pcLoadMap();
+    delete map[pcNormalize(line.invoiceText)];
+    pcSaveMap(map);
+  }
+  pcSaveLast();
+}
+function pcAcceptAllHigh(){
+  if(!PC_LAST_MATCHED) return;
+  const map = pcLoadMap();
+  let n = 0;
+  for(const l of PC_LAST_MATCHED.lines){
+    if(l.confidence==='high' && l.catalogId){
+      map[pcNormalize(l.invoiceText)] = l.catalogId;
+      l.remember = true; n++;
+    }
+  }
+  pcSaveMap(map); pcSaveLast(); pcRenderResults();
+  showToast('success', `🧠 Saved ${n} mappings`);
+}
+async function pcResetMatches(){
+  if(!confirm('Re-run matching from scratch? Saved manual mappings will still apply.')) return;
+  if(!PC_LAST_MATCHED || !PC_LAST_MATCHED.invoice) return;
+  showToast('info','Re-matching...', 2000);
+  PC_LAST_MATCHED.lines = await pcExtractProduceLines(PC_LAST_MATCHED.invoice);
+  pcSaveLast(); pcRenderResults();
+}
+async function pcLoadDemo(){
+  // Build a fake invoice with mixed produce names testing aliases
+  const demoInv = {
+    vendor: 'DEMO PRODUCE CO',
+    invoiceNo: 'DEMO-' + Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    items: [
+      {item:'D01', desc:'GONGORA LEAVES', size:'10 LB', qty:2, caseCost:18, unitCost:1.80, _rt:RT.PURCHASED, _u:1},
+      {item:'D02', desc:'BITTER GOURD', size:'30 LB', qty:1, caseCost:42, unitCost:1.40, _rt:RT.PURCHASED, _u:1},
+      {item:'D03', desc:'KANGKONG (WATER SPINACH)', size:'25 LB', qty:1, caseCost:35, unitCost:1.40, _rt:RT.PURCHASED, _u:1},
+      {item:'D04', desc:'METHI / FENUGREEK', size:'24 PC', qty:2, caseCost:24, unitCost:1.00, _rt:RT.PURCHASED, _u:1},
+      {item:'D05', desc:'COCA YUCA CASSAVA', size:'30 LB', qty:1, caseCost:45, unitCost:1.50, _rt:RT.PURCHASED, _u:1},
+      {item:'D06', desc:'KARELA BITTER MELON SMALL', size:'30 LB', qty:1, caseCost:48, unitCost:1.60, _rt:RT.PURCHASED, _u:1},
+      {item:'D07', desc:'COCONUT YOUNG', size:'9 PC', qty:1, caseCost:18, unitCost:2.00, _rt:RT.PURCHASED, _u:1},
+      {item:'D08', desc:'CILANTRO BUNCH', size:'60 PC', qty:1, caseCost:36, unitCost:0.60, _rt:RT.PURCHASED, _u:1},
+    ]
+  };
+  showToast('info','Loading demo & matching...', 2000);
+  const lines = await pcExtractProduceLines(demoInv);
+  PC_LAST_MATCHED = { lines, when: new Date().toISOString(), invoice: demoInv };
+  pcSaveLast();
+  pcRenderResults();
+  showToast('success','Demo loaded — 8 items matched');
+}
+
+// ── Pricing math ────────────────────────────────
+function pcRetailFor(cost){
+  const markup = parseFloat(document.getElementById('pc-pdf-markup')?.value)||50;
+  const round = document.getElementById('pc-pdf-round')?.value || 'x9_x99';
+  const raw = cost * (1 + markup/100);
+  if(round==='exact') return Math.round(raw*100)/100;
+  // Round UP to nearest .49 or .99 — whichever is nearest above raw
+  const dollars = Math.floor(raw);
+  const cents = raw - dollars;
+  let target;
+  if(cents <= 0.49) target = dollars + 0.49;
+  else if(cents <= 0.99) target = dollars + 0.99;
+  else target = dollars + 1.49;
+  return Math.round(target*100)/100;
+}
+
+// ── PDF Export ──────────────────────────────────
+function pcGetExportItems(){
+  const src = document.getElementById('pc-pdf-source')?.value || 'matched';
+  if(src==='matched' && PC_LAST_MATCHED){
+    const cat = pcLoadCatalog();
+    return PC_LAST_MATCHED.lines
+      .filter(l => l.catalogId)
+      .map(l=>{
+        const c = cat.find(x=>x.id===l.catalogId);
+        return c ? {name:c.name, unit:c.unit, image:pcImgUrl(c), cost:l.cost} : null;
+      })
+      .filter(Boolean);
+  }
+  return pcLoadCatalog().filter(c=>c.cost>0).map(c=>({name:c.name, unit:c.unit, image:pcImgUrl(c), cost:c.cost}));
+}
+
+function pcPdfPreview(){
+  const items = pcGetExportItems();
+  const prev = document.getElementById('pc-pdf-preview');
+  if(!prev) return;
+  if(!items.length){
+    prev.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;background:var(--bg3);border-radius:8px">No items to export. ${PC_LAST_MATCHED ? 'Make sure invoice items have catalog matches.' : 'Match an invoice first or set default costs in catalog items.'}</div>`;
+    return;
+  }
+  const cap = 24;
+  const slice = items.slice(0,cap);
+  prev.innerHTML = `<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Preview · ${items.length} cards${items.length>cap?' (showing first '+cap+')':''}</div><div class="pc-pdf-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">` + slice.map(it=>{
+    const retail = pcRetailFor(it.cost);
+    const unitLbl = {lb:'per lb',bunch:'per bunch',each:'each'}[it.unit] || '';
+    const imgHtml = it.image ? `<img src="${it.image}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-pdf-card-img-empty&quot;>📷</div>'">` : `<div class="pc-pdf-card-img-empty">📦</div>`;
+    return `<div class="pc-pdf-card">${imgHtml}<div class="pc-pdf-card-name">${it.name}</div><div class="pc-pdf-card-price">$${retail.toFixed(2)}<div class="pc-pdf-card-unit">${unitLbl}</div></div></div>`;
+  }).join('') + '</div>';
+}
+
+async function pcExportPDF(){
+  if(typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined'){
+    showToast('error','PDF library still loading — try again in a moment'); return;
+  }
+  const items = pcGetExportItems();
+  if(!items.length){ showToast('warn','No items to export'); return; }
+  
+  const cols = parseInt(document.getElementById('pc-pdf-cols')?.value)||3;
+  showToast('info', `Generating PDF with ${items.length} items…`);
+  
+  const { jsPDF } = window.jspdf || window;
+  const doc = new jsPDF({unit:'pt', format:'letter'});  // 612 x 792
+  const PAGE_W = 612, PAGE_H = 792;
+  const MARGIN = 30;
+  const cardW = (PAGE_W - MARGIN*2 - (cols-1)*12) / cols;
+  const cardH = cardW * 1.35;
+  const perPage = cols * Math.floor((PAGE_H - MARGIN*2) / (cardH + 12));
+  
+  // Pre-load all images as data URLs (avoids CORS issues with jsPDF)
+  const loadImg = (src) => new Promise((res)=>{
+    if(!src){ res(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>{
+      try{
+        const cv = document.createElement('canvas');
+        const max = 600;
+        const ratio = Math.min(max/img.width, max/img.height, 1);
+        cv.width = Math.round(img.width*ratio);
+        cv.height = Math.round(img.height*ratio);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        res(cv.toDataURL('image/jpeg', 0.85));
+      } catch(e){ res(null); }
+    };
+    img.onerror = ()=>res(null);
+    img.src = src;
+  });
+  
+  // Sequentially load images (gentle on browser)
+  const dataUrls = [];
+  for(let i=0; i<items.length; i++){
+    dataUrls.push(await loadImg(items[i].image));
+  }
+  
+  for(let i=0; i<items.length; i++){
+    const it = items[i];
+    const onPage = i % perPage;
+    if(onPage===0 && i>0) doc.addPage();
+    const col = onPage % cols;
+    const row = Math.floor(onPage / cols);
+    const x = MARGIN + col*(cardW+12);
+    const y = MARGIN + row*(cardH+12);
+    
+    // Card border
+    doc.setDrawColor(220); doc.setLineWidth(0.5);
+    doc.roundedRect(x, y, cardW, cardH, 6, 6, 'S');
+    
+    // Image area
+    const imgH = cardW;
+    if(dataUrls[i]){
+      try{
+        doc.addImage(dataUrls[i], 'JPEG', x+6, y+6, cardW-12, imgH-12);
+      } catch(e){
+        doc.setFillColor(245); doc.rect(x+6, y+6, cardW-12, imgH-12, 'F');
+        doc.setTextColor(180); doc.setFontSize(28);
+        doc.text('📦', x+cardW/2, y+imgH/2, {align:'center'});
+      }
+    } else {
+      doc.setFillColor(245); doc.rect(x+6, y+6, cardW-12, imgH-12, 'F');
+      doc.setTextColor(180); doc.setFontSize(28);
+      doc.text('No image', x+cardW/2, y+imgH/2, {align:'center'});
+    }
+    
+    // Name
+    doc.setTextColor(20); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    const nameY = y + imgH + 18;
+    doc.text(it.name, x+cardW/2, nameY, {align:'center', maxWidth: cardW-12});
+    
+    // Price
+    const retail = pcRetailFor(it.cost);
+    doc.setTextColor(20,150,80); doc.setFontSize(18);
+    doc.text(`$${retail.toFixed(2)}`, x+cardW/2, nameY+22, {align:'center'});
+    
+    // Unit
+    const unitLbl = {lb:'per lb',bunch:'per bunch',each:'each'}[it.unit] || '';
+    doc.setTextColor(120); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text(unitLbl, x+cardW/2, nameY+36, {align:'center'});
+  }
+  
+  const filename = `produce-catalog-${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(filename);
+  showToast('success', `✅ Saved ${filename}`);
+}
+
+
+
 // ═══════════ INIT ═══════════
 migrateDB();
 checkApiOnLoad();
@@ -3572,12 +4658,12 @@ updateDbStatus();
 if(getDbConn()&&!loadHist().length){
   loadFromDb().catch(e=>console.warn('Auto-load failed:',e));
 }
-renderTargets();
-renderHistory();
-renderTracker('all');
-renderVendors();
+// Hidden pages render on first navigation via goTo() — skip the upfront work.
+// Only nav badges need to be accurate from the start.
 updateNavCounts();
 updateExportSummary();
+pcSeed();
+pcUpdateNavCount();
 </script>
 </body>
 </html>
