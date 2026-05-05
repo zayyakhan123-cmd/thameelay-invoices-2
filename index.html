@@ -4338,12 +4338,21 @@ function pcSaveLast(){
 }
 
 async function pcExtractProduceLines(inv){
-  const items = (inv.items||[]).filter(it => it._rt===RT.PURCHASED && it.qty>0);
+  // Make sure items are classified (sets _rt). Dashboard's loadInvoice does this,
+  // but the produce matcher uploads bypass that path.
+  if(inv.items && inv.items.some(i=>i._rt===undefined)){
+    try { classifyInvoice(inv); } catch(e){ console.warn('classify failed:', e); }
+  }
+  // Primary filter: classifier-marked PURCHASED items.
+  let items = (inv.items||[]).filter(it => it._rt===RT.PURCHASED && it.qty>0);
+  // Fallback: if nothing matched (produce invoices often skip the classifier's
+  // grocery patterns), accept any line that looks like a real product line.
+  if(!items.length){
+    items = (inv.items||[]).filter(it => it.desc && it.qty>0 && (it.unitCost>0 || it.caseCost>0));
+  }
   if(!items.length) return [];
   const cat = pcLoadCatalog();
-  // Build text for each item
   const texts = items.map(it => it.desc + (it.size?' '+it.size:''));
-  // Batch match all at once
   const matches = await pcAiMatch(texts);
   
   const lines = [];
@@ -4351,7 +4360,7 @@ async function pcExtractProduceLines(inv){
     const text = texts[idx];
     const m = matches[text] || {catalogId:null, score:0, confidence:'none'};
     const catItem = m.catalogId ? cat.find(x=>x.id===m.catalogId) : null;
-    const cost = unitCost(it) || it.unitCost || 0;
+    const cost = (typeof unitCost==='function' ? unitCost(it) : 0) || it.unitCost || 0;
     const conf = m.confidence || pcConfBucket(m.score);
     lines.push({
       invoiceText: it.desc,
@@ -4375,7 +4384,14 @@ function pcRenderResults(){
   const list = document.getElementById('pc-results-list');
   if(!card || !list) return;
   if(!PC_LAST_MATCHED || !PC_LAST_MATCHED.lines.length){
-    card.style.display='none';
+    card.style.display='block';
+    const summary = document.getElementById('pc-results-summary');
+    if(summary) summary.textContent = '0 items';
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3)">
+      <div style="font-size:32px;opacity:.5;margin-bottom:8px">🔍</div>
+      <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No produce items found in this invoice</div>
+      <div style="font-size:11px">Either the invoice didn't contain recognizable produce lines, or extraction failed. Try the demo invoice button to verify the matcher is working.</div>
+    </div>`;
     return;
   }
   card.style.display='block';
