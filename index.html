@@ -4431,8 +4431,19 @@ async function pcProcessFiles(files){
       const ext = (file.name.split('.').pop()||'').toLowerCase();
       const isSheet = ['xlsx','xls','csv'].includes(ext);
       const inv = isSheet ? await pcExtractFromSheet(file) : await extractInvoice(file);
+      
+      // Debug: how many items did extraction find?
+      const extractedCount = (inv.items||[]).length;
+      console.log(`[ProduceMatcher] ${file.name}: extraction found ${extractedCount} items`);
+      
       pcSetStep('matching');
       const newLines = await pcExtractProduceLines(inv);
+      console.log(`[ProduceMatcher] ${file.name}: matcher kept ${newLines.length} lines (extracted ${extractedCount})`);
+      
+      // If we extracted way more than we kept, surface the gap
+      if(extractedCount > newLines.length + 2){
+        showToast('warn', `⚠ Extracted ${extractedCount} items but only ${newLines.length} matched. Check console for details.`, 8000);
+      }
       // Tag each line with the vendor + invoice it came from
       const vendor = (inv.vendor||'Unknown').trim();
       newLines.forEach(l=>{
