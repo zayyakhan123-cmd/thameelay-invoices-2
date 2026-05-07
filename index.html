@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <style>
 /* ─────────────────────────────────────────────
    THAMEELAY · Enterprise grocery pricing assistant
@@ -1416,8 +1417,8 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
       <div class="dz-mini" id="pc-dropzone" style="margin-bottom:10px">
         <div class="dz-mini-icon">🥕</div>
         <div class="dz-mini-title">Drag &amp; drop one or more produce invoices</div>
-        <div class="dz-mini-sub">PDF or image · multiple vendors OK · all results accumulate below</div>
-        <input type="file" id="pc-file-in" accept=".pdf,image/*" multiple style="display:none" onchange="pcHandleFile(event)">
+        <div class="dz-mini-sub">PDF, image, .xlsx or .csv · multiple vendors OK · all results accumulate below</div>
+        <input type="file" id="pc-file-in" accept=".pdf,image/*,.xlsx,.xls,.csv" multiple style="display:none" onchange="pcHandleFile(event)">
       </div>
       <div class="brow" style="gap:8px;flex-wrap:wrap">
         <button class="bp" onclick="document.getElementById('pc-file-in').click()">📁 Choose File(s)</button>
@@ -4427,7 +4428,9 @@ async function pcProcessFiles(files){
     pcSetStep('reading');
     try{
       pcSetStep('extracting');
-      const inv = await extractInvoice(file);
+      const ext = (file.name.split('.').pop()||'').toLowerCase();
+      const isSheet = ['xlsx','xls','csv'].includes(ext);
+      const inv = isSheet ? await pcExtractFromSheet(file) : await extractInvoice(file);
       pcSetStep('matching');
       const newLines = await pcExtractProduceLines(inv);
       // Tag each line with the vendor + invoice it came from
@@ -4648,6 +4651,115 @@ function pcDeleteHist(i){
   pcSaveHist(hist);
   pcRenderHistory();
   pcUpdateNavCount();
+}
+
+// ── Spreadsheet (xlsx/csv) extractor for produce invoices ──
+// Vendor sends a spreadsheet with item/size/qty/cost columns — parse directly, no AI needed.
+async function pcExtractFromSheet(file){
+  const ext = (file.name.split('.').pop()||'').toLowerCase();
+  let rows;
+  if(ext === 'csv'){
+    const text = await file.text();
+    rows = pcParseCSV(text);
+  } else {
+    if(typeof XLSX === 'undefined') throw new Error('Excel library not loaded yet — refresh and try again');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  }
+  if(!rows || rows.length < 2) throw new Error('Spreadsheet has no data rows');
+  
+  // Find header row — first row containing description-like and qty-like columns
+  let headerIdx = 0;
+  for(let i=0; i<Math.min(rows.length, 10); i++){
+    const cells = rows[i].map(c=>String(c||'').toLowerCase());
+    if(cells.some(c=>/item|desc|product/i.test(c)) && cells.some(c=>/qty|quantity|cases?\b|cost|price/i.test(c))){
+      headerIdx = i; break;
+    }
+  }
+  const headers = rows[headerIdx].map(c=>String(c||'').toLowerCase().trim());
+  
+  // Fuzzy column resolver — first match wins, more specific patterns listed first
+  const findCol = (...patterns) => {
+    for(const pat of patterns){
+      const idx = headers.findIndex(h => h.includes(pat));
+      if(idx >= 0) return idx;
+    }
+    return -1;
+  };
+  const cItem = findCol('item #','item#','item no','sku','code');
+  const cDesc = findCol('description','product name','item name','name','product','item');
+  const cSize = findCol('size','pack','unit size','case size','uom','units');
+  const cQty  = findCol('qty','quantity','cases','case count');
+  const cCost = findCol('case cost','case price','total cost','cost','price','unit price');
+  
+  if(cDesc < 0) throw new Error(`Couldn't find description column. Headers seen: ${headers.join(', ')}`);
+  
+  // Try to grab vendor + invoice info from rows above the header
+  let vendor = '', invoiceNo = '', date = new Date().toISOString().split('T')[0];
+  for(let i=0; i<headerIdx; i++){
+    const line = (rows[i]||[]).map(c=>String(c||'')).join(' ');
+    const vM = line.match(/vendor[:\s]+([^\t\n]+?)(?:\s{2,}|$)/i);
+    if(vM && !vendor) vendor = vM[1].trim();
+    const iM = line.match(/invoice[#\s:]+(\S+)/i);
+    if(iM && !invoiceNo) invoiceNo = iM[1].trim();
+    const dM = line.match(/(\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2})/);
+    if(dM) date = dM[1];
+  }
+  if(!vendor) vendor = file.name.replace(/\.[^.]+$/,'').replace(/[_-]/g,' ');
+  if(!invoiceNo) invoiceNo = 'SHEET-' + Date.now().toString().slice(-6);
+  
+  const items = [];
+  for(let i = headerIdx+1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || !row.length) continue;
+    const desc = String(row[cDesc]||'').trim();
+    if(!desc) continue;
+    // Skip total/subtotal/footer rows
+    if(/^(total|subtotal|grand total|tax|shipping|sum)/i.test(desc)) continue;
+    const qty = parseFloat(String(row[cQty]||'').replace(/[^\d.-]/g,'')) || 1;
+    const cost = parseFloat(String(row[cCost]||'').replace(/[^\d.-]/g,'')) || 0;
+    if(cost <= 0) continue;
+    items.push({
+      item: cItem>=0 ? String(row[cItem]||'').trim() || `S${i}` : `S${i}`,
+      desc: desc,
+      size: cSize>=0 ? String(row[cSize]||'').trim() : '',
+      qty: qty,
+      caseCost: cost,
+      unitCost: cost,
+      _u: 1,
+      _rt: 0    // PURCHASED — bypasses classifier
+    });
+  }
+  if(!items.length) throw new Error('No usable rows found in spreadsheet (need at least one row with description and cost > 0)');
+  return { vendor, invoiceNo, date, items };
+}
+
+// Tiny CSV parser — handles quoted fields with commas
+function pcParseCSV(text){
+  const rows = [];
+  const lines = text.split(/\r?\n/);
+  for(const line of lines){
+    if(!line.trim()) continue;
+    const row = [];
+    let cur = '', inQuotes = false;
+    for(let i=0; i<line.length; i++){
+      const c = line[i];
+      if(inQuotes){
+        if(c === '"' && line[i+1] === '"'){ cur += '"'; i++; }
+        else if(c === '"') inQuotes = false;
+        else cur += c;
+      } else {
+        if(c === '"') inQuotes = true;
+        else if(c === ','){ row.push(cur); cur = ''; }
+        else cur += c;
+      }
+    }
+    row.push(cur);
+    rows.push(row);
+  }
+  return rows;
 }
 
 async function pcExtractProduceLines(inv){
