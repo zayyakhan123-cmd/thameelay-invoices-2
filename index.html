@@ -4774,18 +4774,15 @@ function pcParseCSV(text){
 }
 
 async function pcExtractProduceLines(inv){
-  // Make sure items are classified (sets _rt). Dashboard's loadInvoice does this,
-  // but the produce matcher uploads bypass that path.
-  if(inv.items && inv.items.some(i=>i._rt===undefined)){
-    try { classifyInvoice(inv); } catch(e){ console.warn('classify failed:', e); }
-  }
-  // Primary filter: classifier-marked PURCHASED items.
-  let items = (inv.items||[]).filter(it => it._rt===RT.PURCHASED && it.qty>0);
-  // Fallback: if nothing matched (produce invoices often skip the classifier's
-  // grocery patterns), accept any line that looks like a real product line.
-  if(!items.length){
-    items = (inv.items||[]).filter(it => it.desc && it.qty>0 && (it.unitCost>0 || it.caseCost>0));
-  }
+  // Produce invoices don't fit the dried-grocery classifier's "PURCHASED" patterns —
+  // running classifyInvoice() drops most lines. Use a direct filter instead:
+  // any extracted line with description + qty + cost is a candidate.
+  const items = (inv.items||[]).filter(it => 
+    it.desc && 
+    it.qty > 0 && 
+    (it.caseCost > 0 || it.unitCost > 0)
+  );
+  console.log(`[ProduceMatcher] filtered ${items.length} of ${(inv.items||[]).length} extracted items`);
   if(!items.length) return [];
   const cat = pcLoadCatalog();
   const texts = items.map(it => it.desc + (it.size?' '+it.size:''));
