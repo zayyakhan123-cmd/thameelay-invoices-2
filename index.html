@@ -455,6 +455,11 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 .pc-row-l-body{min-width:0;flex:1}
 .pc-row-l-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
 .pc-row-l-cost{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
+.pc-chg{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.02em}
+.pc-chg.up{background:var(--redbg);color:var(--redd)}
+.pc-chg.down{background:var(--greenl);color:var(--greend)}
+.pc-chg.flat{background:var(--bg3);color:var(--text3)}
+.pc-chg.first{background:var(--c1l);color:var(--c1d);font-weight:600}
 .pc-row-arrow{font-size:18px;color:var(--text4);text-align:center}
 .pc-row-r{display:flex;align-items:center;gap:10px;min-width:0}
 .pc-row-r-img{width:54px;height:54px;border-radius:8px;background:var(--bg3);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border)}
@@ -1399,6 +1404,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
     <div class="pc-tab on" data-pct="match" onclick="pcTab('match')">📋 Match Invoice</div>
     <div class="pc-tab" data-pct="catalog" onclick="pcTab('catalog')">🥬 Catalog <span class="scnt" id="pc-cat-cnt">0</span></div>
     <div class="pc-tab" data-pct="export" onclick="pcTab('export')">📄 Export PDF</div>
+    <div class="pc-tab" data-pct="history" onclick="pcTab('history')">📚 History <span class="scnt" id="pc-hist-cnt">0</span></div>
   </div>
 
   <!-- TAB: MATCH INVOICE -->
@@ -1551,6 +1557,16 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
       <div id="pc-pdf-preview" class="pc-pdf-preview" style="margin-top:16px"></div>
     </div>
   </div>
+
+  <!-- HISTORY PANE -->
+  <div class="pc-tab-pane" id="pc-pane-history">
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-t"><div class="ctit">Produce Invoice History</div><span class="act-pill" id="pc-hist-summary">0 invoices</span></div>
+      </div>
+      <div id="pc-hist-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
 </div>
 
 </main>
@@ -1562,7 +1578,7 @@ const TARGETS={snacks:30,candy:40,frozen:35,bev:30,dry:30,sauce:30,other:30};
 const CLABEL={snacks:'Snacks & dry',candy:'Candy/Jelly',frozen:'Frozen',bev:'Beverage',dry:'Rice & noodles',sauce:'Sauces & condiments',other:'Other'};
 const CCLS={snacks:'ta',candy:'tk',frozen:'tb',bev:'tp',dry:'tt',sauce:'tn',other:'tgr'};
 const CAT_COLS={snacks:'#f59e0b',candy:'#ec4899',frozen:'#3b82f6',bev:'#8b5cf6',dry:'#14b8a6',sauce:'#dc2626',other:'#94a3b8'};
-const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last'};
+const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last',PC_HIST:'tm_pc_hist'};
 
 // ═══════════ ROW CLASSIFICATION ENGINE ═══════════
 const RT={PURCHASED:'purchased',OOS:'oos',ZERO_DUP:'zero_dup',CHARGE:'charge',MALFORMED:'malformed'};
@@ -2000,10 +2016,26 @@ async function extractInvoice(file, onStep){
   step('reading');
   const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
   step('extracting');
+  // Build content block based on file type. Anthropic API uses 'image' for png/jpg/gif/webp,
+  // 'document' only for PDFs. Sending an image as a document gives "PDF was not valid" error.
+  const fileType = (file.type||'').toLowerCase();
+  let contentBlock;
+  if(fileType === 'application/pdf'){
+    contentBlock = {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}};
+  } else if(fileType.startsWith('image/')){
+    // Normalize media_type — some browsers report 'image/jpg' instead of 'image/jpeg'
+    let media = fileType === 'image/jpg' ? 'image/jpeg' : fileType;
+    if(!['image/jpeg','image/png','image/gif','image/webp'].includes(media)){
+      throw new Error('Unsupported image type: '+fileType+'. Use JPG, PNG, GIF, or WebP.');
+    }
+    contentBlock = {type:'image',source:{type:'base64',media_type:media,data:b64}};
+  } else {
+    throw new Error('Unsupported file type: '+(fileType||'unknown')+'. Use PDF or an image (JPG/PNG).');
+  }
   const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:16000,messages:[{role:'user',content:[
-      {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
+      contentBlock,
       {type:'text',text:AI_PROMPT}
     ]}]})
   });
@@ -3981,6 +4013,7 @@ function pcTab(t){
   const pane=document.getElementById('pc-pane-'+t); if(pane) pane.classList.add('on');
   if(t==='catalog') pcRenderCatalog();
   if(t==='export') pcPdfPreview();
+  if(t==='history') pcRenderHistory();
 }
 
 function pcOpenPage(){
@@ -3998,6 +4031,8 @@ function pcUpdateNavCount(){
   const a = document.getElementById('pc-cnt'); if(a) a.textContent = n;
   const b = document.getElementById('pc-cat-cnt'); if(b) b.textContent = n;
   const c = document.getElementById('pc-cat-summary'); if(c) c.textContent = `${n} item${n!==1?'s':''}`;
+  const hCnt = pcLoadHist().length;
+  const hb = document.getElementById('pc-hist-cnt'); if(hb) hb.textContent = hCnt;
 }
 
 // Host configuration
@@ -4344,6 +4379,7 @@ async function pcProcessFile(file){
     const lines = await pcExtractProduceLines(inv);
     PC_LAST_MATCHED = { lines, when: new Date().toISOString(), invoice: inv };
     pcSaveLast();
+    pcSaveToHist(inv, lines);
     setTimeout(()=>{
       box.querySelectorAll('.up-step').forEach(s=>{s.classList.remove('active');s.classList.add('done');});
       setTimeout(()=>{ box.style.display='none'; }, 600);
@@ -4370,6 +4406,104 @@ function pcSaveLast(){
   if(PC_LAST_MATCHED){
     try{ lsSet(SK.PC_LAST, {lines: PC_LAST_MATCHED.lines, when: PC_LAST_MATCHED.when}); }catch(e){}
   }
+}
+
+// ── PRODUCE HISTORY (#5) + PRICE CHANGE DETECTION (#1) ──
+function pcLoadHist(){ return lsGet(SK.PC_HIST) || []; }
+function pcSaveHist(arr){ lsSet(SK.PC_HIST, arr); }
+// Save a matched-and-extracted invoice into produce history.
+function pcSaveToHist(inv, lines){
+  if(!inv) return;
+  const hist = pcLoadHist();
+  const key = (inv.vendor||'').trim()+'|'+(inv.invoiceNo||'').trim();
+  const existingIdx = hist.findIndex(h=>h._key===key);
+  const entry = {
+    _key: key,
+    vendor: inv.vendor||'Unknown',
+    invoiceNo: inv.invoiceNo||'',
+    date: inv.date || new Date().toISOString().split('T')[0],
+    when: new Date().toISOString(),
+    lineCount: lines.length,
+    lines: lines.map(l=>({   // store lean version
+      invoiceText: l.invoiceText, invoiceSize: l.invoiceSize,
+      caseCost: l.caseCost, unitsPerCase: l.unitsPerCase,
+      cost: l.cost, unitType: l.unitType,
+      catalogId: l.catalogId, catalogName: l.catalogName,
+      retailOverride: l.retailOverride
+    }))
+  };
+  if(existingIdx>=0) hist[existingIdx] = entry; else hist.unshift(entry);
+  // Keep last 50 invoices
+  if(hist.length > 50) hist.length = 50;
+  pcSaveHist(hist);
+  pcUpdateNavCount();
+}
+
+// For a given catalog item id + vendor, find the most recent prior cost from history.
+// Returns {cost, date, vendor, invoiceNo} or null if no match.
+function pcFindPriorCost(catalogId, vendor, currentInvNo){
+  if(!catalogId) return null;
+  const hist = pcLoadHist();
+  const v = (vendor||'').toLowerCase().trim();
+  // 1. Same vendor, same item — prefer most recent that ISN'T the current invoice
+  const sameVendor = hist
+    .filter(h => (h.vendor||'').toLowerCase().trim() === v && h.invoiceNo !== currentInvNo)
+    .map(h => ({h, line: h.lines.find(l=>l.catalogId===catalogId)}))
+    .filter(x => x.line && x.line.cost > 0)
+    .sort((a,b)=> new Date(b.h.date) - new Date(a.h.date));
+  if(sameVendor.length) return {cost:sameVendor[0].line.cost, date:sameVendor[0].h.date, vendor:sameVendor[0].h.vendor, invoiceNo:sameVendor[0].h.invoiceNo, sameVendor:true};
+  // 2. Any vendor — fallback (cross-vendor signal)
+  const any = hist
+    .filter(h => h.invoiceNo !== currentInvNo)
+    .map(h => ({h, line: h.lines.find(l=>l.catalogId===catalogId)}))
+    .filter(x => x.line && x.line.cost > 0)
+    .sort((a,b)=> new Date(b.h.date) - new Date(a.h.date));
+  if(any.length) return {cost:any[0].line.cost, date:any[0].h.date, vendor:any[0].h.vendor, invoiceNo:any[0].h.invoiceNo, sameVendor:false};
+  return null;
+}
+
+function pcRenderHistory(){
+  const wrap = document.getElementById('pc-hist-list');
+  const summary = document.getElementById('pc-hist-summary');
+  if(!wrap) return;
+  const hist = pcLoadHist();
+  if(summary) summary.textContent = `${hist.length} invoice${hist.length!==1?'s':''}`;
+  if(!hist.length){
+    wrap.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3)">
+      <div style="font-size:32px;opacity:.5;margin-bottom:8px">📚</div>
+      <div style="font-weight:600;color:var(--text2)">No invoice history yet</div>
+      <div style="font-size:11px;margin-top:4px">Upload a produce invoice on the Match tab and it'll appear here</div>
+    </div>`;
+    return;
+  }
+  wrap.innerHTML = hist.map((h,i)=>`
+    <div style="border:1px solid var(--border);border-radius:var(--rl);padding:12px 14px;display:flex;align-items:center;gap:12px;background:#fff">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;color:var(--text);font-size:13px">${h.vendor} · #${h.invoiceNo}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${h.date} · ${h.lineCount} item${h.lineCount!==1?'s':''} · saved ${new Date(h.when).toLocaleDateString()}</div>
+      </div>
+      <button class="db-bulk-btn" onclick="pcReloadHist(${i})">↻ Reload</button>
+      <button class="db-bulk-btn warn" onclick="pcDeleteHist(${i})">🗑 Delete</button>
+    </div>
+  `).join('');
+}
+function pcReloadHist(i){
+  const hist = pcLoadHist();
+  const h = hist[i]; if(!h) return;
+  PC_LAST_MATCHED = { lines: h.lines.map(l=>({...l, score:1, confidence:'high', remember:false})), when: h.when, invoice:{vendor:h.vendor, invoiceNo:h.invoiceNo, date:h.date} };
+  pcSaveLast();
+  pcTab('match');
+  pcRenderResults();
+  showToast('success', `Reloaded ${h.vendor} #${h.invoiceNo}`);
+}
+function pcDeleteHist(i){
+  const hist = pcLoadHist();
+  const h = hist[i]; if(!h) return;
+  if(!confirm(`Delete ${h.vendor} #${h.invoiceNo} from history?`)) return;
+  hist.splice(i,1);
+  pcSaveHist(hist);
+  pcRenderHistory();
+  pcUpdateNavCount();
 }
 
 async function pcExtractProduceLines(inv){
@@ -4477,11 +4611,33 @@ function pcRenderResults(){
     const confScore = line.score>0 ? `${(line.score*100).toFixed(0)}%` : '';
     const costPerUnit = `$${line.cost.toFixed(2)}/${line.unitType||'lb'}`;
     const caseInfo = `Case ${line.invoiceSize||''} @ $${(line.caseCost||0).toFixed(2)}`;
+    
+    // Price change vs prior history (#1)
+    const curVendor = (PC_LAST_MATCHED && PC_LAST_MATCHED.invoice && PC_LAST_MATCHED.invoice.vendor) || '';
+    const curInvNo = (PC_LAST_MATCHED && PC_LAST_MATCHED.invoice && PC_LAST_MATCHED.invoice.invoiceNo) || '';
+    const prior = line.catalogId ? pcFindPriorCost(line.catalogId, curVendor, curInvNo) : null;
+    let changeBadge = '';
+    if(prior){
+      const diff = line.cost - prior.cost;
+      const pct = prior.cost>0 ? (diff/prior.cost*100) : 0;
+      const xVendorTag = prior.sameVendor ? '' : ` (${prior.vendor})`;
+      if(Math.abs(pct) < 0.5){
+        changeBadge = `<span class="pc-chg flat" title="No change vs ${prior.date}${xVendorTag}">• same as last</span>`;
+      } else if(diff > 0){
+        changeBadge = `<span class="pc-chg up" title="Was $${prior.cost.toFixed(2)} on ${prior.date}${xVendorTag}">▲ +${pct.toFixed(0)}% (was $${prior.cost.toFixed(2)})</span>`;
+      } else {
+        changeBadge = `<span class="pc-chg down" title="Was $${prior.cost.toFixed(2)} on ${prior.date}${xVendorTag}">▼ ${pct.toFixed(0)}% (was $${prior.cost.toFixed(2)})</span>`;
+      }
+    } else if(line.catalogId){
+      changeBadge = `<span class="pc-chg first" title="No prior purchase of this item">first time</span>`;
+    }
+    
     return `<div class="pc-row ${conf}">
       <div class="pc-row-l">
         <div class="pc-row-l-body">
           <div class="pc-row-l-name">${line.invoiceText}</div>
           <div class="pc-row-l-cost">${caseInfo} → cost <b>${costPerUnit}</b></div>
+          ${changeBadge ? `<div style="margin-top:4px">${changeBadge}</div>` : ''}
         </div>
       </div>
       <div class="pc-row-arrow">→</div>
