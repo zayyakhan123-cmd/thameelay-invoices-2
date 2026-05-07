@@ -617,7 +617,6 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
     <a data-pg="dashboard" class="on"><span class="sico">📊</span>Dashboard</a>
     <a data-pg="upload"><span class="sico">📤</span>Upload Invoices</a>
     <a data-pg="approve"><span class="sico">✅</span>Price Approvals <span class="scnt scnt-red" id="ap-cnt">0</span></a>
-    <a data-pg="verify"><span class="sico">🔍</span>Verify Lines</a>
     <a data-pg="export"><span class="sico">📤</span>Export to POS</a>
   </div>
   <div class="sg"><div class="slabel">Intelligence</div>
@@ -705,7 +704,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
         <button class="bp" style="width:100%;justify-content:center" onclick="document.getElementById('file-in').click()">📁 Choose Files</button>
         <div class="btn-grid-3" style="width:100%;margin-top:0">
           <button onclick="processQueue()" style="justify-content:center">▶ Process</button>
-          <button onclick="loadDemo()" style="justify-content:center">▶ Demo</button>
+          <button onclick="loadDemo()" style="justify-content:center;display:none" data-demo-btn>▶ Demo</button>
           <button onclick="clearQueue()" style="justify-content:center;color:var(--red)">🗑 Clear</button>
         </div>
       </div>
@@ -756,6 +755,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
         <button class="db-bulk-btn primary" onclick="dbApproveSafe()" title="Approve all items where Recommended Action is Do Nothing">✓ Safe</button>
         <button class="db-bulk-btn primary" onclick="dbApproveAll()" title="Approve every item">✓✓ All</button>
         <button class="db-bulk-btn warn" onclick="dbRejectAll()">✕ Reject All</button>
+        <button class="db-bulk-btn" onclick="dbLoadLastInvoice()" title="Re-load the most recently uploaded invoice">📄 Last Invoice</button>
         <button class="db-bulk-btn" onclick="goTo('approve')" title="Open detailed approvals page">→ Details</button>
       </div>
       <div class="tw">
@@ -969,38 +969,6 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 </div>
 
 <!-- VERIFY -->
-<div class="pg" id="pg-verify">
-  <div class="pgh"><div class="pgt">Verify Line Items</div><div class="pgs" id="verify-sub">Review classified rows before pricing</div></div>
-  <div class="steps"><div class="step done">1 · Upload ✓</div><div class="step active">2 · Verify</div><div class="step">3 · Approve</div><div class="step">4 · Export</div></div>
-  <div id="v-alerts"></div>
-  <div class="legend">
-    <div class="legi"><div class="legd" style="background:var(--green)"></div>Purchased (enters price history)</div>
-    <div class="legi"><div class="legd" style="background:var(--amber)"></div>Zero-duplicate (excluded)</div>
-    <div class="legi"><div class="legd" style="background:var(--purple)"></div>Charge/fee (excluded)</div>
-    <div class="legi"><div class="legd" style="background:var(--red)"></div>Malformed (flagged)</div>
-    <div class="legi"><div class="legd" style="background:var(--text3)"></div>OOS (not received)</div>
-  </div>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-      <div><div class="ctit">All extracted lines</div><div class="csub" style="margin-bottom:0">Only <b style="color:var(--green)">purchased</b> rows write to price history. Edit category inline.</div></div>
-      <button class="bp" onclick="runPricing()">Run pricing engine →</button>
-    </div>
-    <div class="pills" id="vf-pills">
-      <div class="pill on" data-vf="all">All rows</div>
-      <div class="pill" data-vf="purchased">Purchased</div>
-      <div class="pill" data-vf="oos">OOS</div>
-      <div class="pill" data-vf="issues">Issues</div>
-    </div>
-    <div class="tw"><table id="v-tbl">
-      <thead><tr>
-        <th>Item#</th><th>Description</th><th>Category</th><th>Size / Units</th>
-        <th>Cases</th><th>Cost/Box</th><th>Cost/Unit</th>
-        <th>Type</th><th>Conf.</th><th>Price change</th>
-      </tr></thead>
-      <tbody id="v-body"></tbody>
-    </table></div>
-  </div>
-</div>
 
 <!-- APPROVE -->
 <div class="pg" id="pg-approve">
@@ -1064,7 +1032,6 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
       <div class="ig"><label>POS format</label>
         <select id="pos-fmt">
           <option value="generic">Generic CSV (Item#, Description, Price)</option>
-          <option value="detailed">Detailed (all fields)</option>
           <option value="square">Square POS</option>
           <option value="clover">Clover POS</option>
         </select>
@@ -1073,7 +1040,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
         <select id="exp-scope"><option value="approved">Approved only</option><option value="all">All shipped</option><option value="changed">Changed prices only</option></select>
       </div>
       <div class="ig"><label>Price rounding</label>
-        <select id="exp-round"><option value="none" selected>Exact markup (no rounding)</option><option value="charm4">Charm: .29 / .49 / .79 / .99 (up)</option><option value="charm2">Charm: .49 / .99 (up)</option><option value="98">Round to .98</option><option value="99">Round to .99</option><option value="25">Round up to nearest $0.25</option></select>
+        <select id="exp-round"><option value="charm4" selected>Charm: .29 / .49 / .79 / .99 (up)</option><option value="charm2">Charm: .49 / .99 (up)</option><option value="none">Exact markup (no rounding)</option></select>
       </div>
       <div class="brow">
         <button class="bp" onclick="downloadCSV()">⬇ Download CSV</button>
@@ -1158,17 +1125,34 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
         </div>
       </div>
     </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+      <div class="tbl-search-input" style="flex:1;min-width:240px;max-width:360px">
+        <input type="text" placeholder="Search items, vendors, notes..." id="tr-search" oninput="trSearchDebounced()">
+      </div>
+      <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="tr-show-disc" onchange="renderTracker(_lastTrFilter||'all')"> Show discontinued
+      </label>
+      <span style="font-size:11px;color:var(--text3)" id="tr-result-count"></span>
+    </div>
     <div class="pills" id="tr-pills">
       <div class="pill on" data-tf="all">All</div><div class="pill" data-tf="up">Up ▲</div><div class="pill" data-tf="dn">Down ▼</div><div class="pill" data-tf="same">Same</div>
+      <div class="pill" data-tf="produce">🥬 Produce</div>
       <div class="pill" data-tf="snacks">Snacks</div><div class="pill" data-tf="candy">Candy/Jelly</div><div class="pill" data-tf="frozen">Frozen</div>
       <div class="pill" data-tf="bev">Beverages</div><div class="pill" data-tf="dry">Rice/Noodles</div><div class="pill" data-tf="other">Other</div>
     </div>
-    <div class="card" style="padding:0">
+    <div class="card" style="padding:0;overflow-x:auto">
       <table><thead><tr>
-        <th style="padding:10px 14px">Item#</th><th>Description</th><th>Category</th>
-        <th>First $/unit</th><th>Latest $/unit</th><th>Δ $</th><th>Δ %</th>
-        <th>Retail/unit</th><th>Retail/box</th><th>Profit/unit</th>
-        <th>Orders</th><th>Status</th>
+        <th style="padding:10px 14px">Description</th>
+        <th>Category</th>
+        <th>Last Vendor</th>
+        <th>Prev $/u</th>
+        <th>Latest $/u</th>
+        <th>Δ %</th>
+        <th>Retail/u</th>
+        <th>Last Seen</th>
+        <th>Orders</th>
+        <th>Notes</th>
+        <th style="text-align:center">Status</th>
       </tr></thead>
       <tbody id="tr-body"></tbody></table>
     </div>
@@ -1323,6 +1307,15 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
       </div>
     </div>
   </div>
+
+  <!-- DEMO TOGGLE -->
+  <div class="card" style="margin-top:14px">
+    <div class="ctit">Developer options</div>
+    <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer;margin-top:6px">
+      <input type="checkbox" id="show-demo-toggle" onchange="toggleDemoButtons(this.checked)">
+      Show "Demo Invoice" buttons (for testing without a real invoice)
+    </label>
+  </div>
 </div>
 
 <!-- DATABASE SETTINGS -->
@@ -1422,7 +1415,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
       </div>
       <div class="brow" style="gap:8px;flex-wrap:wrap">
         <button class="bp" onclick="document.getElementById('pc-file-in').click()">📁 Choose File(s)</button>
-        <button onclick="pcLoadDemo()">▶ Demo Invoice</button>
+        <button onclick="pcLoadDemo()" style="display:none" data-demo-btn>▶ Demo Invoice</button>
         <button onclick="pcClearAllMatches()" style="color:var(--red);margin-left:auto" id="pc-clear-btn">🗑 Clear All Matches</button>
       </div>
       <div id="pc-extracting" class="up-prog" style="display:none">
@@ -1596,7 +1589,7 @@ const TARGETS={snacks:30,candy:40,frozen:35,bev:30,dry:30,sauce:30,other:30};
 const CLABEL={snacks:'Snacks & dry',candy:'Candy/Jelly',frozen:'Frozen',bev:'Beverage',dry:'Rice & noodles',sauce:'Sauces & condiments',other:'Other'};
 const CCLS={snacks:'ta',candy:'tk',frozen:'tb',bev:'tp',dry:'tt',sauce:'tn',other:'tgr'};
 const CAT_COLS={snacks:'#f59e0b',candy:'#ec4899',frozen:'#3b82f6',bev:'#8b5cf6',dry:'#14b8a6',sauce:'#dc2626',other:'#94a3b8'};
-const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last',PC_HIST:'tm_pc_hist',PC_RULES:'tm_pc_rules'};
+const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last',PC_HIST:'tm_pc_hist',PC_RULES:'tm_pc_rules',PROD_META:'tm_prod_meta'};
 
 // ═══════════ ROW CLASSIFICATION ENGINE ═══════════
 const RT={PURCHASED:'purchased',OOS:'oos',ZERO_DUP:'zero_dup',CHARGE:'charge',MALFORMED:'malformed'};
@@ -2081,7 +2074,7 @@ function loadInvoice(inv){
     APPROVALS[i.item]={status:'pending',retailPrice:charmRoundUp(retailUnit(i),[0.29,0.49,0.79,0.99]),change:ch,
       desc:i.desc,cat:i.cat,size:i.size,qty:i.qty,caseCost:i.caseCost};
   });
-  renderVerify('all');renderApprovals('all');
+  renderApprovals("all");
   updateApprovalCounts();buildAlerts();updateNavCounts();
   renderDashboard();
   goTo('dashboard');
@@ -2093,79 +2086,11 @@ function reloadInv(vendor,invoiceNo){
 }
 
 // ═══════════ VERIFY PAGE ═══════════
-function renderVerify(filter){
-  if(!INV)return;
-  const vk=normV(INV.vendor);
-  const purchased=INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0);
-  const oos=INV.items.filter(i=>i._rt===RT.OOS);
-  const zeros=INV.items.filter(i=>i._rt===RT.ZERO_DUP);
-  const charges=INV.items.filter(i=>i._rt===RT.CHARGE);
-  const malformed=INV.items.filter(i=>i._rt===RT.MALFORMED);
-  const newItems=INV.items.filter(i=>i._isNew&&i._rt===RT.PURCHASED);
-  const increases=purchased.filter(i=>detectChange(i,vk,INV.invoiceNo,INV.date).status==='increase');
+// Verify Lines page was removed; this is a no-op stub kept for any lingering callers.
+function renderVerify(){}
 
-  document.getElementById('verify-sub').textContent=`${INV.vendor} · ${INV.docType==='sales_order'?'⚠ Sales Order':'Invoice'} #${INV.invoiceNo} · ${INV.date} · ${INV.items.length} total lines`;
-
-  let al='';
-  if(INV.docType==='sales_order')al+=`<div style="background:var(--amberl);border:1px solid var(--amberd);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--amberd)">⚠ <b>Sales Order</b> — prices may differ from final invoice. Saved and flagged accordingly.</div>`;
-  if(increases.length)al+=`<div style="background:var(--redl);border:1px solid var(--redd);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--redd)">▲ <b>${increases.length} price increase${increases.length!==1?'s':''}</b> detected vs previous invoice from this vendor.</div>`;
-  if(newItems.length)al+=`<div style="background:var(--bluel);border:1px solid var(--blued);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--blued)">🆕 <b>${newItems.length} new product${newItems.length!==1?'s':''}</b> — not seen before. Set retail prices.</div>`;
-  if(malformed.length)al+=`<div style="background:var(--redl);border:1px solid var(--redd);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--redd)">⚠ <b>${malformed.length} malformed row${malformed.length!==1?'s':''}</b> flagged for review — excluded from price history.</div>`;
-  al+=`<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text2)">✅ <b>${purchased.length}</b> purchased · <b>${oos.length}</b> OOS · <b>${zeros.length}</b> zero-duplicates excluded · <b>${charges.length}</b> charge rows excluded</div>`;
-  document.getElementById('v-alerts').innerHTML=al;
-
-  const rowCls={[RT.PURCHASED]:'rp',[RT.OOS]:'ro',[RT.ZERO_DUP]:'rz',[RT.CHARGE]:'rc',[RT.MALFORMED]:'rm'};
-  const tagHtml={
-    [RT.PURCHASED]:'<span class="tag tg">Purchased</span>',
-    [RT.OOS]:'<span class="tag tgr">OOS</span>',
-    [RT.ZERO_DUP]:'<span class="tag ta">Zero dup</span>',
-    [RT.CHARGE]:'<span class="tag tp">Charge</span>',
-    [RT.MALFORMED]:'<span class="tag tr">⚠ Malformed</span>',
-  };
-
-  let data=INV.items;
-  if(filter==='purchased')data=INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0);
-  else if(filter==='oos')data=INV.items.filter(i=>i._rt===RT.OOS);
-  else if(filter==='issues')data=INV.items.filter(i=>i._rt===RT.MALFORMED||i._rt===RT.ZERO_DUP);
-
-  document.getElementById('v-body').innerHTML=data.map(i=>{
-    const cu=i.caseCost>0?(i.caseCost/(i._u||1)):0;
-    const isPurch=i._rt===RT.PURCHASED&&i.qty>0;
-    const ch=isPurch?detectChange(i,vk,INV.invoiceNo,INV.date):null;
-    let chCell='<span style="color:var(--text3);font-size:11px">—</span>';
-    if(ch){
-      const matchBadge=ch.matchType==='cross_vendor'?'<span class="tag tp" style="font-size:9px">cross-vendor</span>':ch.matchType==='fuzzy'?`<span class="tag ta" style="font-size:9px">${Math.round((ch.matchConf||0)*100)}% match</span>`:'';
-      const cvBadge=ch.crossVendor&&ch.crossVendor.cheaperCount>0?`<span class="tag tg" style="font-size:9px">cheaper vendor exists</span>`:'';
-      if(ch.status==='increase')chCell=`<div><span class="au"></span><span class="up">${f2(ch.prev)}→${f2(ch.curr)} +${ch.pct.toFixed(1)}%</span> ${matchBadge}</div>${cvBadge}`;
-      else if(ch.status==='decrease')chCell=`<div><span class="ad"></span><span class="dn">${f2(ch.prev)}→${f2(ch.curr)} ${ch.pct.toFixed(1)}%</span> ${matchBadge}</div>`;
-      else if(ch.status==='no_change')chCell=`<span class="aeq"></span><span style="color:var(--text3)">unchanged</span> ${matchBadge}`;
-      else if(ch.status==='no_history')chCell=`<span class="tag tb">No history</span>`;
-    }
-    const cc=i._conf>=0.9?'var(--green)':i._conf>=0.65?'var(--amber)':'var(--red)';
-    return `<tr class="${rowCls[i._rt]||''}">
-      <td class="mn" style="font-size:11px;color:var(--text3)">${i.item}</td>
-      <td class="wd">
-        <input class="tinput" style="width:100%;max-width:200px;font-size:11px" value="${(i.desc||'').replace(/"/g,'&quot;')}" onchange="editDesc('${i.item}',this.value)">
-        ${i._isNew?'<span class="tag tb" style="margin-left:4px;font-size:9px">NEW</span>':''}
-        ${i._notes.length?`<div style="font-size:9px;color:var(--text3);margin-top:1px">${i._notes.join(' · ')}</div>`:''}
-      </td>
-      <td>
-        <select class="tsel" onchange="editCat('${i.item}',this.value)">
-          ${Object.keys(CLABEL).map(c=>`<option value="${c}"${i.cat===c?' selected':''}>${CLABEL[c]}</option>`).join('')}
-        </select>
-      </td>
-      <td class="mn" style="font-size:11px;color:var(--text3)">${i.size||'—'} <span style="color:var(--text3)">(${i._u||1})</span></td>
-      <td class="mn">${i.isOOS||i.qty===0?'OOS':i.qty}</td>
-      <td class="mn">${i.caseCost?f2(i.caseCost):'—'}</td>
-      <td class="mn" style="font-weight:600">${cu>0?f2(cu):'—'}</td>
-      <td>${tagHtml[i._rt]||''}</td>
-      <td style="color:${cc};font-weight:600;font-family:'JetBrains Mono',monospace">${Math.round(i._conf*100)}%</td>
-      <td>${chCell}</td>
-    </tr>`;
-  }).join('');
-}
-
-document.getElementById('vf-pills').addEventListener('click',e=>{
+const _vfPills = document.getElementById('vf-pills');
+if(_vfPills) _vfPills.addEventListener('click',e=>{
   const pill=e.target.closest('.pill');if(!pill)return;
   document.querySelectorAll('#vf-pills .pill').forEach(p=>p.classList.remove('on'));
   pill.classList.add('on');renderVerify(pill.dataset.vf);
@@ -2261,6 +2186,14 @@ function dbRejectAll(){
   if(!confirm('Reject all '+Object.keys(APPROVALS).length+' items?'))return;
   rejectAll();
 }
+function dbLoadLastInvoice(){
+  const hist = loadHist();
+  if(!hist || !hist.length){ showToast('warn','No saved invoices in history yet'); return; }
+  // Most recent first (history is appended; sort by date desc just in case)
+  const sorted = hist.slice().sort((a,b)=> new Date(b.date||0) - new Date(a.date||0));
+  loadInvoice(sorted[0]);
+  showToast('success', `Loaded ${sorted[0].vendor} #${sorted[0].invoiceNo}`);
+}
 function dbApproveSafe(){
   if(!INV){showToast('warn','Upload an invoice first');return;}
   const vk=normV(INV.vendor); let n=0;
@@ -2289,16 +2222,12 @@ function updateApprovalCounts(){
 function getExportRows(){
   if(!INV)return[];
   const scope=document.getElementById('exp-scope')?.value||'approved';
-  const rm=document.getElementById('exp-round')?.value||'none';
+  const rm=document.getElementById('exp-round')?.value||'charm4';
   // Always rounds UP — never decreases price below the markup target
   function round(p){
-    if(rm==='none')return p;
-    if(rm==='98'){const f=Math.floor(p);return p<=f+.98?f+.98:f+1+.98;}
-    if(rm==='99'){const f=Math.floor(p);return p<=f+.99?f+.99:f+1+.99;}
-    if(rm==='25')return Math.ceil(p*4)/4;
     if(rm==='charm4')return charmRoundUp(p,[0.29,0.49,0.79,0.99]);
     if(rm==='charm2')return charmRoundUp(p,[0.49,0.99]);
-    return p;
+    return p; // 'none' / exact
   }
   return INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).filter(i=>{
     if(scope==='approved')return APPROVALS[i.item]&&APPROVALS[i.item].status==='approved';
@@ -2314,7 +2243,6 @@ function buildCSV(rows){
   const fmt=document.getElementById('pos-fmt')?.value||'generic';
   let h,fn;
   if(fmt==='generic'){h=['Item#','Description','Size','Case Cost','Unit Cost','Retail Price'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.box.toFixed(2),r.unit.toFixed(2),r.retail.toFixed(2)];}
-  else if(fmt==='detailed'){h=['Item#','Description','Size','Units/Case','Category','Cost/Box','Cost/Unit','Markup%','Retail/Unit','Retail/Box','Profit/Unit','Margin'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.upc,`"${r.cat}"`,r.box.toFixed(2),r.unit.toFixed(2),r.mk+'%',r.retail.toFixed(2),(r.retail*r.upc).toFixed(2),r.profit,r.margin];}
   else{h=['SKU','Name','Size','Case Cost','Unit Cost','Retail'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.box.toFixed(2),r.unit.toFixed(2),r.retail.toFixed(2)];}
   return [h.join(','),...rows.map(r=>fn(r).join(','))].join('\n');
 }
@@ -2349,63 +2277,159 @@ function finalizeAndSave(){
 }
 
 // ═══════════ PRICE TRACKER ═══════════
-function renderTracker(filter){
-  const db=loadDB();const hist=loadHist();const keys=Object.keys(db);
-  if(!keys.length){show('tr-empty',true);show('tr-content',false);return;}
-  show('tr-empty',false);show('tr-content',true);
+// Per-product metadata (notes, discontinued flag) — keyed by normalized name+vendor
+function loadProdMeta(){ return lsGet(SK.PROD_META) || {}; }
+function saveProdMeta(m){ lsSet(SK.PROD_META, m); }
+function prodMetaKey(name, vendor){
+  return (name||'').toLowerCase().replace(/\s+/g,' ').trim() + '||' + (vendor||'').toLowerCase().trim();
+}
+function setProdNote(name, vendor, note){
+  const m = loadProdMeta(); const k = prodMetaKey(name, vendor);
+  m[k] = m[k] || {}; m[k].note = note; saveProdMeta(m);
+}
+function toggleProdDisc(name, vendor){
+  const m = loadProdMeta(); const k = prodMetaKey(name, vendor);
+  m[k] = m[k] || {}; m[k].discontinued = !m[k].discontinued; saveProdMeta(m);
+  renderTracker(_lastTrFilter || 'all');
+}
 
-  let prods=keys.map(key=>{
-    const ents=db[key].filter(e=>e.unitCost>0);if(!ents.length)return null;
-    const first=ents[0];const last=ents[ents.length-1];
-    const diff=last.unitCost-first.unitCost;
-    const pct=first.unitCost>0?((diff/first.unitCost)*100):0;
-    const trend=Math.abs(pct)<0.005?'same':diff>0?'up':'dn';
-    const lr=last.unitCost*(1+getTgt(last.cat||'other')/100);
-    return {key,desc:last.desc,cat:last.cat||'other',item:key.split('|')[1],
-      firstCu:first.unitCost,lastCu:last.unitCost,diff,pct,trend,
-      orders:ents.length,latestRetail:lr,
-      latestBox:lr*(last.units||1),latestProfit:lr-last.unitCost};
+// Track last filter so search & checkbox re-render the same view
+let _lastTrFilter = 'all';
+let _trSearchT = null;
+function trSearchDebounced(){
+  clearTimeout(_trSearchT);
+  _trSearchT = setTimeout(()=>renderTracker(_lastTrFilter || 'all'), 150);
+}
+
+function renderTracker(filter){
+  _lastTrFilter = filter;
+  const db=loadDB();
+  const hist=loadHist();
+  const pcHist = (typeof pcLoadHist === 'function') ? pcLoadHist() : [];
+  const meta = loadProdMeta();
+  const showDisc = document.getElementById('tr-show-disc')?.checked || false;
+  const search = (document.getElementById('tr-search')?.value || '').toLowerCase().trim();
+
+  // Build dried-side products from price DB
+  const driedKeys = Object.keys(db);
+  let prods = driedKeys.map(key=>{
+    const ents = db[key].filter(e=>e.unitCost>0);
+    if(!ents.length) return null;
+    const first = ents[0], last = ents[ents.length-1];
+    const prev = ents.length > 1 ? ents[ents.length-2] : null;
+    const prevCu = prev ? prev.unitCost : first.unitCost;
+    const diff = last.unitCost - prevCu;
+    const pct = prevCu > 0 ? (diff/prevCu*100) : 0;
+    const trend = Math.abs(pct) < 0.005 ? 'same' : diff > 0 ? 'up' : 'dn';
+    const lr = last.unitCost*(1+getTgt(last.cat||'other')/100);
+    const vendor = key.split('|')[0] || 'Unknown';
+    const m = meta[prodMetaKey(last.desc, vendor)] || {};
+    return { kind:'dried', source:'dried', desc:last.desc, cat:last.cat||'other', vendor,
+      prevCu, lastCu:last.unitCost, diff, pct, trend, orders:ents.length,
+      lastSeen: last.invoiceDate || last.date || '',
+      latestRetail:lr, note:m.note||'', discontinued:!!m.discontinued };
   }).filter(Boolean);
 
-  const upCount=prods.filter(p=>p.trend==='up').length;
-  const dnCount=prods.filter(p=>p.trend==='dn').length;
-  const upPct=prods.length?Math.round(upCount/prods.length*100):0;
-  const dnPct=prods.length?Math.round(dnCount/prods.length*100):0;
-  
-  document.getElementById('tr-tot').textContent=prods.length;
-  document.getElementById('tr-up').textContent=upCount;
-  document.getElementById('tr-dn').textContent=dnCount;
-  document.getElementById('tr-invs').textContent=hist.length;
-  
-  // Update chip values
+  // Add produce-side products from PC_HIST (treats each catalogId+vendor as a product)
+  const produceMap = {}; // key: catalogId+vendor → array of {date, cost, ...}
+  for(const inv of pcHist){
+    const v = (inv.vendor||'Unknown').trim();
+    for(const ln of (inv.lines||[])){
+      if(!ln.catalogId || !(ln.cost>0)) continue;
+      const k = ln.catalogId + '||' + v;
+      (produceMap[k] = produceMap[k] || []).push({ date: inv.date, cost: ln.cost, name: ln.catalogName || ln.invoiceText });
+    }
+  }
+  for(const k of Object.keys(produceMap)){
+    const ents = produceMap[k].slice().sort((a,b)=> new Date(a.date||0) - new Date(b.date||0));
+    if(!ents.length) continue;
+    const first = ents[0], last = ents[ents.length-1];
+    const prev = ents.length > 1 ? ents[ents.length-2] : null;
+    const prevCu = prev ? prev.cost : first.cost;
+    const diff = last.cost - prevCu;
+    const pct = prevCu > 0 ? (diff/prevCu*100) : 0;
+    const trend = Math.abs(pct) < 0.005 ? 'same' : diff > 0 ? 'up' : 'dn';
+    const lr = last.cost * 1.5;  // produce default 50% markup
+    const [, vendor] = k.split('||');
+    const desc = last.name;
+    const m = meta[prodMetaKey(desc, vendor)] || {};
+    prods.push({ kind:'produce', source:'produce', desc, cat:'produce', vendor,
+      prevCu, lastCu:last.cost, diff, pct, trend, orders:ents.length,
+      lastSeen: last.date || '',
+      latestRetail: charmRoundUp(lr,[0.29,0.49,0.79,0.99]),
+      note:m.note||'', discontinued:!!m.discontinued });
+  }
+
+  // Empty state
+  if(!prods.length){ show('tr-empty',true); show('tr-content',false); return; }
+  show('tr-empty',false); show('tr-content',true);
+
+  // Stats use full set before filtering
+  const upCount = prods.filter(p=>p.trend==='up' && !p.discontinued).length;
+  const dnCount = prods.filter(p=>p.trend==='dn' && !p.discontinued).length;
+  const upPct = prods.length ? Math.round(upCount/prods.length*100) : 0;
+  const dnPct = prods.length ? Math.round(dnCount/prods.length*100) : 0;
+  document.getElementById('tr-tot').textContent = prods.length;
+  document.getElementById('tr-up').textContent = upCount;
+  document.getElementById('tr-dn').textContent = dnCount;
+  document.getElementById('tr-invs').textContent = hist.length + pcHist.length;
   const setChip=(id,html)=>{const el=document.getElementById(id);if(el)el.innerHTML=html;};
-  setChip('tr-tot-chip',prods.length>0?`${prods.length} active`:'—');
-  setChip('tr-up-chip',upCount?`▲ ${upPct}%`:'▲ 0%');
-  setChip('tr-dn-chip',dnCount?`▼ ${dnPct}%`:'▼ 0%');
+  setChip('tr-tot-chip', prods.length>0 ? `${prods.length} products` : '—');
+  setChip('tr-up-chip', upCount ? `▲ ${upPct}%` : '▲ 0%');
+  setChip('tr-dn-chip', dnCount ? `▼ ${dnPct}%` : '▼ 0%');
 
-  if(filter==='up')prods=prods.filter(p=>p.trend==='up');
-  else if(filter==='dn')prods=prods.filter(p=>p.trend==='dn');
-  else if(filter==='same')prods=prods.filter(p=>p.trend==='same');
-  else if(filter!=='all')prods=prods.filter(p=>p.cat===filter);
-  prods.sort((a,b)=>b.pct-a.pct);
+  // Hide discontinued unless asked
+  if(!showDisc) prods = prods.filter(p=>!p.discontinued);
 
-  document.getElementById('tr-body').innerHTML=prods.map(p=>{
-    const ds=p.trend==='same'?'<span style="color:var(--text4)">—</span>':p.diff>0?`<span class="up mn"><span class="au"></span>+${f2(p.diff)}</span>`:`<span class="dn mn"><span class="ad"></span>${f2(p.diff)}</span>`;
-    const ps=p.trend==='same'?'<span style="color:var(--text4)">—</span>':p.pct>0?`<span class="up mn">+${p.pct.toFixed(1)}%</span>`:`<span class="dn mn">${p.pct.toFixed(1)}%</span>`;
-    const st=p.trend==='up'?'<span class="trend-pill up">▲ Up</span>':p.trend==='dn'?'<span class="trend-pill dn">▼ Down</span>':'<span class="trend-pill same">— Same</span>';
-    const cv=getCrossVendorPrices(p.item,p.key.split('|')[0],p.lastCu);
-    const cvTag=cv&&cv.totalVendors>1?(cv.cheaperCount>0?`<span class="tag tg" style="font-size:9px">💰save ${f2(cv.savings)}/u</span>`:'<span class="tag tgr" style="font-size:9px">cheapest vendor</span>'):'';
-    const rc=p.trend==='up'?'style="background:#fff7f7"':p.trend==='dn'?'style="background:#f0fdf4"':'';
+  // Tab filter
+  if(filter==='up') prods = prods.filter(p=>p.trend==='up');
+  else if(filter==='dn') prods = prods.filter(p=>p.trend==='dn');
+  else if(filter==='same') prods = prods.filter(p=>p.trend==='same');
+  else if(filter==='produce') prods = prods.filter(p=>p.source==='produce');
+  else if(filter!=='all') prods = prods.filter(p=>p.cat===filter);
+
+  // Search
+  if(search){
+    prods = prods.filter(p =>
+      (p.desc||'').toLowerCase().includes(search) ||
+      (p.vendor||'').toLowerCase().includes(search) ||
+      (p.note||'').toLowerCase().includes(search)
+    );
+  }
+  prods.sort((a,b)=> b.pct - a.pct);
+
+  const cnt = document.getElementById('tr-result-count');
+  if(cnt) cnt.textContent = `${prods.length} match${prods.length!==1?'es':''}`;
+
+  document.getElementById('tr-body').innerHTML = prods.map(p=>{
+    const escDesc = (p.desc||'').replace(/"/g,'&quot;');
+    const escVendor = (p.vendor||'').replace(/"/g,'&quot;');
+    const ps = p.trend==='same' ? '<span style="color:var(--text4)">—</span>'
+      : p.pct>0 ? `<span class="up mn">+${p.pct.toFixed(1)}%</span>`
+      : `<span class="dn mn">${p.pct.toFixed(1)}%</span>`;
+    const rc = p.discontinued ? 'style="background:#f5f5f5;color:var(--text3);opacity:.7"'
+      : p.trend==='up' ? 'style="background:#fff7f7"'
+      : p.trend==='dn' ? 'style="background:#f0fdf4"' : '';
+    const catTag = p.source==='produce'
+      ? '<span class="tag tg">🥬 Produce</span>'
+      : `<span class="tag ${CCLS[p.cat]||'tgr'}">${CLABEL[p.cat]||p.cat}</span>`;
+    const discBtn = p.discontinued
+      ? `<button class="db-bulk-btn" onclick="toggleProdDisc('${escDesc}','${escVendor}')" title="Restore">↺</button>`
+      : `<button class="db-bulk-btn warn" onclick="toggleProdDisc('${escDesc}','${escVendor}')" title="Mark discontinued">⊘</button>`;
     return `<tr ${rc}>
-      <td class="mn" style="font-size:11px;color:var(--text3)">${p.item}</td>
-      <td class="wd">${p.desc}</td>
-      <td><span class="tag ${CCLS[p.cat]||'tgr'}">${CLABEL[p.cat]||p.cat}</span></td>
-      <td class="mn">${f2(p.firstCu)}</td><td class="mn" style="font-weight:700">${f2(p.lastCu)}</td>
-      <td>${ds}</td><td>${ps}</td>
+      <td class="wd" style="padding:8px 14px"><b>${p.desc}</b>${p.discontinued?' <span class="tag tgr" style="font-size:9px">DISC</span>':''}</td>
+      <td>${catTag}</td>
+      <td style="font-size:11px;color:var(--text2)">${p.vendor}</td>
+      <td class="mn">${f2(p.prevCu)}</td>
+      <td class="mn" style="font-weight:700">${f2(p.lastCu)}</td>
+      <td>${ps}</td>
       <td class="mn" style="color:var(--green);font-weight:600">${f2(p.latestRetail)}</td>
-      <td class="mn" style="color:var(--c1)">${f2(p.latestBox)}</td>
-      <td class="mn" style="color:var(--green)">${f2(p.latestProfit)}</td>
-      <td class="mn">${p.orders}</td><td>${st}</td>
+      <td class="mn" style="font-size:11px;color:var(--text3)">${p.lastSeen||'—'}</td>
+      <td class="mn">${p.orders}</td>
+      <td><input type="text" placeholder="—" value="${(p.note||'').replace(/"/g,'&quot;')}" 
+        onchange="setProdNote('${escDesc}','${escVendor}',this.value)" 
+        style="width:100%;max-width:160px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:11px"></td>
+      <td style="text-align:center">${discBtn}</td>
     </tr>`;
   }).join('');
 }
@@ -2541,7 +2565,7 @@ function onTgtChange(c){
   const ret=(1+v/100).toFixed(2);const marg=((v/(100+v))*100).toFixed(1);
   const el=document.getElementById('ti-'+c);if(el)el.textContent=`→ ${marg}% margin · $1.00 → $${ret}`;
   renderRefTable();calcRun();
-  if(INV){renderVerify('all');renderApprovals('all');}
+  if(INV){renderApprovals("all");}
 }
 function renderRefTable(){
   document.getElementById('ref-body').innerHTML=Object.keys(CLABEL).map(c=>{
@@ -5244,6 +5268,18 @@ updateNavCounts();
 updateExportSummary();
 pcSeed();
 pcUpdateNavCount();
+
+// Demo button visibility toggle (persisted)
+function toggleDemoButtons(on){
+  try{ localStorage.setItem('tm_show_demo', on ? '1' : '0'); }catch(e){}
+  document.querySelectorAll('[data-demo-btn]').forEach(b=>{
+    b.style.display = on ? '' : 'none';
+  });
+}
+const _showDemo = localStorage.getItem('tm_show_demo') === '1';
+const _demoCb = document.getElementById('show-demo-toggle');
+if(_demoCb){ _demoCb.checked = _showDemo; }
+toggleDemoButtons(_showDemo);
 </script>
 </body>
 </html>
