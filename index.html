@@ -4326,18 +4326,45 @@ ${lineList}`;
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-6',
-        max_tokens:8000,
+        max_tokens:16000,
         messages:[{role:'user',content:prompt}]
       })
     });
     const data = await resp.json();
     if(data.type === 'error') throw new Error(data.error?.message || 'API error');
+    const truncated = data.stop_reason === 'max_tokens';
     const raw = data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
-    const s=raw.indexOf('{'),e=raw.lastIndexOf('}');
-    if(s<0||e<0) throw new Error('No JSON in matcher response');
-    const parsed = JSON.parse(raw.substring(s,e+1));
     const confScore = {high:0.95, medium:0.75, low:0.5, none:0};
-    for(const m of (parsed.matches||[])){
+    
+    // Try full JSON parse first
+    let entries = [];
+    try {
+      const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+      if(s>=0 && e>s){
+        const parsed = JSON.parse(raw.substring(s, e+1));
+        entries = parsed.matches || [];
+      }
+    } catch(parseErr){
+      console.warn('Full JSON parse failed, salvaging entries via regex:', parseErr.message);
+    }
+    
+    // Fallback: salvage individual match entries via regex (handles truncated responses)
+    if(!entries.length){
+      const re = /\{\s*"line"\s*:\s*(\d+)\s*,\s*"id"\s*:\s*"([^"]+)"\s*,\s*"confidence"\s*:\s*"([^"]+)"\s*\}/g;
+      let m;
+      while((m = re.exec(raw)) !== null){
+        entries.push({line: parseInt(m[1]), id: m[2], confidence: m[3]});
+      }
+    }
+    
+    if(!entries.length) throw new Error('Could not parse any matches from response');
+    
+    if(truncated || entries.length < remaining.length){
+      console.warn(`Matcher returned ${entries.length}/${remaining.length} matches (truncated=${truncated})`);
+      showToast('warn', `Matcher returned ${entries.length} of ${remaining.length} items. Try splitting the invoice if items are missing.`, 8000);
+    }
+    
+    for(const m of entries){
       const idx = (m.line||0) - 1;
       if(idx<0 || idx>=remaining.length) continue;
       const text = remaining[idx];
