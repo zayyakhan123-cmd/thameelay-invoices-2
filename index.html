@@ -2008,6 +2008,60 @@ function resetUpload(){
 
 // ═══════════ INVOICE EXTRACTION ═══════════
 function AI_KEY(){return localStorage.getItem('tm_api_key')||'';}
+
+// ─── Single point of contact for all LLM calls ─────────────────────────────
+// Today: hits api.anthropic.com directly with the user's key.
+// Future: hits /api/ai on our own backend; the key never leaves the server.
+// When that day comes, only THIS function changes — no call sites need to.
+//
+// Returns: { text, content, stopReason, usage, raw }
+//   text:       all text blocks concatenated (use this 90% of the time)
+//   content:    the raw content array (for vision/tool-use responses)
+//   stopReason: 'end_turn' | 'max_tokens' | 'stop_sequence' | …
+//   usage:      { input_tokens, output_tokens }
+//   raw:        full API response (escape hatch)
+//
+// Throws Error('no_api_key') if no key is configured (caller can route to settings).
+// Throws Error(message) for API errors with the server's message preserved.
+async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, system }){
+  const key = AI_KEY();
+  if(!key) throw new Error('no_api_key');
+
+  const body = { model, max_tokens: maxTokens, messages };
+  if(system) body.system = system;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await resp.json();
+  if(data.type === 'error') throw new Error(data.error?.message || 'API error');
+  if(!data.content) throw new Error('Empty response from AI');
+
+  return {
+    text: data.content.map(c => c.text || '').join(''),
+    content: data.content,
+    stopReason: data.stop_reason,
+    usage: data.usage,
+    raw: data
+  };
+}
+
+// Pull the first JSON object out of an AI response, tolerating ```json fences and prose.
+function aiJson(text){
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}');
+  if(s < 0 || e < 0) throw new Error('No JSON in response: ' + cleaned.substring(0, 200));
+  return JSON.parse(cleaned.substring(s, e + 1));
+}
+
 const AI_PROMPT=`You are extracting a vendor invoice. Read EVERY line item carefully including OOS and zero-quantity rows.
 
 DOCUMENT: Check the header — is this an INVOICE or SALES ORDER? Extract the exact invoice/order number and date.
@@ -2066,22 +2120,15 @@ async function extractInvoice(file, onStep){
   } else {
     throw new Error('Unsupported file type: '+(fileType||'unknown')+'. Use PDF or an image (JPG/PNG).');
   }
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:16000,messages:[{role:'user',content:[
-      contentBlock,
-      {type:'text',text:AI_PROMPT}
-    ]}]})
+  const resp = await callAI({
+    messages: [{ role:'user', content: [contentBlock, { type:'text', text: AI_PROMPT }] }],
+    model: 'claude-sonnet-4-6',
+    maxTokens: 16000
   });
   step('parsing');
-  const data=await resp.json();
-  if(data.type==='error') throw new Error(data.error&&data.error.message?data.error.message:'API error');
-  if(data.stop_reason==='max_tokens') throw new Error('Response truncated — invoice has too many line items. Try splitting the PDF or raising max_tokens.');
-  const raw=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
-  const s=raw.indexOf('{'),e=raw.lastIndexOf('}');
-  if(s<0||e<0) throw new Error('No JSON object in response: '+raw.substring(0,200));
-  const _inv=JSON.parse(raw.substring(s,e+1));
-  trackUsage(_inv);return _inv;
+  if(resp.stopReason === 'max_tokens') throw new Error('Response truncated — invoice has too many line items. Try splitting the PDF or raising max_tokens.');
+  const _inv = aiJson(resp.text);
+  trackUsage(_inv); return _inv;
 }
 
 // ═══════════ LOAD INVOICE ═══════════
@@ -2688,23 +2735,21 @@ async function testApiKey(){
   btn.textContent='Testing...';btn.disabled=true;
   res.style.display='block';res.textContent='Connecting to Anthropic...';res.style.color='var(--text3)';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,
-        'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,
-        messages:[{role:'user',content:'Say OK'}]})
+    const resp = await callAI({
+      messages: [{ role:'user', content:'Say OK' }],
+      model: 'claude-haiku-4-5-20251001',
+      maxTokens: 10
     });
-    const d=await r.json();
-    if(d.content&&d.content[0]){
+    if(resp.text){
       res.innerHTML='<span style="color:var(--green);font-weight:600">✅ Connection successful! API key is working correctly.</span>';
       res.style.background='var(--greenl)';
       showBanner('✅ API key verified — ready to extract real invoices.','var(--greenl)','var(--greend)');
-    } else if(d.error){
-      res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+esc(d.error.message||'API error')+' — check your key and account.</span>';
+    } else {
+      res.innerHTML='<span style="color:var(--red);font-weight:600">❌ Empty response — check your key and account.</span>';
       res.style.background='var(--redl)';
     }
   }catch(err){
-    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ Connection failed: '+esc(err.message)+'</span>';
+    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+esc(err.message)+'</span>';
     res.style.background='var(--redl)';
   }
   btn.textContent='🧪 Test connection';btn.disabled=false;
@@ -4368,19 +4413,13 @@ INVOICE LINES:
 ${lineList}`;
   
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:16000,
-        messages:[{role:'user',content:prompt}]
-      })
+    const resp = await callAI({
+      messages: [{ role:'user', content: prompt }],
+      model: 'claude-sonnet-4-6',
+      maxTokens: 16000
     });
-    const data = await resp.json();
-    if(data.type === 'error') throw new Error(data.error?.message || 'API error');
-    const truncated = data.stop_reason === 'max_tokens';
-    const raw = data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const truncated = resp.stopReason === 'max_tokens';
+    const raw = resp.text.replace(/```json|```/g,'').trim();
     const confScore = {high:0.95, medium:0.75, low:0.5, none:0};
     
     // Try full JSON parse first
