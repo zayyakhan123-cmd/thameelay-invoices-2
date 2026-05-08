@@ -1581,12 +1581,18 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 
 <!-- Vendor drill-down modal: opened by clicking a vendor card on the Vendor Dashboard -->
 <div id="vnd-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto" onclick="if(event.target===this)vendorClose()">
-  <div style="background:#fff;border-radius:14px;max-width:1100px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.25);overflow:hidden">
-    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
-      <div style="flex:1;min-width:0">
+  <div style="background:#fff;border-radius:14px;max-width:1200px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.25);overflow:hidden">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <button id="vnd-back-btn" onclick="productBackToVendor()" style="display:none;font-size:13px;padding:6px 12px;background:var(--bg3);border:1px solid var(--border2)" title="Back to vendor view">← Back</button>
+      <div style="flex:1;min-width:200px">
         <div id="vnd-modal-title" style="font-size:18px;font-weight:700;color:var(--text)"></div>
         <div id="vnd-modal-sub" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
       </div>
+      <input id="vnd-search" type="text" placeholder="Search desc, item #, or SKU…" oninput="vendorSearchDebounced()" style="font-size:12px;padding:6px 10px;width:220px;border:1px solid var(--border2);border-radius:6px">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none" title="Show calculated retail price and margin per item">
+        <input type="checkbox" id="vnd-show-retail" onchange="vendorRerender()" style="cursor:pointer">
+        Show retail
+      </label>
       <button onclick="vendorExportCSV()" style="font-size:12px;padding:7px 12px">⬇ CSV</button>
       <button onclick="vendorExportPDF()" style="font-size:12px;padding:7px 12px">⬇ PDF</button>
       <button onclick="vendorClose()" style="font-size:18px;padding:4px 10px;background:transparent;border:none;cursor:pointer;color:var(--text3)" title="Close">×</button>
@@ -1777,8 +1783,9 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 // In-memory cache: avoids re-parsing localStorage JSON on every render (was happening 30+ times per page load).
 // Caches are invalidated on every save.
 const _CACHE = {hist:null, db:null};
+const _VENDOR_ITEMS_CACHE = {}; // keyed by vendor name; invalidated on saveHist
 function loadHist(){ if(_CACHE.hist===null) _CACHE.hist = lsGet(SK.HIST)||[]; return _CACHE.hist; }
-function saveHist(a){ _CACHE.hist = a; lsSet(SK.HIST,a); }
+function saveHist(a){ _CACHE.hist = a; lsSet(SK.HIST,a); for(const k in _VENDOR_ITEMS_CACHE) delete _VENDOR_ITEMS_CACHE[k]; }
 function loadDB(){ if(_CACHE.db===null) _CACHE.db = lsGet(SK.PRICE)||{}; return _CACHE.db; }
 function saveDB(d){ _CACHE.db = d; lsSet(SK.PRICE,d); }
 function invalidateCache(){ _CACHE.hist = null; _CACHE.db = null; }
@@ -2288,7 +2295,7 @@ function renderApprovals(filter){
     if(ch.crossVendor&&ch.crossVendor.cheaperCount>0){
       chTag+=` <span class="tag tg" style="font-size:10px">💰 cheaper from another vendor (save ${f2(ch.crossVendor.savings)}/unit)</span>`;
     }
-    return `<div class="apr ap${st==='approved'?'ok':st==='rejected'?'no':'p'}">
+    return `<div class="apr ap${st==='approved'?'ok':st==='rejected'?'no':'p'}" data-item="${esc(i.item)}">
       <input type="checkbox" class="chk apchk" data-item="${esc(i.item)}">
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:13px;margin-bottom:3px">${esc(i.desc)} ${i._isNew?'<span class="tag tb">NEW</span>':''}</div>
@@ -2326,7 +2333,57 @@ function renderApprovals(filter){
 }
 
 function updateRetail(k,v){if(APPROVALS[k])APPROVALS[k].retailPrice=v;const p=document.querySelector('#af-pills .pill.on');renderApprovals(p?p.dataset.af:'all');}
-function setAp(k,s){if(APPROVALS[k])APPROVALS[k].status=s;updateApprovalCounts();const p=document.querySelector('#af-pills .pill.on');if(p)renderApprovals(p.dataset.af);renderDashboardTable();updateExportSummary();}
+// setAp updates a single approval's status. The full table is expensive to re-render
+// (140-180ms with 60 items × full DOM rebuild), so for the common case (filter='all'
+// or the new status still matches the active filter) we mutate just the affected row's
+// classes — instant, sub-millisecond. We only fall back to a full re-render when the
+// row needs to leave the visible filter (e.g. user is on 'pending' and approves an item).
+function setAp(k,s){
+  if(!APPROVALS[k]) return;
+  const oldStatus = APPROVALS[k].status;
+  APPROVALS[k].status = s;
+  updateApprovalCounts();
+  updateExportSummary();
+
+  // Only update the dashboard table if it's actually visible. When the user is on the
+  // approvals page (the most common case), the dashboard table will be re-rendered
+  // naturally on tab switch — saves ~30ms per click for no visible difference.
+  const dashboardVisible = document.getElementById('pg-dashboard')?.classList.contains('on');
+
+  // Decide whether the row should remain visible under the active filter.
+  const activePill = document.querySelector('#af-pills .pill.on');
+  const filter = activePill ? activePill.dataset.af : 'all';
+  const stillVisible = (
+    filter === 'all' ||
+    (filter === 'pending'  && s === 'pending') ||
+    (filter === 'approved' && s === 'approved') ||
+    (filter === 'up' || filter === 'dn') // change-based filters don't depend on status
+  );
+
+  if(stillVisible){
+    // Surgical update: change row class + button highlight without rebuilding the DOM.
+    // Escape just the chars that matter inside an attribute selector. Item codes are
+    // typically alphanumeric, so this is mostly defensive.
+    const sel = String(k).replace(/(["\\])/g, '\\$1');
+    const row = document.querySelector(`.apr[data-item="${sel}"]`);
+    if(row){
+      row.classList.remove('apok', 'apno', 'app');
+      row.classList.add(s === 'approved' ? 'apok' : s === 'rejected' ? 'apno' : 'app');
+      const buttons = row.querySelectorAll('button');
+      buttons.forEach(b => {
+        const onc = b.getAttribute('onclick') || '';
+        b.classList.remove('bg', 'br');
+        if(onc.includes("'approved'") && s === 'approved') b.classList.add('bg');
+        if(onc.includes("'rejected'") && s === 'rejected') b.classList.add('br');
+      });
+      if(dashboardVisible) renderDashboardTable();
+      return;
+    }
+  }
+  // Fallback: full re-render (filter changes membership, or row isn't in the DOM).
+  if(activePill) renderApprovals(filter);
+  if(dashboardVisible) renderDashboardTable();
+}
 function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('success', `✅ Approved ${Object.keys(APPROVALS).length} items`);}
 function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
 function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();}
@@ -2556,7 +2613,14 @@ function renderTracker(filter){
   const cnt = document.getElementById('tr-result-count');
   if(cnt) cnt.textContent = `${prods.length} match${prods.length!==1?'es':''}`;
 
-  document.getElementById('tr-body').innerHTML = prods.map(p=>{
+  // Pagination: with thousands of products, rendering all rows at once locks up the browser
+  // for several seconds. Show first 200 by default; "Show all" override exposes the full set.
+  const TR_PAGE_SIZE = 200;
+  const showAll = !!_trShowAll;
+  const slice = showAll ? prods : prods.slice(0, TR_PAGE_SIZE);
+  const hidden = prods.length - slice.length;
+
+  document.getElementById('tr-body').innerHTML = slice.map(p=>{
     const ps = p.trend==='same' ? '<span style="color:var(--text4)">—</span>'
       : p.pct>0 ? `<span class="up mn">+${p.pct.toFixed(1)}%</span>`
       : `<span class="dn mn">${p.pct.toFixed(1)}%</span>`;
@@ -2584,8 +2648,13 @@ function renderTracker(filter){
         style="width:100%;max-width:160px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:11px"></td>
       <td style="text-align:center">${discBtn}</td>
     </tr>`;
-  }).join('');
+  }).join('') + (hidden > 0 ? `<tr><td colspan="11" style="text-align:center;padding:14px;background:var(--bg3)">
+    <span style="color:var(--text3);margin-right:10px">Showing first ${slice.length} of ${prods.length} — use search/filters to narrow down</span>
+    <button class="db-bulk-btn" onclick="trShowAll()">Show all ${prods.length}</button>
+  </td></tr>` : '');
 }
+let _trShowAll = false;
+function trShowAll(){ _trShowAll = true; renderTracker(_lastTrFilter || 'all'); }
 document.getElementById('tr-pills').addEventListener('click',e=>{
   const p=e.target.closest('.pill');if(!p)return;
   document.querySelectorAll('#tr-pills .pill').forEach(x=>x.classList.remove('on'));
@@ -2634,7 +2703,85 @@ function renderVendors(){
 // ═══════════ VENDOR DRILL-DOWN ═══════════
 // Build a per-item summary for a vendor: aggregates every line item across that vendor's
 // invoices and reports first/last seen, last cost, change %, total qty, total spend.
+// ═══════════ PRODUCT STORE (per-product SKU model) ═══════════
+// One product per real-world item; many vendor lines map to one product. This is the
+// foundation for cross-vendor comparison and eventual POS integration. The produce
+// catalog (pcCatalog) is intentionally kept separate for now — it has richer fields
+// (images, aliases) tailored to its UI. They can be unified later without data loss.
+//
+//   tm_products       : { [productId]: { id, sku, name, createdAt } }
+//   tm_product_links  : { [`${vendorKey}|${itemNo}`]: productId }
+//
+// SKUs are kept unique across products; if a user types an existing SKU we link to the
+// existing product rather than creating a duplicate.
+let _PRODUCTS_CACHE = null;
+function loadProducts(){
+  if(_PRODUCTS_CACHE) return _PRODUCTS_CACHE;
+  _PRODUCTS_CACHE = lsGet('tm_products') || {};
+  return _PRODUCTS_CACHE;
+}
+function saveProducts(p){ lsSet('tm_products', p); _PRODUCTS_CACHE = p; }
+function loadProductLinks(){ return lsGet('tm_product_links') || {}; }
+function saveProductLinks(m){ lsSet('tm_product_links', m); }
+
+function productLinkKey(vendorName, itemNo){ return normV(vendorName) + '|' + (itemNo || ''); }
+function productForVendorItem(vendorName, itemNo){
+  const links = loadProductLinks();
+  const id = links[productLinkKey(vendorName, itemNo)];
+  return id ? loadProducts()[id] || null : null;
+}
+function productBySku(sku){
+  const s = String(sku || '').trim();
+  if(!s) return null;
+  const ps = loadProducts();
+  for(const id in ps) if(ps[id].sku === s) return ps[id];
+  return null;
+}
+function productNewId(){
+  return 'prod_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2,7);
+}
+// Given a (vendor, item) and a SKU string the user typed:
+//   - empty SKU → unlink (delete the link entry; product remains in store for reuse)
+//   - SKU matches existing product → link this (vendor, item) to that product
+//   - SKU is new → create a product (using the invoice item's description as initial name)
+//                  and link to it
+// Returns the resolved product or null when unlinked.
+function setProductSkuForItem(vendorName, itemNo, sku, fallbackName){
+  const links = loadProductLinks();
+  const key = productLinkKey(vendorName, itemNo);
+  const cleanSku = String(sku || '').trim();
+  if(!cleanSku){
+    delete links[key];
+    saveProductLinks(links);
+    return null;
+  }
+  let prod = productBySku(cleanSku);
+  if(!prod){
+    prod = { id: productNewId(), sku: cleanSku, name: (fallbackName || cleanSku).trim(), createdAt: Date.now() };
+    const ps = loadProducts();
+    ps[prod.id] = prod;
+    saveProducts(ps);
+  }
+  links[key] = prod.id;
+  saveProductLinks(links);
+  return prod;
+}
+// Find every (vendor, item) that links to a given product. Used by the cross-vendor view.
+function vendorItemsForProduct(productId){
+  const links = loadProductLinks();
+  const matches = [];
+  Object.keys(links).forEach(k => {
+    if(links[k] === productId){
+      const [vk, itemNo] = k.split('|');
+      matches.push({vendorKey: vk, itemNo});
+    }
+  });
+  return matches;
+}
+
+// Cache: keyed by vendor name. Invalidated on saveHist() — see _VENDOR_ITEMS_CACHE near _CACHE.
 function vendorBuildItems(vendorName){
+  if(_VENDOR_ITEMS_CACHE[vendorName]) return _VENDOR_ITEMS_CACHE[vendorName];
   const hist = loadHist();
   const invs = hist.filter(inv => inv.vendor === vendorName);
   const byItem = {};
@@ -2667,76 +2814,276 @@ function vendorBuildItems(vendorName){
       if(!e.firstCost) e.firstCost = cu;
     });
   });
-  return Object.values(byItem).map(e => {
+  const result = Object.values(byItem).map(e => {
     const diff = e.lastCost - e.firstCost;
     const pct = e.firstCost > 0 ? (diff / e.firstCost * 100) : 0;
     return {...e, costDiff: diff, costPct: pct};
   }).sort((a,b) => b.totalSpend - a.totalSpend);
+  _VENDOR_ITEMS_CACHE[vendorName] = result;
+  return result;
+}
+// Compute auto-retail and margin for a vendor item using the latest cost and the
+// item's category markup. Charm-rounds to the same tier as the approvals page.
+function vendorRetailFor(i){
+  const retail = charmRoundUp(i.lastCost * (1 + catMarkup(i.cat)/100), [0.29, 0.49, 0.79, 0.99]);
+  const margin = retail > 0 ? ((retail - i.lastCost) / retail * 100) : 0;
+  return {retail, margin};
 }
 function vendorOpen(vendorName){
-  const items = vendorBuildItems(vendorName);
-  const totalSpend = items.reduce((s,i)=>s+i.totalSpend,0);
-  const totalQty = items.reduce((s,i)=>s+i.totalQty,0);
-  // Stash on the modal so Export buttons know which vendor's data to write.
+  // Stash on the modal so Export buttons and Show-retail toggle know which vendor's data to use.
   const modal = document.getElementById('vnd-modal');
   modal.dataset.vendor = vendorName;
+  // Reset to vendor view (in case we were in product cross-vendor view from a previous open).
+  delete modal.dataset.viewProductId;
+  // Reset search filter and pagination on open.
+  const search = document.getElementById('vnd-search'); if(search) search.value = '';
+  _vndShowAll = false;
+  // Restore last show-retail preference (persisted across opens for convenience).
+  const saved = lsGet('tm_vnd_show_retail');
+  document.getElementById('vnd-show-retail').checked = !!saved;
+  vendorRenderTable(vendorName);
+  modal.style.display = 'flex';
+}
+// Re-render the table without closing the modal — used by Show-retail toggle and SKU search.
+function vendorRerender(){
+  const m = document.getElementById('vnd-modal');
+  if(m.dataset.viewProductId){ productRenderView(m.dataset.viewProductId); return; }
+  const v = m.dataset.vendor;
+  if(!v) return;
+  lsSet('tm_vnd_show_retail', document.getElementById('vnd-show-retail').checked);
+  vendorRenderTable(v);
+}
+// Debounced wrapper for the search input — called on every keystroke, but only fires
+// the (potentially expensive) re-render after 150ms of inactivity. Keeps typing snappy.
+let _vndSearchT = null;
+function vendorSearchDebounced(){
+  clearTimeout(_vndSearchT);
+  _vndSearchT = setTimeout(vendorRerender, 150);
+}
+function vendorRenderTable(vendorName){
+  let items = vendorBuildItems(vendorName);
+  const showRetail = document.getElementById('vnd-show-retail').checked;
+  // Search filter: matches description, vendor item #, or assigned SKU.
+  const q = (document.getElementById('vnd-search')?.value || '').trim().toLowerCase();
+  if(q){
+    items = items.filter(i => {
+      const prod = productForVendorItem(vendorName, i.item);
+      const sku = (prod?.sku || '').toLowerCase();
+      return (i.desc || '').toLowerCase().includes(q)
+          || (i.item || '').toLowerCase().includes(q)
+          || sku.includes(q);
+    });
+  }
+  const totalSpend = items.reduce((s,i)=>s+i.totalSpend,0);
+  const totalQty = items.reduce((s,i)=>s+i.totalQty,0);
   document.getElementById('vnd-modal-title').textContent = vendorName;
-  document.getElementById('vnd-modal-sub').textContent = `${items.length} item${items.length!==1?'s':''} purchased · ${totalQty} cases · ${fBig(totalSpend)} total spend`;
+  document.getElementById('vnd-modal-sub').textContent = `${items.length} item${items.length!==1?'s':''}${q?' matching "'+q+'"':''} · ${totalQty} cases · ${fBig(totalSpend)} total spend`;
+  document.getElementById('vnd-back-btn').style.display = 'none';
+
+  const headRetail = showRetail
+    ? '<th style="text-align:right">Retail</th><th style="text-align:right">Margin</th>'
+    : '';
+  // Pagination: rendering 300+ rows of inputs + buttons stalls the browser for ~400ms.
+  // Show first 100 by default. Search filter implicitly narrows; user can override with Show all.
+  const VND_PAGE = 100;
+  const showAll = !!_vndShowAll;
+  const slice = showAll ? items : items.slice(0, VND_PAGE);
+  const hidden = items.length - slice.length;
   document.getElementById('vnd-modal-body').innerHTML = items.length ? `
     <table style="width:100%;font-size:12px">
       <thead><tr>
         <th style="text-align:left">Item</th>
+        <th style="text-align:left;width:140px">Your SKU</th>
         <th style="text-align:left">Category</th>
         <th style="text-align:right">First cost</th>
         <th style="text-align:right">Last cost</th>
         <th style="text-align:right">Change</th>
+        ${headRetail}
         <th style="text-align:right">Cases</th>
         <th style="text-align:right">Spend</th>
         <th style="text-align:left">Last seen</th>
       </tr></thead>
       <tbody>
-        ${items.map(i => {
+        ${slice.map(i => {
           const trendCol = i.costPct > 0.5 ? 'var(--red)' : i.costPct < -0.5 ? 'var(--green)' : 'var(--text3)';
           const trendTxt = Math.abs(i.costPct) < 0.5 ? '—' : (i.costPct > 0 ? '+' : '') + i.costPct.toFixed(1) + '%';
+          const prod = productForVendorItem(vendorName, i.item);
+          const skuVal = prod?.sku || '';
+          // SKU cell: editable input + (if linked) a small "compare vendors" link to the cross-vendor view.
+          const skuCell = `<td>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="text" class="tinput" value="${esc(skuVal)}" placeholder="—"
+                onblur="vendorSetSku('${escJs(vendorName)}','${escJs(i.item)}',this.value,'${escJs(i.desc)}')"
+                onkeydown="if(event.key==='Enter')this.blur()"
+                style="width:100px;padding:3px 6px;font-size:11px;font-family:var(--font-mono)" title="Type your store SKU/UPC. Same SKU on multiple rows → links them as one product.">
+              ${prod ? `<button onclick="productOpenView('${escJs(prod.id)}')" style="padding:2px 6px;font-size:10px" title="See all vendors for this product">↗</button>` : ''}
+            </div>
+          </td>`;
+          let retailCells = '';
+          if(showRetail){
+            const {retail, margin} = vendorRetailFor(i);
+            const marginCol = margin >= 30 ? 'var(--green)' : margin >= 20 ? 'var(--amber)' : 'var(--red)';
+            retailCells = `
+              <td class="mn" style="text-align:right;color:var(--green);font-weight:600" title="Auto-calculated from last cost × ${catMarkup(i.cat)}% markup">${f2(retail)}<span style="color:var(--text4);font-weight:400;margin-left:2px">~</span></td>
+              <td class="mn" style="text-align:right;color:${marginCol};font-weight:600">${margin.toFixed(1)}%</td>`;
+          }
           return `<tr>
             <td style="padding:8px 10px"><div style="font-weight:600">${esc(i.desc)}</div><div style="font-size:11px;color:var(--text3)">#${esc(i.item)} · ${esc(i.size||'')}</div></td>
+            ${skuCell}
             <td>${catTagHtml(i.cat)}</td>
             <td class="mn" style="text-align:right">${f2(i.firstCost)}</td>
             <td class="mn" style="text-align:right;font-weight:600">${f2(i.lastCost)}</td>
             <td class="mn" style="text-align:right;color:${trendCol};font-weight:600">${trendTxt}</td>
+            ${retailCells}
             <td class="mn" style="text-align:right">${i.totalQty}</td>
             <td class="mn" style="text-align:right;font-weight:600">${fBig(i.totalSpend)}</td>
             <td class="mn" style="font-size:11px;color:var(--text3)">${esc(i.lastSeen)}</td>
           </tr>`;
         }).join('')}
       </tbody>
-    </table>` : '<div style="text-align:center;padding:32px;color:var(--text3)">No purchased items recorded for this vendor.</div>';
-  modal.style.display = 'flex';
+    </table>
+    ${hidden > 0 ? `<div style="text-align:center;padding:10px;background:var(--bg3);border-radius:6px;margin-top:8px">
+      <span style="color:var(--text3);margin-right:10px;font-size:12px">Showing first ${slice.length} of ${items.length} items — narrow with search or</span>
+      <button class="db-bulk-btn" onclick="vendorShowAll()">Show all ${items.length}</button>
+    </div>` : ''}
+    <div style="margin-top:8px;font-size:11px;color:var(--text3)">
+      Type your store SKU/UPC in the field. Same SKU across vendors links them as one product — click ↗ to see vendor comparison.
+      ${showRetail ? ' <span style="color:var(--text4)">~</span> retail is auto-calculated from current category markup.' : ''}
+    </div>` : `<div style="text-align:center;padding:32px;color:var(--text3)">${q ? 'No items match "'+esc(q)+'"' : 'No purchased items recorded for this vendor.'}</div>`;
+}
+let _vndShowAll = false;
+function vendorShowAll(){ _vndShowAll = true; vendorRerender(); }
+// Called by the inline SKU input. Persists the link and re-renders so the ↗ button appears.
+function vendorSetSku(vendorName, itemNo, sku, desc){
+  const before = productForVendorItem(vendorName, itemNo);
+  const after = setProductSkuForItem(vendorName, itemNo, sku, desc);
+  // Toast only when something actually changed, to avoid noise on focus-out without edits.
+  const changed = (before?.id || '') !== (after?.id || '');
+  if(changed && typeof showToast === 'function'){
+    if(after && before) showToast('info', `Linked to "${after.name}"`);
+    else if(after) showToast('success', `Created product "${after.name}" (SKU ${after.sku})`);
+    else if(before) showToast('info', `Removed SKU link`);
+  }
+  vendorRerender();
+}
+
+// ═══════════ PRODUCT CROSS-VENDOR VIEW ═══════════
+// Same modal, different content. Stack semantics: vendor view → product view → back.
+function productOpenView(productId){
+  const m = document.getElementById('vnd-modal');
+  m.dataset.viewProductId = productId;
+  productRenderView(productId);
+}
+function productRenderView(productId){
+  const prod = loadProducts()[productId];
+  if(!prod){ productBackToVendor(); return; }
+  const refs = vendorItemsForProduct(productId);
+  // Build a per-vendor row for this product by pulling from each linked vendor's history.
+  // We reuse vendorBuildItems() per vendor to get aggregated stats consistent with the vendor view.
+  const hist = loadHist();
+  const knownVendors = {}; // vendorKey → real vendor name (case-preserving)
+  hist.forEach(inv => { knownVendors[normV(inv.vendor)] = inv.vendor; });
+
+  const rows = [];
+  refs.forEach(r => {
+    const vendorName = knownVendors[r.vendorKey];
+    if(!vendorName) return; // link points to a vendor that no longer has any history
+    const items = vendorBuildItems(vendorName);
+    const i = items.find(x => x.item === r.itemNo);
+    if(i) rows.push({vendorName, ...i});
+  });
+  // Sort by last cost per unit ascending so the cheapest source bubbles to the top.
+  rows.sort((a,b) => a.lastCost - b.lastCost);
+  const cheapestCost = rows.length ? rows[0].lastCost : 0;
+
+  // Header chrome: Back button + product title + SKU + edit-name affordance.
+  document.getElementById('vnd-modal-title').textContent = prod.name;
+  document.getElementById('vnd-modal-sub').innerHTML = `SKU <span style="font-family:var(--font-mono);font-weight:600;color:var(--text)">${esc(prod.sku)}</span> · ${rows.length} vendor${rows.length!==1?'s':''} · <a onclick="productRename('${escJs(prod.id)}')" style="cursor:pointer;color:var(--c1);text-decoration:underline">rename</a>`;
+  document.getElementById('vnd-back-btn').style.display = '';
+
+  document.getElementById('vnd-modal-body').innerHTML = rows.length ? `
+    <table style="width:100%;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left">Vendor</th>
+        <th style="text-align:left">Vendor's description</th>
+        <th style="text-align:left">Vendor item #</th>
+        <th style="text-align:right">Last cost/unit</th>
+        <th style="text-align:right">vs cheapest</th>
+        <th style="text-align:right">Cases bought</th>
+        <th style="text-align:right">Total spend</th>
+        <th style="text-align:left">Last seen</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map((r,idx) => {
+          const diff = r.lastCost - cheapestCost;
+          const pct = cheapestCost > 0 ? (diff / cheapestCost * 100) : 0;
+          const isCheapest = idx === 0;
+          const diffCell = isCheapest
+            ? '<span style="color:var(--green);font-weight:600">✓ cheapest</span>'
+            : `<span style="color:var(--red)">+${pct.toFixed(1)}% (+${f2(diff)})</span>`;
+          return `<tr ${isCheapest?'style="background:#f0fdf4"':''}>
+            <td style="padding:8px 10px"><a onclick="vendorOpen('${escJs(r.vendorName)}')" style="cursor:pointer;color:var(--c1);font-weight:600;text-decoration:underline">${esc(r.vendorName)}</a></td>
+            <td style="font-size:11px;color:var(--text2)">${esc(r.desc)}</td>
+            <td class="mn" style="font-size:11px">#${esc(r.item)} · ${esc(r.size||'')}</td>
+            <td class="mn" style="text-align:right;font-weight:700;${isCheapest?'color:var(--green)':''}">${f2(r.lastCost)}</td>
+            <td class="mn" style="text-align:right">${diffCell}</td>
+            <td class="mn" style="text-align:right">${r.totalQty}</td>
+            <td class="mn" style="text-align:right;font-weight:600">${fBig(r.totalSpend)}</td>
+            <td class="mn" style="font-size:11px;color:var(--text3)">${esc(r.lastSeen)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2)">
+      ${rows.length > 1
+        ? `<b>Tip:</b> ${esc(rows[0].vendorName)} is your cheapest source for this product. Switching all purchases here would save you about <b>${f2((rows.reduce((s,r)=>s+r.totalQty,0)) * (rows.reduce((s,r)=>s+r.totalSpend/Math.max(1,r.totalQty),0)/rows.length - cheapestCost))}</b> at current volumes (rough estimate).`
+        : 'Add this same SKU to invoice items from other vendors and you\'ll see a cost comparison here.'}
+    </div>` : '<div style="text-align:center;padding:32px;color:var(--text3)">No vendor history found for this product.</div>';
+}
+function productBackToVendor(){
+  const m = document.getElementById('vnd-modal');
+  delete m.dataset.viewProductId;
+  if(m.dataset.vendor) vendorRenderTable(m.dataset.vendor);
+}
+function productRename(productId){
+  const ps = loadProducts();
+  const p = ps[productId]; if(!p) return;
+  const nu = (prompt('Product name', p.name) || '').trim();
+  if(!nu || nu === p.name) return;
+  p.name = nu;
+  saveProducts(ps);
+  productRenderView(productId);
 }
 function vendorClose(){
   const m = document.getElementById('vnd-modal');
   m.style.display = 'none';
   delete m.dataset.vendor;
+  delete m.dataset.viewProductId;
 }
 // CSV export. RFC-4180-ish quoting: wrap fields containing comma/quote/newline in quotes,
-// double any internal quote.
+// double any internal quote. Retail/Margin always included regardless of UI toggle.
 function vendorExportCSV(){
   const vendorName = document.getElementById('vnd-modal').dataset.vendor;
   if(!vendorName) return;
   const items = vendorBuildItems(vendorName);
-  const cols = ['Item #','Description','Size','Category','First seen','Last seen','First cost/unit','Last cost/unit','Change %','Total cases','Total spend','Invoice count'];
+  const cols = ['Item #','Your SKU','Description','Size','Category','First seen','Last seen','First cost/unit','Last cost/unit','Change %','Auto retail','Margin %','Total cases','Total spend','Invoice count'];
   const csvCell = v => {
     const s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
   };
-  const rows = items.map(i => [
-    i.item, i.desc, i.size, catLabel(i.cat),
-    i.firstSeen, i.lastSeen,
-    i.firstCost.toFixed(4), i.lastCost.toFixed(4),
-    i.costPct.toFixed(2),
-    i.totalQty, i.totalSpend.toFixed(2),
-    i.invoiceCount
-  ].map(csvCell).join(','));
+  const rows = items.map(i => {
+    const {retail, margin} = vendorRetailFor(i);
+    const prod = productForVendorItem(vendorName, i.item);
+    return [
+      i.item, prod?.sku || '', i.desc, i.size, catLabel(i.cat),
+      i.firstSeen, i.lastSeen,
+      i.firstCost.toFixed(4), i.lastCost.toFixed(4),
+      i.costPct.toFixed(2),
+      retail.toFixed(2), margin.toFixed(2),
+      i.totalQty, i.totalSpend.toFixed(2),
+      i.invoiceCount
+    ].map(csvCell).join(',');
+  });
   const csv = [cols.join(','), ...rows].join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
@@ -2747,7 +3094,7 @@ function vendorExportCSV(){
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
   if(typeof showToast === 'function') showToast('success', `Exported ${items.length} items to CSV`);
 }
-// PDF export uses jsPDF + autoTable (already loaded for other exports in this app).
+// PDF export uses jsPDF + autoTable. Retail/Margin always included regardless of UI toggle.
 function vendorExportPDF(){
   const vendorName = document.getElementById('vnd-modal').dataset.vendor;
   if(!vendorName) return;
@@ -2764,19 +3111,25 @@ function vendorExportPDF(){
   doc.text(`${items.length} items · ${fBig(totalSpend)} total spend · Generated ${new Date().toLocaleDateString()}`, 40, 68);
   doc.autoTable({
     startY: 84,
-    head: [['Item','Description','Size','Category','First','Last','Change','Cases','Spend','Last seen']],
-    body: items.map(i => [
-      i.item, i.desc, i.size, catLabel(i.cat),
-      '$'+i.firstCost.toFixed(2),
-      '$'+i.lastCost.toFixed(2),
-      Math.abs(i.costPct) < 0.5 ? '—' : (i.costPct>0?'+':'')+i.costPct.toFixed(1)+'%',
-      i.totalQty,
-      '$'+i.totalSpend.toFixed(2),
-      i.lastSeen
-    ]),
+    head: [['Item','SKU','Description','Size','Category','First','Last','Change','Retail','Margin','Cases','Spend','Last seen']],
+    body: items.map(i => {
+      const {retail, margin} = vendorRetailFor(i);
+      const prod = productForVendorItem(vendorName, i.item);
+      return [
+        i.item, prod?.sku || '', i.desc, i.size, catLabel(i.cat),
+        '$'+i.firstCost.toFixed(2),
+        '$'+i.lastCost.toFixed(2),
+        Math.abs(i.costPct) < 0.5 ? '—' : (i.costPct>0?'+':'')+i.costPct.toFixed(1)+'%',
+        '$'+retail.toFixed(2),
+        margin.toFixed(1)+'%',
+        i.totalQty,
+        '$'+i.totalSpend.toFixed(2),
+        i.lastSeen
+      ];
+    }),
     styles:{fontSize:8,cellPadding:4},
     headStyles:{fillColor:[59,130,246]},
-    columnStyles:{1:{cellWidth:160},6:{halign:'right'},7:{halign:'right'},8:{halign:'right'}}
+    columnStyles:{2:{cellWidth:130},7:{halign:'right'},8:{halign:'right'},9:{halign:'right'},10:{halign:'right'},11:{halign:'right'}}
   });
   doc.save(`${vendorName.replace(/[^\w-]+/g,'_')}_items_${new Date().toISOString().substring(0,10)}.pdf`);
   if(typeof showToast === 'function') showToast('success', `Exported ${items.length} items to PDF`);
