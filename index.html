@@ -1665,6 +1665,29 @@ function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function normV(v){return (v||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20);}
 
+// ═══════════ HTML/JS ESCAPING ═══════════
+// esc(s): safe for HTML text content AND inside double-quoted attributes (e.g. value="${esc(x)}").
+// escJs(s): safe inside an HTML double-quoted attribute that contains a single-quoted JS string,
+//           e.g. onclick="fn('${escJs(x)}')". Escapes for JS first, then HTML, so the value
+//           survives both parsers without breaking out of the JS string or the HTML attribute.
+const _ESC_HTML = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => _ESC_HTML[c]); }
+function escJs(s){
+  return String(s==null?'':s)
+    .replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// safeUrl(s): returns the URL only if it uses a safe scheme (http, https, data:image, blob).
+// Falls back to '' so we never inject javascript: or other dangerous schemes into src/href.
+function safeUrl(s){
+  const u = String(s==null?'':s).trim();
+  if(!u) return '';
+  if(/^(https?:|blob:|data:image\/)/i.test(u)) return u;
+  if(u.startsWith('/') || u.startsWith('./') || u.startsWith('../')) return u;
+  return '';
+}
+
 // ═══════════ STORAGE ═══════════
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -1911,8 +1934,8 @@ function renderQueue(){
   document.getElementById('queue-list').innerHTML=FILE_QUEUE.map((q,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
       <span>${ico[q.status]||'⏳'}</span>
-      <span style="flex:1;font-size:12px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.name}</span>
-      <span style="font-size:11px;color:var(--text3)">${q.status==='done'&&q.result?q.result.vendor+' #'+q.result.invoiceNo:q.status}</span>
+      <span style="flex:1;font-size:12px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.name)}</span>
+      <span style="font-size:11px;color:var(--text3)">${q.status==='done'&&q.result?esc(q.result.vendor+' #'+q.result.invoiceNo):esc(q.status)}</span>
       ${q.status==='waiting'?`<button style="font-size:11px;padding:3px 8px" onclick="FILE_QUEUE.splice(${i},1);renderQueue()">×</button>`:''}
     </div>`).join('');
   const w=FILE_QUEUE.filter(q=>q.status==='waiting').length;
@@ -1927,7 +1950,7 @@ async function processQueue(){
   show('dz-wrap',false);show('queue-wrap',false);show('batch-progress',true);
   const total=FILE_QUEUE.length;
   const log=document.getElementById('bp-log');log.innerHTML='';
-  const addLog=(m,c)=>{log.innerHTML+=`<div style="color:${c||'var(--text2)'}">${m}</div>`;log.scrollTop=log.scrollHeight;};
+  const addLog=(m,c)=>{log.innerHTML+=`<div style="color:${c||'var(--text2)'}">${esc(m)}</div>`;log.scrollTop=log.scrollHeight;};
   addLog(`Starting: ${total} invoice(s)...`);
   const results=[];
   for(let i=0;i<FILE_QUEUE.length;i++){
@@ -1964,12 +1987,12 @@ async function processQueue(){
   document.getElementById('bd-list').innerHTML=done.map(r=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px">
       <div>
-        <div style="font-weight:600">${r.inv.vendor} — #${r.inv.invoiceNo}</div>
-        <div style="font-size:11px;color:var(--text2)">${r.inv.date} · ${r.saved} products saved · ${r.skipped} excluded</div>
+        <div style="font-weight:600">${esc(r.inv.vendor)} — #${esc(r.inv.invoiceNo)}</div>
+        <div style="font-size:11px;color:var(--text2)">${esc(r.inv.date)} · ${r.saved} products saved · ${r.skipped} excluded</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         ${r.ups>0?`<span class="tag tr">▲ ${r.ups} increase${r.ups!==1?'s':''}</span>`:'<span class="tag tg">No increases</span>'}
-        <button onclick="reloadInv('${r.inv.vendor}','${r.inv.invoiceNo}')" style="font-size:11px;padding:4px 10px">Review →</button>
+        <button onclick="reloadInv('${escJs(r.inv.vendor)}','${escJs(r.inv.invoiceNo)}')" style="font-size:11px;padding:4px 10px">Review →</button>
       </div>
     </div>`).join('');
   if(done.length){INV=done[0].inv;const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=INV.vendor+' #'+INV.invoiceNo+' · '+INV.date;}
@@ -2123,7 +2146,7 @@ function renderApprovals(filter){
     const st=ap.status||'pending'; const ch=ap.change||{};
     let chTag='';
     if(ch.status==='increase'){
-      chTag=`<span class="tag tr">▲ +${ch.pct.toFixed(1)}% vs ${ch.prevDate||'prev invoice'}</span>`;
+      chTag=`<span class="tag tr">▲ +${ch.pct.toFixed(1)}% vs ${esc(ch.prevDate||'prev invoice')}</span>`;
       if(ch.matchType==='cross_vendor')chTag+=` <span class="tag tp">cross-vendor match</span>`;
       else if(ch.matchType==='fuzzy')chTag+=` <span class="tag ta">${Math.round((ch.matchConf||0)*100)}% similarity</span>`;
     }
@@ -2134,10 +2157,10 @@ function renderApprovals(filter){
       chTag+=` <span class="tag tg" style="font-size:10px">💰 cheaper from another vendor (save ${f2(ch.crossVendor.savings)}/unit)</span>`;
     }
     return `<div class="apr ap${st==='approved'?'ok':st==='rejected'?'no':'p'}">
-      <input type="checkbox" class="chk apchk" data-item="${i.item}">
+      <input type="checkbox" class="chk apchk" data-item="${esc(i.item)}">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;margin-bottom:3px">${i.desc} ${i._isNew?'<span class="tag tb">NEW</span>':''}</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:5px">${CLABEL[i.cat]} · ${i.size} · ${i._u||1} units/case · ${i.qty} cases</div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:3px">${esc(i.desc)} ${i._isNew?'<span class="tag tb">NEW</span>':''}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:5px">${esc(CLABEL[i.cat]||'')} · ${esc(i.size)} · ${i._u||1} units/case · ${i.qty} cases</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
           <span style="font-size:12px">Cost: <b class="mn">${f2(cu)}/unit</b> · Box: <b class="mn">${f2(i.caseCost)}</b></span>
           ${chTag}
@@ -2147,7 +2170,7 @@ function renderApprovals(filter){
         <div>
           <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/UNIT</div>
           <input type="number" class="tinput" value="${retail.toFixed(2)}" step="0.01" min="0"
-            onchange="updateRetail('${i.item}',parseFloat(this.value))">
+            onchange="updateRetail('${escJs(i.item)}',parseFloat(this.value))">
         </div>
         <div style="text-align:center">
           <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/BOX</div>
@@ -2158,8 +2181,8 @@ function renderApprovals(filter){
           <div class="mn" style="font-size:14px;font-weight:700;color:${mc}">${marg.toFixed(1)}%</div>
         </div>
         <div style="display:flex;gap:6px">
-          <button onclick="setAp('${i.item}','approved')" ${st==='approved'?'class="bg"':''}>✓</button>
-          <button onclick="setAp('${i.item}','rejected')" ${st==='rejected'?'class="br"':''}>✗</button>
+          <button onclick="setAp('${escJs(i.item)}','approved')" ${st==='approved'?'class="bg"':''}>✓</button>
+          <button onclick="setAp('${escJs(i.item)}','rejected')" ${st==='rejected'?'class="br"':''}>✗</button>
         </div>
       </div>
     </div>`;
@@ -2402,8 +2425,6 @@ function renderTracker(filter){
   if(cnt) cnt.textContent = `${prods.length} match${prods.length!==1?'es':''}`;
 
   document.getElementById('tr-body').innerHTML = prods.map(p=>{
-    const escDesc = (p.desc||'').replace(/"/g,'&quot;');
-    const escVendor = (p.vendor||'').replace(/"/g,'&quot;');
     const ps = p.trend==='same' ? '<span style="color:var(--text4)">—</span>'
       : p.pct>0 ? `<span class="up mn">+${p.pct.toFixed(1)}%</span>`
       : `<span class="dn mn">${p.pct.toFixed(1)}%</span>`;
@@ -2412,22 +2433,22 @@ function renderTracker(filter){
       : p.trend==='dn' ? 'style="background:#f0fdf4"' : '';
     const catTag = p.source==='produce'
       ? '<span class="tag tg">🥬 Produce</span>'
-      : `<span class="tag ${CCLS[p.cat]||'tgr'}">${CLABEL[p.cat]||p.cat}</span>`;
+      : `<span class="tag ${CCLS[p.cat]||'tgr'}">${esc(CLABEL[p.cat]||p.cat)}</span>`;
     const discBtn = p.discontinued
-      ? `<button class="db-bulk-btn" onclick="toggleProdDisc('${escDesc}','${escVendor}')" title="Restore">↺</button>`
-      : `<button class="db-bulk-btn warn" onclick="toggleProdDisc('${escDesc}','${escVendor}')" title="Mark discontinued">⊘</button>`;
+      ? `<button class="db-bulk-btn" onclick="toggleProdDisc('${escJs(p.desc)}','${escJs(p.vendor)}')" title="Restore">↺</button>`
+      : `<button class="db-bulk-btn warn" onclick="toggleProdDisc('${escJs(p.desc)}','${escJs(p.vendor)}')" title="Mark discontinued">⊘</button>`;
     return `<tr ${rc}>
-      <td class="wd" style="padding:8px 14px"><b>${p.desc}</b>${p.discontinued?' <span class="tag tgr" style="font-size:9px">DISC</span>':''}</td>
+      <td class="wd" style="padding:8px 14px"><b>${esc(p.desc)}</b>${p.discontinued?' <span class="tag tgr" style="font-size:9px">DISC</span>':''}</td>
       <td>${catTag}</td>
-      <td style="font-size:11px;color:var(--text2)">${p.vendor}</td>
+      <td style="font-size:11px;color:var(--text2)">${esc(p.vendor)}</td>
       <td class="mn">${f2(p.prevCu)}</td>
       <td class="mn" style="font-weight:700">${f2(p.lastCu)}</td>
       <td>${ps}</td>
       <td class="mn" style="color:var(--green);font-weight:600">${f2(p.latestRetail)}</td>
-      <td class="mn" style="font-size:11px;color:var(--text3)">${p.lastSeen||'—'}</td>
+      <td class="mn" style="font-size:11px;color:var(--text3)">${esc(p.lastSeen||'—')}</td>
       <td class="mn">${p.orders}</td>
-      <td><input type="text" placeholder="—" value="${(p.note||'').replace(/"/g,'&quot;')}" 
-        onchange="setProdNote('${escDesc}','${escVendor}',this.value)" 
+      <td><input type="text" placeholder="—" value="${esc(p.note||'')}"
+        onchange="setProdNote('${escJs(p.desc)}','${escJs(p.vendor)}',this.value)"
         style="width:100%;max-width:160px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:11px"></td>
       <td style="text-align:center">${discBtn}</td>
     </tr>`;
@@ -2460,7 +2481,7 @@ function renderVendors(){
   document.getElementById('vnd-list').innerHTML=Object.values(V).map(v=>{
     const avg=v.invs.length?v.spend/v.invs.length:0;
     return `<div class="vc">
-      <div class="vc-hd"><div class="vc-av">${v.name.charAt(0)}</div><div class="vc-name">${v.name}</div></div>
+      <div class="vc-hd"><div class="vc-av">${esc((v.name||'?').charAt(0))}</div><div class="vc-name">${esc(v.name)}</div></div>
       <div class="vc-stats">
         <div class="vs"><div class="vsv mn">${v.invs.length}</div><div class="vsl">Invoices</div></div>
         <div class="vs"><div class="vsv mn">${fBig(v.spend)}</div><div class="vsl">Total spend</div></div>
@@ -2468,7 +2489,7 @@ function renderVendors(){
         <div class="vs"><div class="vsv mn">${v.items.size}</div><div class="vsl">Catalog items</div></div>
         <div class="vs"><div class="vsv mn" style="color:var(--red)">${v.up}</div><div class="vsl">Price increases</div></div>
         <div class="vs"><div class="vsv mn" style="color:var(--green)">${v.dn}</div><div class="vsl">Price decreases</div></div>
-        <div class="vs"><div class="vsv mn" style="font-size:11px;color:var(--text3)">${v.invs[v.invs.length-1].date}</div><div class="vsl">Last invoice</div></div>
+        <div class="vs"><div class="vsv mn" style="font-size:11px;color:var(--text3)">${esc(v.invs[v.invs.length-1].date)}</div><div class="vsl">Last invoice</div></div>
       </div>
     </div>`;
   }).join('');
@@ -2507,8 +2528,8 @@ function buildAlerts(){
     <div class="alrow">
       <div class="alico" style="background:${bgs[a.sev]}">${a.ico}</div>
       <div style="flex:1">
-        <div style="font-weight:600;margin-bottom:2px">${a.title}</div>
-        <div style="font-size:12px;color:var(--text2)">${a.detail}</div>
+        <div style="font-weight:600;margin-bottom:2px">${esc(a.title)}</div>
+        <div style="font-size:12px;color:var(--text2)">${esc(a.detail)}</div>
       </div>
     </div>`).join('')+`</div>`;
 }
@@ -2524,11 +2545,11 @@ function renderHistory(){
     const purch=inv.items?inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0):[];
     const oos=inv.items?inv.items.filter(i=>i._rt===RT.OOS).length:0;
     const newCt=inv.items?inv.items.filter(i=>i._isNew&&i._rt===RT.PURCHASED).length:0;
-    return `<div class="hcard" onclick="reloadInv('${inv.vendor}','${inv.invoiceNo}')">
+    return `<div class="hcard" onclick="reloadInv('${escJs(inv.vendor)}','${escJs(inv.invoiceNo)}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div>
-          <div style="font-weight:700;font-size:14px">${inv.vendor} — #${inv.invoiceNo}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${inv.date} · ${inv.docType==='sales_order'?'⚠ Sales Order':'Invoice'} · ${purch.length} products</div>
+          <div style="font-weight:700;font-size:14px">${esc(inv.vendor)} — #${esc(inv.invoiceNo)}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${esc(inv.date)} · ${inv.docType==='sales_order'?'⚠ Sales Order':'Invoice'} · ${purch.length} products</div>
         </div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <div style="text-align:center"><div class="mn" style="font-size:15px;font-weight:700">${fBig(inv.total||0)}</div><div style="font-size:10px;color:var(--text3)">total</div></div>
@@ -2679,11 +2700,11 @@ async function testApiKey(){
       res.style.background='var(--greenl)';
       showBanner('✅ API key verified — ready to extract real invoices.','var(--greenl)','var(--greend)');
     } else if(d.error){
-      res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+( d.error.message||'API error')+' — check your key and account.</span>';
+      res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+esc(d.error.message||'API error')+' — check your key and account.</span>';
       res.style.background='var(--redl)';
     }
   }catch(err){
-    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ Connection failed: '+err.message+'</span>';
+    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ Connection failed: '+esc(err.message)+'</span>';
     res.style.background='var(--redl)';
   }
   btn.textContent='🧪 Test connection';btn.disabled=false;
@@ -2704,7 +2725,7 @@ function showToast(kind, msg, dur){
   const ico = {success:'✅', error:'⚠️', warn:'⚡', info:'ℹ️'}[kind] || 'ℹ️';
   const t = document.createElement('div');
   t.className = 'toast ' + (kind||'info');
-  t.innerHTML = `<div class="toast-ico">${ico}</div><div class="toast-body">${msg}</div><div class="toast-x">×</div>`;
+  t.innerHTML = `<div class="toast-ico">${ico}</div><div class="toast-body">${esc(msg)}</div><div class="toast-x">×</div>`;
   t.querySelector('.toast-x').onclick = ()=>{ t.classList.add('fade'); setTimeout(()=>t.remove(),300); };
   wrap.appendChild(t);
   setTimeout(()=>{ t.classList.add('fade'); setTimeout(()=>t.remove(),300); }, dur||4500);
@@ -3088,7 +3109,7 @@ async function testDbConn(){
     showDbBanner('✅ Database connected and ready.','var(--greenl)','var(--greend)');
     updateDbStatus();
   }catch(err){
-    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+err.message+'</span>';
+    res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+esc(err.message)+'</span>';
     res.style.background='var(--redl)';
   }
   btn.textContent='🧪 Test connection';btn.disabled=false;
@@ -3198,7 +3219,7 @@ async function syncToDb(){
     updateDbStatus();
     showDbBanner('✅ All data synced to Neon successfully.','var(--greenl)','var(--greend)');
   }catch(err){
-    status.innerHTML='<span style="color:var(--red)">❌ Sync failed: '+err.message+'</span>';
+    status.innerHTML='<span style="color:var(--red)">❌ Sync failed: '+esc(err.message)+'</span>';
     showDbBanner('❌ Sync failed: '+err.message,'var(--redl)','var(--redd)');
   }
   syncBtn.disabled=false;syncBtn.textContent='☁️ Sync all data to database';
@@ -3504,7 +3525,7 @@ function renderDashboardTable(){
   }
   
   if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text3)">No items match "${search}"</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text3)">No items match "${esc(search)}"</td></tr>`;
     return;
   }
   
@@ -3597,17 +3618,17 @@ function renderDashboardTable(){
     if(apStatus === 'approved'){
       actionCell = `<div class="db-act-cell">
         <span class="db-act-status approved">✓ Approved</span>
-        <span class="db-act-undo" onclick="setAp('${item.item}','pending')">Undo</span>
+        <span class="db-act-undo" onclick="setAp('${escJs(item.item)}','pending')">Undo</span>
       </div>`;
     } else if(apStatus === 'rejected'){
       actionCell = `<div class="db-act-cell">
         <span class="db-act-status rejected">✕ Rejected</span>
-        <span class="db-act-undo" onclick="setAp('${item.item}','pending')">Undo</span>
+        <span class="db-act-undo" onclick="setAp('${escJs(item.item)}','pending')">Undo</span>
       </div>`;
     } else {
       actionCell = `<div class="db-act-cell">
-        <button class="db-act-btn approve" onclick="setAp('${item.item}','approved')">✓ Approve</button>
-        <button class="db-act-btn reject" onclick="setAp('${item.item}','rejected')">✕ Reject</button>
+        <button class="db-act-btn approve" onclick="setAp('${escJs(item.item)}','approved')">✓ Approve</button>
+        <button class="db-act-btn reject" onclick="setAp('${escJs(item.item)}','rejected')">✕ Reject</button>
       </div>`;
     }
 
@@ -3638,7 +3659,7 @@ function renderDashboardTable(){
     
     // Units cell — flag if prior had a different number of units (parser drift)
     const unitsWarn = hasPrev && ch.prevUnits>0 && ch.prevUnits!==curUnits;
-    const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Units per case'}">${curUnits}${unitsWarn?` <span style="color:var(--amber)">⚠</span>`:''}<span class="u-sub">${item.size||''}${unitsWarn?`<br>was ${ch.prevUnits}`:''}</span></div>`;
+    const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Units per case'}">${curUnits}${unitsWarn?` <span style="color:var(--amber)">⚠</span>`:''}<span class="u-sub">${esc(item.size||'')}${unitsWarn?`<br>was ${ch.prevUnits}`:''}</span></div>`;
     
     // Unit cost cell
     let unitCellHtml;
@@ -3664,8 +3685,8 @@ function renderDashboardTable(){
         <div class="itm-cell">
           <div class="itm-img">${catIcon}</div>
           <div>
-            <div class="itm-name">${item.desc}</div>
-            <div class="itm-size">${item.size||''}</div>
+            <div class="itm-name">${esc(item.desc)}</div>
+            <div class="itm-size">${esc(item.size||'')}</div>
           </div>
         </div>
       </td>
@@ -3786,9 +3807,9 @@ function renderDashboardVendors(){
     totalRisk += v.atRisk;
     totalSpend += v.spend;
     
-    const initial = v.name.charAt(0).toUpperCase();
+    const initial = (v.name||'?').charAt(0).toUpperCase();
     return `<tr>
-      <td><div class="vt-name"><div class="vt-logo">${initial}</div><span style="font-weight:500">${v.name}</span></div></td>
+      <td><div class="vt-name"><div class="vt-logo">${esc(initial)}</div><span style="font-weight:500">${esc(v.name)}</span></div></td>
       <td class="vt-num">${v.invoices}</td>
       <td class="vt-num">${v.items.size}</td>
       <td><span class="vt-risk">${v.atRisk}</span></td>
@@ -3898,7 +3919,7 @@ function renderDashboardChart(){
       const cls = m.pct>0 ? 'up' : 'dn';
       const sign = m.pct>0 ? '+' : '';
       return `<tr>
-        <td style="font-size:11px;color:var(--text);font-weight:500">${m.desc.length>22?m.desc.substring(0,22)+'…':m.desc}</td>
+        <td style="font-size:11px;color:var(--text);font-weight:500">${esc(m.desc.length>22?m.desc.substring(0,22)+'…':m.desc)}</td>
         <td style="text-align:right" class="${cls}">${sign}${m.pct.toFixed(1)}%</td>
         <td style="text-align:right" class="${cls}">${sign}${f2(m.diff)}</td>
       </tr>`;
@@ -3927,7 +3948,7 @@ function renderDashboardQueue(){
     return `<div class="q-item">
       <div class="q-icon">📄</div>
       <div class="q-mid">
-        <div class="q-name">${q.name}</div>
+        <div class="q-name">${esc(q.name)}</div>
         <div class="q-meta">${sizeStr} · Added now</div>
       </div>
       <span class="q-status ${stCls}">${st}</span>
@@ -4095,7 +4116,7 @@ function pcTestHost(){
   if(!v){ status.textContent = 'Enter a URL pattern first.'; return; }
   if(!v.includes('{slug}')){ status.innerHTML = '<span style="color:var(--red)">⚠ Pattern must include {slug}</span>'; return; }
   const testUrl = v.replace('{slug}','a-choy');
-  status.innerHTML = `Testing… <code style="font-size:10px">${testUrl}</code>`;
+  status.innerHTML = `Testing… <code style="font-size:10px">${esc(testUrl)}</code>`;
   const img = new Image();
   img.onload = ()=>{ status.innerHTML = `<span style="color:var(--green)">✅ Image loaded successfully (${img.naturalWidth}×${img.naturalHeight})</span>`; };
   img.onerror = ()=>{ status.innerHTML = `<span style="color:var(--red)">⚠ Could not load test image. Check the URL is public and the file exists.</span>`; };
@@ -4108,7 +4129,7 @@ function pcOnImage(e){
   pcCompressImage(f, 480, 0.82).then(dataUrl=>{
     _PC_ADD_IMG = dataUrl;
     const box = document.getElementById('pc-add-img-prev');
-    box.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    box.innerHTML = `<img src="${esc(safeUrl(dataUrl))}" style="width:100%;height:100%;object-fit:cover">`;
   }).catch(err=>{ showToast('error','Image error: '+err.message); });
 }
 function pcCompressImage(file, maxSide, quality){
@@ -4174,7 +4195,7 @@ function pcCatalogEdit(id){
   document.getElementById('pc-add-cost').value = item.cost||'';
   const url = pcImgUrl(item);
   if(url){
-    document.getElementById('pc-add-img-prev').innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`;
+    document.getElementById('pc-add-img-prev').innerHTML = `<img src="${esc(safeUrl(url))}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`;
   }
   document.getElementById('pc-add-name').scrollIntoView({behavior:'smooth',block:'center'});
 }
@@ -4202,7 +4223,7 @@ function pcRenderCatalog(){
   if(!filtered.length){
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
       <div style="font-size:32px;opacity:.4;margin-bottom:8px">🔍</div>
-      <div style="font-weight:600;color:var(--text2)">${search?'No matches for "'+search+'"':'No catalog items yet'}</div>
+      <div style="font-weight:600;color:var(--text2)">${search?'No matches for "'+esc(search)+'"':'No catalog items yet'}</div>
     </div>`;
     return;
   }
@@ -4212,20 +4233,21 @@ function pcRenderCatalog(){
   const unitLabel = {lb:'/ lb',bunch:'/ bunch',each:'each'};
   grid.innerHTML = slice.map(x=>{
     const url = pcImgUrl(x);
-    const imgHtml = url
-      ? `<img src="${url}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-cat-img-empty&quot;>📷</div>'">`
+    const safe = safeUrl(url);
+    const imgHtml = safe
+      ? `<img src="${esc(safe)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-cat-img-empty&quot;>📷</div>'">`
       : `<div class="pc-cat-img-empty">📦</div>`;
     const aliasText = (x.aliases||[]).slice(0,3).join(', ');
     return `<div class="pc-cat-card">
       <div class="pc-cat-img">${imgHtml}</div>
       <div class="pc-cat-body">
-        <div class="pc-cat-name">${x.name}</div>
-        <div class="pc-cat-meta">${unitLabel[x.unit]||x.unit}${x.cost?' · $'+x.cost.toFixed(2):''}</div>
-        ${aliasText?`<div class="pc-cat-aliases">aka ${aliasText}${(x.aliases||[]).length>3?' +'+((x.aliases.length)-3)+' more':''}</div>`:''}
+        <div class="pc-cat-name">${esc(x.name)}</div>
+        <div class="pc-cat-meta">${esc(unitLabel[x.unit]||x.unit)}${x.cost?' · $'+x.cost.toFixed(2):''}</div>
+        ${aliasText?`<div class="pc-cat-aliases">aka ${esc(aliasText)}${(x.aliases||[]).length>3?' +'+((x.aliases.length)-3)+' more':''}</div>`:''}
       </div>
       <div class="pc-cat-actions">
-        <button onclick="pcCatalogEdit('${x.id}')">Edit</button>
-        <button class="del" onclick="pcCatalogDelete('${x.id}')">Delete</button>
+        <button onclick="pcCatalogEdit('${escJs(x.id)}')">Edit</button>
+        <button class="del" onclick="pcCatalogDelete('${escJs(x.id)}')">Delete</button>
       </div>
     </div>`;
   }).join('') + (filtered.length>cap?`<div style="grid-column:1/-1;text-align:center;padding:14px;color:var(--text3);font-size:12px">Showing ${cap} of ${filtered.length} items — refine your search to see more</div>`:'');
@@ -4563,8 +4585,8 @@ function pcRenderRules(){
   wrap.innerHTML = rules.map((r,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--r)">
       <div style="flex:1;font-size:12px">
-        <div><b>"${r.match}"</b> → +$${(r.shipPerCase||0).toFixed(2)} per box</div>
-        ${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${r.note}</div>`:''}
+        <div><b>"${esc(r.match)}"</b> → +$${(r.shipPerCase||0).toFixed(2)} per box</div>
+        ${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(r.note)}</div>`:''}
       </div>
       <button class="db-bulk-btn warn" onclick="pcDeleteRule(${i})">🗑 Delete</button>
     </div>
@@ -4661,8 +4683,8 @@ function pcRenderHistory(){
   wrap.innerHTML = hist.map((h,i)=>`
     <div style="border:1px solid var(--border);border-radius:var(--rl);padding:12px 14px;display:flex;align-items:center;gap:12px;background:#fff">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;color:var(--text);font-size:13px">${h.vendor} · #${h.invoiceNo}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">${h.date} · ${h.lineCount} item${h.lineCount!==1?'s':''} · saved ${new Date(h.when).toLocaleDateString()}</div>
+        <div style="font-weight:600;color:var(--text);font-size:13px">${esc(h.vendor)} · #${esc(h.invoiceNo)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(h.date)} · ${h.lineCount} item${h.lineCount!==1?'s':''} · saved ${new Date(h.when).toLocaleDateString()}</div>
       </div>
       <button class="db-bulk-btn" onclick="pcReloadHist(${i})">↻ Reload</button>
       <button class="db-bulk-btn warn" onclick="pcDeleteHist(${i})">🗑 Delete</button>
@@ -4888,7 +4910,7 @@ function pcRenderResults(){
   if(summary) summary.textContent = `${PC_LAST_MATCHED.lines.length} items · ${buckets.high} high · ${buckets.med} med · ${buckets.low+buckets.none} review`;
   
   const cat = pcLoadCatalog();
-  const catOptions = cat.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const catOptions = cat.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
   
   // Build duplicate index: catalog id → set of vendors carrying it
   // Used to flag lines where the same item appears from multiple vendors.
@@ -4904,8 +4926,9 @@ function pcRenderResults(){
     const conf = line.confidence;
     const matched = line.catalogId ? cat.find(x=>x.id===line.catalogId) : null;
     const url = matched ? pcImgUrl(matched) : '';
+    const safe = safeUrl(url);
     const imgHtml = matched
-      ? (url ? `<img src="${url}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-row-r-img-empty&quot;>📷</div>'">` : `<div class="pc-row-r-img-empty">📦</div>`)
+      ? (safe ? `<img src="${esc(safe)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-row-r-img-empty&quot;>📷</div>'">` : `<div class="pc-row-r-img-empty">📦</div>`)
       : `<div class="pc-row-r-img-empty">❓</div>`;
     const autoRetail = pcRetailFor(line.cost);
     const retail = (line.retailOverride != null) ? line.retailOverride : autoRetail;
@@ -4916,11 +4939,11 @@ function pcRenderResults(){
     // Cost breakdown — show shipping line separately when a vendor rule applied
     let costBreakdown;
     if((line.shipPerCase||0) > 0){
-      costBreakdown = `Case ${line.invoiceSize||''} @ $${(line.baseCaseCost||0).toFixed(2)}<br>
+      costBreakdown = `Case ${esc(line.invoiceSize||'')} @ $${(line.baseCaseCost||0).toFixed(2)}<br>
         <span style="color:var(--amberd)">+ shipping $${line.shipPerCase.toFixed(2)}/box</span><br>
-        = $${(line.caseCost||0).toFixed(2)} ÷ ${line.unitsPerCase} → cost <b>$${line.cost.toFixed(2)}/${line.unitType||'lb'}</b>`;
+        = $${(line.caseCost||0).toFixed(2)} ÷ ${line.unitsPerCase} → cost <b>$${line.cost.toFixed(2)}/${esc(line.unitType||'lb')}</b>`;
     } else {
-      costBreakdown = `Case ${line.invoiceSize||''} @ $${(line.caseCost||0).toFixed(2)} → cost <b>$${line.cost.toFixed(2)}/${line.unitType||'lb'}</b>`;
+      costBreakdown = `Case ${esc(line.invoiceSize||'')} @ $${(line.caseCost||0).toFixed(2)} → cost <b>$${line.cost.toFixed(2)}/${esc(line.unitType||'lb')}</b>`;
     }
     
     // Vendor + duplicate label
@@ -4929,7 +4952,7 @@ function pcRenderResults(){
     if(lineVendor){
       const dupCount = line.catalogId && dupVendors[line.catalogId] ? dupVendors[line.catalogId].size : 1;
       const isDup = dupCount > 1;
-      vendorPill = `<span class="pc-vpill${isDup?' dup':''}" title="${isDup?`Same item from ${dupCount} different vendors`:'Vendor'}">${isDup?'⚠ ':''}${lineVendor}${isDup?` · ${dupCount} vendors`:''}</span>`;
+      vendorPill = `<span class="pc-vpill${isDup?' dup':''}" title="${isDup?`Same item from ${dupCount} different vendors`:'Vendor'}">${isDup?'⚠ ':''}${esc(lineVendor)}${isDup?` · ${dupCount} vendors`:''}</span>`;
     }
     
     // Price change vs prior history (uses each line's own vendor)
@@ -4938,13 +4961,13 @@ function pcRenderResults(){
     if(prior){
       const diff = line.cost - prior.cost;
       const pct = prior.cost>0 ? (diff/prior.cost*100) : 0;
-      const xVendorTag = prior.sameVendor ? '' : ` (${prior.vendor})`;
+      const xVendorTag = prior.sameVendor ? '' : ` (${esc(prior.vendor)})`;
       if(Math.abs(pct) < 0.5){
-        changeBadge = `<span class="pc-chg flat" title="No change vs ${prior.date}${xVendorTag}">• same as last</span>`;
+        changeBadge = `<span class="pc-chg flat" title="No change vs ${esc(prior.date)}${xVendorTag}">• same as last</span>`;
       } else if(diff > 0){
-        changeBadge = `<span class="pc-chg up" title="Was $${prior.cost.toFixed(2)} on ${prior.date}${xVendorTag}">▲ +${pct.toFixed(0)}% (was $${prior.cost.toFixed(2)})</span>`;
+        changeBadge = `<span class="pc-chg up" title="Was $${prior.cost.toFixed(2)} on ${esc(prior.date)}${xVendorTag}">▲ +${pct.toFixed(0)}% (was $${prior.cost.toFixed(2)})</span>`;
       } else {
-        changeBadge = `<span class="pc-chg down" title="Was $${prior.cost.toFixed(2)} on ${prior.date}${xVendorTag}">▼ ${pct.toFixed(0)}% (was $${prior.cost.toFixed(2)})</span>`;
+        changeBadge = `<span class="pc-chg down" title="Was $${prior.cost.toFixed(2)} on ${esc(prior.date)}${xVendorTag}">▼ ${pct.toFixed(0)}% (was $${prior.cost.toFixed(2)})</span>`;
       }
     } else if(line.catalogId){
       changeBadge = `<span class="pc-chg first" title="No prior purchase of this item">first time</span>`;
@@ -4953,7 +4976,7 @@ function pcRenderResults(){
     return `<div class="pc-row ${conf}">
       <div class="pc-row-l">
         <div class="pc-row-l-body">
-          <div class="pc-row-l-name">${line.invoiceText} ${vendorPill}</div>
+          <div class="pc-row-l-name">${esc(line.invoiceText)} ${vendorPill}</div>
           <div class="pc-row-l-cost">${costBreakdown}</div>
           ${changeBadge ? `<div style="margin-top:4px">${changeBadge}</div>` : ''}
         </div>
@@ -4965,7 +4988,7 @@ function pcRenderResults(){
           <div class="pc-row-r-name">
             <select onchange="pcOverride(${idx}, this.value)">
               <option value="">— No match (skip) —</option>
-              ${catOptions.replace(`value="${line.catalogId}"`, `value="${line.catalogId}" selected`)}
+              ${catOptions.replace(`value="${esc(line.catalogId)}"`, `value="${esc(line.catalogId)}" selected`)}
             </select>
           </div>
           ${matched ? `
@@ -4974,11 +4997,11 @@ function pcRenderResults(){
             <input type="number" step="0.01" min="0" value="${retail.toFixed(2)}" 
               onchange="pcSetRetail(${idx}, this.value)"
               style="width:70px;padding:3px 6px;border:1px solid ${isOverridden?'var(--c1)':'var(--border2)'};border-radius:5px;font-family:var(--font-mono);font-weight:700;color:${isOverridden?'var(--c1d)':'var(--green)'};font-size:13px">
-            <span style="font-size:11px;color:var(--text3)">${unitLbl}</span>
+            <span style="font-size:11px;color:var(--text3)">${esc(unitLbl)}</span>
             ${isOverridden ? `<span onclick="pcResetRetail(${idx})" title="Reset to auto-calculated" style="font-size:10px;color:var(--text3);cursor:pointer;text-decoration:underline">reset</span>` : `<span style="font-size:10px;color:var(--text4)">auto from $${autoRetail.toFixed(2)}</span>`}
           </div>
           ` : '<div class="pc-row-r-no">No catalog match</div>'}
-          ${matched && conf!=='high' ? `<label style="font-size:10px;color:var(--text3);display:flex;gap:4px;align-items:center;margin-top:4px;cursor:pointer"><input type="checkbox" ${line.remember?'checked':''} onchange="pcRememberToggle(${idx})"> Remember "${line.invoiceText.substring(0,30)}" → ${matched.name}</label>` : ''}
+          ${matched && conf!=='high' ? `<label style="font-size:10px;color:var(--text3);display:flex;gap:4px;align-items:center;margin-top:4px;cursor:pointer"><input type="checkbox" ${line.remember?'checked':''} onchange="pcRememberToggle(${idx})"> Remember "${esc(line.invoiceText.substring(0,30))}" → ${esc(matched.name)}</label>` : ''}
         </div>
       </div>
       <div class="pc-conf">
@@ -5122,8 +5145,9 @@ function pcPdfPreview(){
   prev.innerHTML = `<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Preview · ${items.length} cards${items.length>cap?' (showing first '+cap+')':''}</div><div class="pc-pdf-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">` + slice.map(it=>{
     const retail = (it.retailOverride != null) ? it.retailOverride : pcRetailFor(it.cost);
     const unitLbl = {lb:'per lb',bunch:'per bunch',each:'each'}[it.unit] || '';
-    const imgHtml = it.image ? `<img src="${it.image}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-pdf-card-img-empty&quot;>📷</div>'">` : `<div class="pc-pdf-card-img-empty">📦</div>`;
-    return `<div class="pc-pdf-card">${imgHtml}<div class="pc-pdf-card-name">${it.name}</div><div class="pc-pdf-card-price">$${retail.toFixed(2)}<div class="pc-pdf-card-unit">${unitLbl}</div></div></div>`;
+    const safeImg = safeUrl(it.image);
+    const imgHtml = safeImg ? `<img src="${esc(safeImg)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-pdf-card-img-empty&quot;>📷</div>'">` : `<div class="pc-pdf-card-img-empty">📦</div>`;
+    return `<div class="pc-pdf-card">${imgHtml}<div class="pc-pdf-card-name">${esc(it.name)}</div><div class="pc-pdf-card-price">$${retail.toFixed(2)}<div class="pc-pdf-card-unit">${esc(unitLbl)}</div></div></div>`;
   }).join('') + '</div>';
 }
 
