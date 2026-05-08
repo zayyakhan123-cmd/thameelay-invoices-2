@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <style>
 /* ─────────────────────────────────────────────
@@ -1188,7 +1189,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 
 <!-- PRICING RULES -->
 <div class="pg" id="pg-pricing">
-  <div class="pgh"><div class="pgt">Pricing Rules</div><div class="pgs">Set markup % by category — all calculations update instantly</div></div>
+  <div class="pgh"><div class="pgt">Pricing Rules</div><div class="pgs">Set markup % by category, or add your own categories — all calculations update instantly</div></div>
   <div class="g3" id="tgt-grid"></div>
   <div class="card"><div class="ctit">Quick reference</div>
     <table style="min-width:0"><thead><tr><th>Category</th><th>Markup</th><th>Margin</th><th>$1.00 cost → retail</th><th>Profit</th></tr></thead>
@@ -1205,12 +1206,6 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
         <div class="ig"><label>Category</label>
           <select id="cc-cat" onchange="calcRun()">
             <option value="">— select —</option>
-            <option value="snacks">Snacks & dry (30%)</option>
-            <option value="candy">Candy/Jelly (40%)</option>
-            <option value="frozen">Frozen (35%)</option>
-            <option value="bev">Beverages (30%)</option>
-            <option value="dry">Rice & noodles (30%)</option>
-            <option value="other">Other (30%)</option>
           </select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1583,12 +1578,100 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 </main>
 </div>
 <div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- Vendor drill-down modal: opened by clicking a vendor card on the Vendor Dashboard -->
+<div id="vnd-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto" onclick="if(event.target===this)vendorClose()">
+  <div style="background:#fff;border-radius:14px;max-width:1100px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.25);overflow:hidden">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
+      <div style="flex:1;min-width:0">
+        <div id="vnd-modal-title" style="font-size:18px;font-weight:700;color:var(--text)"></div>
+        <div id="vnd-modal-sub" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
+      </div>
+      <button onclick="vendorExportCSV()" style="font-size:12px;padding:7px 12px">⬇ CSV</button>
+      <button onclick="vendorExportPDF()" style="font-size:12px;padding:7px 12px">⬇ PDF</button>
+      <button onclick="vendorClose()" style="font-size:18px;padding:4px 10px;background:transparent;border:none;cursor:pointer;color:var(--text3)" title="Close">×</button>
+    </div>
+    <div id="vnd-modal-body" style="padding:18px 22px;max-height:70vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <script>
 // ═══════════ CONSTANTS ═══════════
-const TARGETS={snacks:30,candy:40,frozen:35,bev:30,dry:30,sauce:30,other:30};
-const CLABEL={snacks:'Snacks & dry',candy:'Candy/Jelly',frozen:'Frozen',bev:'Beverage',dry:'Rice & noodles',sauce:'Sauces & condiments',other:'Other'};
-const CCLS={snacks:'ta',candy:'tk',frozen:'tb',bev:'tp',dry:'tt',sauce:'tn',other:'tgr'};
-const CAT_COLS={snacks:'#f59e0b',candy:'#ec4899',frozen:'#3b82f6',bev:'#8b5cf6',dry:'#14b8a6',sauce:'#dc2626',other:'#94a3b8'};
+// Category system: built-in defaults + user-added categories.
+// Built-ins can have markup edited but not be renamed/deleted (extraction may produce these IDs).
+// Custom categories can be fully edited or deleted by the user.
+const BUILTIN_CATS = [
+  {id:'snacks', label:'Snacks & dry',         color:'#f59e0b', tag:'ta',  markup:30, matchRule:'crackers/chips/cookies/breadsticks/biscuits/wafers/puffs', builtin:true},
+  {id:'candy',  label:'Candy/Jelly',          color:'#ec4899', tag:'tk',  markup:40, matchRule:'jelly/pudding/gummies/candy/chocolate/sweets/mochi', builtin:true},
+  {id:'frozen', label:'Frozen',               color:'#3b82f6', tag:'tb',  markup:35, matchRule:'anything marked FZ or FROZEN', builtin:true},
+  {id:'bev',    label:'Beverage',             color:'#8b5cf6', tag:'tp',  markup:30, matchRule:'drinks/juice/soda/coffee/tea/syrup/coconut water/energy drinks', builtin:true},
+  {id:'dry',    label:'Rice & noodles',       color:'#14b8a6', tag:'tt',  markup:30, matchRule:'rice/noodles/vermicelli/pasta/flour/starch/tapioca', builtin:true},
+  {id:'sauce',  label:'Sauces & condiments',  color:'#dc2626', tag:'tn',  markup:30, matchRule:'sauces/condiments/fish sauce/soy sauce/oyster sauce/sriracha/sambal/chili paste/curry paste/crab paste/shrimp paste/galingale/peppercorn/pickled chili/spices/seasonings/vinegar/marinades', builtin:true},
+  {id:'other',  label:'Other',                color:'#94a3b8', tag:'tgr', markup:30, matchRule:"mushroom/seafood/canned goods/produce/dairy/misc/charges (anything that doesn't fit above)", builtin:true}
+];
+// Color palette for new custom categories (cycled when user adds without picking).
+const CUSTOM_CAT_PALETTE = ['#0ea5e9','#22c55e','#eab308','#f97316','#ef4444','#a855f7','#06b6d4','#84cc16','#f59e0b','#d946ef'];
+
+let _CATS_CACHE = null;
+function loadCats(){
+  if(_CATS_CACHE) return _CATS_CACHE;
+  const saved = lsGet('tm_cats');
+  let arr;
+  if(Array.isArray(saved) && saved.length){
+    // Saved layout wins; ensure every built-in still exists (so AI extraction never returns
+    // an ID we don't know about) and that built-ins remain marked builtin.
+    const byId = {};
+    saved.forEach(c => { if(c && c.id) byId[c.id] = {...c}; });
+    BUILTIN_CATS.forEach(b => {
+      if(byId[b.id]) byId[b.id] = {...b, ...byId[b.id], builtin:true, matchRule: byId[b.id].matchRule || b.matchRule};
+      else byId[b.id] = {...b};
+    });
+    arr = Object.values(byId);
+  } else {
+    arr = BUILTIN_CATS.map(c => ({...c}));
+  }
+  _CATS_CACHE = arr;
+  return arr;
+}
+function saveCats(arr){
+  lsSet('tm_cats', arr);
+  _CATS_CACHE = null;
+  rebuildCatMaps();
+}
+function catFind(id){ return loadCats().find(c => c.id === id); }
+function catLabel(id){ const c = catFind(id); return c ? c.label : (id || '?'); }
+function catColor(id){ const c = catFind(id); return c ? c.color : '#94a3b8'; }
+function catMarkup(id){ const c = catFind(id); return c ? c.markup : 30; }
+// Render a category chip. Built-in categories use predefined CSS classes for proper theming;
+// custom categories fall back to inline styles based on their color.
+function catTagHtml(id, extraClass=''){
+  const c = catFind(id);
+  if(!c) return `<span class="tag tgr ${extraClass}">${esc(id || '?')}</span>`;
+  if(c.tag) return `<span class="tag ${c.tag} ${extraClass}">${esc(c.label)}</span>`;
+  return `<span class="tag ${extraClass}" style="background:${c.color}1a;color:${c.color}">${esc(c.label)}</span>`;
+}
+// Generate a URL-safe id from a label for new custom categories.
+function catSlugify(label){
+  return String(label||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').substring(0,24) || 'cat_'+Date.now().toString(36);
+}
+
+// Legacy constant maps — kept in sync with loadCats() so existing call sites keep working.
+// Mutated by rebuildCatMaps() whenever categories change. New code should prefer the helpers above.
+let TARGETS = {}, CLABEL = {}, CCLS = {}, CAT_COLS = {};
+function rebuildCatMaps(){
+  for(const k in TARGETS) delete TARGETS[k];
+  for(const k in CLABEL) delete CLABEL[k];
+  for(const k in CCLS) delete CCLS[k];
+  for(const k in CAT_COLS) delete CAT_COLS[k];
+  loadCats().forEach(c => {
+    TARGETS[c.id] = c.markup;
+    CLABEL[c.id] = c.label;
+    CCLS[c.id] = c.tag || 'tgr';
+    CAT_COLS[c.id] = c.color;
+  });
+}
+rebuildCatMaps();
+
 const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last',PC_HIST:'tm_pc_hist',PC_RULES:'tm_pc_rules',PROD_META:'tm_prod_meta'};
 
 // ═══════════ ROW CLASSIFICATION ENGINE ═══════════
@@ -2062,7 +2145,14 @@ function aiJson(text){
   return JSON.parse(cleaned.substring(s, e + 1));
 }
 
-const AI_PROMPT=`You are extracting a vendor invoice. Read EVERY line item carefully including OOS and zero-quantity rows.
+// AI extraction prompt is built dynamically so user-added categories are included.
+// Built-ins keep their existing matchRule wording; custom categories contribute their
+// user-supplied "matchRule" hint so the LLM knows what items belong to them.
+function buildAiPrompt(){
+  const cats = loadCats();
+  const ids = cats.map(c => c.id).join(' OR ');
+  const rules = cats.map(c => `  ${c.id}=${c.matchRule || c.label}`).join('\n');
+  return `You are extracting a vendor invoice. Read EVERY line item carefully including OOS and zero-quantity rows.
 
 DOCUMENT: Check the header — is this an INVOICE or SALES ORDER? Extract the exact invoice/order number and date.
 
@@ -2072,14 +2162,8 @@ FOR EACH LINE ITEM extract ALL of these fields:
 - size: pack size EXACTLY as printed (e.g. "12X2LBS", "4 X (6X10.82", "1X50LBS", "30X14.9OZ")
 - qty: cases ordered (use 0 if OOS or not shipped)
 - caseCost: the UNIT PRICE column (price per case), use 0 if blank
-- cat: snacks OR candy OR frozen OR bev OR dry OR sauce OR other
-  snacks=crackers/chips/cookies/breadsticks/biscuits/wafers/puffs
-  candy=jelly/pudding/gummies/candy/chocolate/sweets/mochi
-  frozen=anything marked FZ or FROZEN
-  bev=drinks/juice/soda/coffee/tea/syrup/coconut water/energy drinks
-  dry=rice/noodles/vermicelli/pasta/flour/starch/tapioca
-  sauce=sauces/condiments/fish sauce/soy sauce/oyster sauce/sriracha/sambal/chili paste/curry paste/crab paste/shrimp paste/galingale/peppercorn/pickled chili/spices/seasonings/vinegar/marinades
-  other=mushroom/seafood/canned goods/produce/dairy/misc/charges (anything that doesn't fit above)
+- cat: ${ids}
+${rules}
 - isNew: true if description contains *NEW* or NEW
 - isOOS: true if quantity is 0 or row says OOS
 
@@ -2091,6 +2175,7 @@ IMPORTANT RULES:
 
 Return ONLY raw JSON with no markdown, no backticks, no explanation:
 {"vendor":"","invoiceNo":"","date":"","docType":"invoice","customer":"","total":0,"items":[{"item":"","desc":"","size":"","qty":0,"caseCost":0.00,"cat":"other","isNew":false,"isOOS":false}]}`;
+}
 
 async function extractInvoice(file, onStep){
   const step=(s)=>{ if(typeof onStep==='function') onStep(s); };
@@ -2121,7 +2206,7 @@ async function extractInvoice(file, onStep){
     throw new Error('Unsupported file type: '+(fileType||'unknown')+'. Use PDF or an image (JPG/PNG).');
   }
   const resp = await callAI({
-    messages: [{ role:'user', content: [contentBlock, { type:'text', text: AI_PROMPT }] }],
+    messages: [{ role:'user', content: [contentBlock, { type:'text', text: buildAiPrompt() }] }],
     model: 'claude-sonnet-4-6',
     maxTokens: 16000
   });
@@ -2527,8 +2612,12 @@ function renderVendors(){
   });
   document.getElementById('vnd-list').innerHTML=Object.values(V).map(v=>{
     const avg=v.invs.length?v.spend/v.invs.length:0;
-    return `<div class="vc">
-      <div class="vc-hd"><div class="vc-av">${esc((v.name||'?').charAt(0))}</div><div class="vc-name">${esc(v.name)}</div></div>
+    return `<div class="vc" onclick="vendorOpen('${escJs(v.name)}')" style="cursor:pointer" title="Click to see all items from ${esc(v.name)}">
+      <div class="vc-hd">
+        <div class="vc-av">${esc((v.name||'?').charAt(0))}</div>
+        <div class="vc-name">${esc(v.name)}</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:500">View items →</div>
+      </div>
       <div class="vc-stats">
         <div class="vs"><div class="vsv mn">${v.invs.length}</div><div class="vsl">Invoices</div></div>
         <div class="vs"><div class="vsv mn">${fBig(v.spend)}</div><div class="vsl">Total spend</div></div>
@@ -2540,6 +2629,157 @@ function renderVendors(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ═══════════ VENDOR DRILL-DOWN ═══════════
+// Build a per-item summary for a vendor: aggregates every line item across that vendor's
+// invoices and reports first/last seen, last cost, change %, total qty, total spend.
+function vendorBuildItems(vendorName){
+  const hist = loadHist();
+  const invs = hist.filter(inv => inv.vendor === vendorName);
+  const byItem = {};
+  invs.forEach(inv => {
+    (inv.items||[]).forEach(i => {
+      // Only count rows the user actually purchased; OOS/charge/zero rows are noise here.
+      if(i._rt !== RT.PURCHASED || (i.qty||0) <= 0) return;
+      const key = i.item || normV(i.desc);
+      if(!byItem[key]){
+        byItem[key] = {
+          item: i.item || '',
+          desc: i.desc || '',
+          size: i.size || '',
+          cat: i.cat || 'other',
+          unitsPerCase: i._u || 1,
+          firstSeen: inv.date, lastSeen: inv.date,
+          firstCost: 0, lastCost: 0, lastCaseCost: 0,
+          totalQty: 0, totalSpend: 0, invoiceCount: 0
+        };
+      }
+      const e = byItem[key];
+      const u = i._u || 1;
+      const cu = u > 0 ? i.caseCost / u : 0;
+      e.totalQty += i.qty || 0;
+      e.totalSpend += (i.caseCost||0) * (i.qty||0);
+      e.invoiceCount++;
+      // Track the earliest/latest by date string (YYYY-MM-DD sorts correctly).
+      if(inv.date < e.firstSeen){ e.firstSeen = inv.date; e.firstCost = cu; }
+      if(inv.date >= e.lastSeen){ e.lastSeen = inv.date; e.lastCost = cu; e.lastCaseCost = i.caseCost || 0; e.size = i.size; e.cat = i.cat || e.cat; e.unitsPerCase = u; e.desc = i.desc || e.desc; }
+      if(!e.firstCost) e.firstCost = cu;
+    });
+  });
+  return Object.values(byItem).map(e => {
+    const diff = e.lastCost - e.firstCost;
+    const pct = e.firstCost > 0 ? (diff / e.firstCost * 100) : 0;
+    return {...e, costDiff: diff, costPct: pct};
+  }).sort((a,b) => b.totalSpend - a.totalSpend);
+}
+function vendorOpen(vendorName){
+  const items = vendorBuildItems(vendorName);
+  const totalSpend = items.reduce((s,i)=>s+i.totalSpend,0);
+  const totalQty = items.reduce((s,i)=>s+i.totalQty,0);
+  // Stash on the modal so Export buttons know which vendor's data to write.
+  const modal = document.getElementById('vnd-modal');
+  modal.dataset.vendor = vendorName;
+  document.getElementById('vnd-modal-title').textContent = vendorName;
+  document.getElementById('vnd-modal-sub').textContent = `${items.length} item${items.length!==1?'s':''} purchased · ${totalQty} cases · ${fBig(totalSpend)} total spend`;
+  document.getElementById('vnd-modal-body').innerHTML = items.length ? `
+    <table style="width:100%;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left">Item</th>
+        <th style="text-align:left">Category</th>
+        <th style="text-align:right">First cost</th>
+        <th style="text-align:right">Last cost</th>
+        <th style="text-align:right">Change</th>
+        <th style="text-align:right">Cases</th>
+        <th style="text-align:right">Spend</th>
+        <th style="text-align:left">Last seen</th>
+      </tr></thead>
+      <tbody>
+        ${items.map(i => {
+          const trendCol = i.costPct > 0.5 ? 'var(--red)' : i.costPct < -0.5 ? 'var(--green)' : 'var(--text3)';
+          const trendTxt = Math.abs(i.costPct) < 0.5 ? '—' : (i.costPct > 0 ? '+' : '') + i.costPct.toFixed(1) + '%';
+          return `<tr>
+            <td style="padding:8px 10px"><div style="font-weight:600">${esc(i.desc)}</div><div style="font-size:11px;color:var(--text3)">#${esc(i.item)} · ${esc(i.size||'')}</div></td>
+            <td>${catTagHtml(i.cat)}</td>
+            <td class="mn" style="text-align:right">${f2(i.firstCost)}</td>
+            <td class="mn" style="text-align:right;font-weight:600">${f2(i.lastCost)}</td>
+            <td class="mn" style="text-align:right;color:${trendCol};font-weight:600">${trendTxt}</td>
+            <td class="mn" style="text-align:right">${i.totalQty}</td>
+            <td class="mn" style="text-align:right;font-weight:600">${fBig(i.totalSpend)}</td>
+            <td class="mn" style="font-size:11px;color:var(--text3)">${esc(i.lastSeen)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>` : '<div style="text-align:center;padding:32px;color:var(--text3)">No purchased items recorded for this vendor.</div>';
+  modal.style.display = 'flex';
+}
+function vendorClose(){
+  const m = document.getElementById('vnd-modal');
+  m.style.display = 'none';
+  delete m.dataset.vendor;
+}
+// CSV export. RFC-4180-ish quoting: wrap fields containing comma/quote/newline in quotes,
+// double any internal quote.
+function vendorExportCSV(){
+  const vendorName = document.getElementById('vnd-modal').dataset.vendor;
+  if(!vendorName) return;
+  const items = vendorBuildItems(vendorName);
+  const cols = ['Item #','Description','Size','Category','First seen','Last seen','First cost/unit','Last cost/unit','Change %','Total cases','Total spend','Invoice count'];
+  const csvCell = v => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const rows = items.map(i => [
+    i.item, i.desc, i.size, catLabel(i.cat),
+    i.firstSeen, i.lastSeen,
+    i.firstCost.toFixed(4), i.lastCost.toFixed(4),
+    i.costPct.toFixed(2),
+    i.totalQty, i.totalSpend.toFixed(2),
+    i.invoiceCount
+  ].map(csvCell).join(','));
+  const csv = [cols.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${vendorName.replace(/[^\w-]+/g,'_')}_items_${new Date().toISOString().substring(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  if(typeof showToast === 'function') showToast('success', `Exported ${items.length} items to CSV`);
+}
+// PDF export uses jsPDF + autoTable (already loaded for other exports in this app).
+function vendorExportPDF(){
+  const vendorName = document.getElementById('vnd-modal').dataset.vendor;
+  if(!vendorName) return;
+  if(typeof window.jspdf === 'undefined'){
+    if(typeof showToast === 'function') showToast('error','PDF library not loaded');
+    return;
+  }
+  const items = vendorBuildItems(vendorName);
+  const totalSpend = items.reduce((s,i)=>s+i.totalSpend,0);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape',unit:'pt',format:'letter'});
+  doc.setFontSize(16); doc.text(vendorName, 40, 50);
+  doc.setFontSize(10); doc.setTextColor(120);
+  doc.text(`${items.length} items · ${fBig(totalSpend)} total spend · Generated ${new Date().toLocaleDateString()}`, 40, 68);
+  doc.autoTable({
+    startY: 84,
+    head: [['Item','Description','Size','Category','First','Last','Change','Cases','Spend','Last seen']],
+    body: items.map(i => [
+      i.item, i.desc, i.size, catLabel(i.cat),
+      '$'+i.firstCost.toFixed(2),
+      '$'+i.lastCost.toFixed(2),
+      Math.abs(i.costPct) < 0.5 ? '—' : (i.costPct>0?'+':'')+i.costPct.toFixed(1)+'%',
+      i.totalQty,
+      '$'+i.totalSpend.toFixed(2),
+      i.lastSeen
+    ]),
+    styles:{fontSize:8,cellPadding:4},
+    headStyles:{fillColor:[59,130,246]},
+    columnStyles:{1:{cellWidth:160},6:{halign:'right'},7:{halign:'right'},8:{halign:'right'}}
+  });
+  doc.save(`${vendorName.replace(/[^\w-]+/g,'_')}_items_${new Date().toISOString().substring(0,10)}.pdf`);
+  if(typeof showToast === 'function') showToast('success', `Exported ${items.length} items to PDF`);
 }
 
 // ═══════════ ALERTS ═══════════
@@ -2615,30 +2855,109 @@ function deleteHistory(idx){
 
 // ═══════════ PRICING RULES ═══════════
 function renderTargets(){
-  document.getElementById('tgt-grid').innerHTML=Object.keys(CLABEL).map(c=>{
-    const t=TARGETS[c];const ret=(1+t/100).toFixed(2);const marg=((t/(100+t))*100).toFixed(1);
-    return `<div class="tcard" style="border-top-color:${CAT_COLS[c]}">
-      <div style="font-size:11px;font-weight:600;color:${CAT_COLS[c]};letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px">${CLABEL[c]}</div>
+  const cats = loadCats();
+  const grid = document.getElementById('tgt-grid');
+  if(!grid) return;
+  grid.innerHTML = cats.map(c => {
+    const t = c.markup;
+    const ret = (1 + t/100).toFixed(2);
+    const marg = ((t/(100+t))*100).toFixed(1);
+    const editBtn = c.builtin
+      ? ''
+      : `<button class="db-bulk-btn warn" onclick="catEdit('${escJs(c.id)}')" style="padding:3px 8px;font-size:10px" title="Edit category">✎</button>
+         <button class="db-bulk-btn warn" onclick="catDelete('${escJs(c.id)}')" style="padding:3px 8px;font-size:10px;margin-left:4px" title="Delete category">×</button>`;
+    return `<div class="tcard" style="border-top-color:${c.color}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:600;color:${c.color};letter-spacing:.4px;text-transform:uppercase">${esc(c.label)}${c.builtin?'':' <span style="font-weight:400;text-transform:none;color:var(--text3);font-size:10px">· custom</span>'}</div>
+        <div>${editBtn}</div>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <input id="tgt-${c}" type="number" value="${t}" min="0" max="300" step="1" oninput="onTgtChange('${c}')">
+        <input id="tgt-${c.id}" type="number" value="${t}" min="0" max="300" step="1" oninput="onTgtChange('${escJs(c.id)}')">
         <span style="font-size:13px;color:var(--text2)">% markup</span>
       </div>
-      <div id="ti-${c}" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ ${marg}% margin · $1.00 → $${ret}</div>
+      <div id="ti-${c.id}" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">→ ${marg}% margin · $1.00 → $${ret}</div>
     </div>`;
-  }).join('');
+  }).join('') + `
+    <div class="tcard" style="border-top-color:var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg3)" onclick="catAddPrompt()">
+      <div style="text-align:center;color:var(--text3)">
+        <div style="font-size:24px;line-height:1;margin-bottom:4px">＋</div>
+        <div style="font-size:12px;font-weight:600">Add category</div>
+      </div>
+    </div>`;
+  populateCatDropdown('cc-cat');
   renderRefTable();
 }
-function onTgtChange(c){
-  const v=parseFloat(document.getElementById('tgt-'+c).value)||0;
-  const ret=(1+v/100).toFixed(2);const marg=((v/(100+v))*100).toFixed(1);
-  const el=document.getElementById('ti-'+c);if(el)el.textContent=`→ ${marg}% margin · $1.00 → $${ret}`;
-  renderRefTable();calcRun();
-  if(INV){renderApprovals("all");}
+// Keep <select id> in sync with the category list. Preserves the current selection if still valid.
+function populateCatDropdown(selectId){
+  const sel = document.getElementById(selectId);
+  if(!sel) return;
+  const cur = sel.value;
+  const opts = ['<option value="">— select —</option>']
+    .concat(loadCats().map(c => `<option value="${esc(c.id)}">${esc(c.label)} (${c.markup}%)</option>`));
+  sel.innerHTML = opts.join('');
+  if(cur && loadCats().some(c => c.id === cur)) sel.value = cur;
 }
+function onTgtChange(c){
+  const v = parseFloat(document.getElementById('tgt-'+c).value) || 0;
+  // Persist the markup change to the category store so it survives reload.
+  const cats = loadCats().map(x => x.id === c ? {...x, markup: v} : x);
+  saveCats(cats);
+  const ret = (1 + v/100).toFixed(2);
+  const marg = ((v/(100+v))*100).toFixed(1);
+  const el = document.getElementById('ti-'+c); if(el) el.textContent = `→ ${marg}% margin · $1.00 → $${ret}`;
+  populateCatDropdown('cc-cat');
+  renderRefTable(); calcRun();
+  if(INV) renderApprovals("all");
+}
+// Add a custom category. Asks for label + match-rule + markup; auto-picks a color.
+function catAddPrompt(){
+  const label = (prompt('New category name (e.g. "Dairy", "Bakery", "Produce")') || '').trim();
+  if(!label) return;
+  let id = catSlugify(label);
+  // If the slug collides with an existing id, add a numeric suffix.
+  let suffix = 2;
+  while(catFind(id)){ id = catSlugify(label) + '_' + suffix; suffix++; }
+  const matchRule = (prompt('What kinds of items belong in "'+label+'"? This helps the AI auto-categorize.\n\nExample: "milk/yogurt/cheese/butter/cream"') || '').trim();
+  const mkRaw = prompt('Default markup % for this category', '30');
+  const markup = Math.max(0, Math.min(300, parseFloat(mkRaw) || 30));
+  // Pick a color from the palette that isn't already used by a custom category.
+  const usedColors = new Set(loadCats().filter(c => !c.builtin).map(c => c.color));
+  const color = CUSTOM_CAT_PALETTE.find(c => !usedColors.has(c)) || CUSTOM_CAT_PALETTE[Math.floor(Math.random()*CUSTOM_CAT_PALETTE.length)];
+  const cats = loadCats().concat([{id, label, color, markup, matchRule, builtin:false}]);
+  saveCats(cats);
+  renderTargets();
+  if(typeof showToast === 'function') showToast('success', `Added category "${label}"`);
+}
+// Edit a custom category (built-ins are not editable here — markup-only edits go through the inputs).
+function catEdit(id){
+  const c = catFind(id);
+  if(!c || c.builtin) return;
+  const newLabel = (prompt('Category name', c.label) || '').trim();
+  if(!newLabel) return;
+  const newRule = (prompt('Match rule (helps AI auto-categorize)', c.matchRule || '') || '').trim();
+  const cats = loadCats().map(x => x.id === id ? {...x, label:newLabel, matchRule:newRule} : x);
+  saveCats(cats);
+  renderTargets();
+  if(INV) renderApprovals("all");
+}
+function catDelete(id){
+  const c = catFind(id);
+  if(!c || c.builtin) return;
+  if(!confirm(`Delete category "${c.label}"?\n\nExisting items already tagged with this category will keep the tag, but the AI will no longer pick this category for new invoices.`)) return;
+  const cats = loadCats().filter(x => x.id !== id);
+  saveCats(cats);
+  renderTargets();
+  if(INV) renderApprovals("all");
+  if(typeof showToast === 'function') showToast('info', `Removed "${c.label}"`);
+}
+function onTgtChange_legacy_unused(){} // (kept slot — original onTgtChange replaced above)
 function renderRefTable(){
-  document.getElementById('ref-body').innerHTML=Object.keys(CLABEL).map(c=>{
-    const t=getTgt(c);const ret=(1+t/100).toFixed(2);const p=(ret-1).toFixed(2);const m=((p/ret)*100).toFixed(1);
-    return `<tr><td><span class="tag ${CCLS[c]}">${CLABEL[c]}</span></td><td class="mn" style="color:var(--amber)">${t}%</td><td class="mn">${m}%</td><td class="mn" style="color:var(--green)">$${ret}</td><td class="mn" style="color:var(--green)">+$${p}</td></tr>`;
+  document.getElementById('ref-body').innerHTML = loadCats().map(c => {
+    const t = c.markup;
+    const ret = (1 + t/100).toFixed(2);
+    const p = (ret - 1).toFixed(2);
+    const m = ((p/ret)*100).toFixed(1);
+    return `<tr><td>${catTagHtml(c.id)}</td><td class="mn" style="color:var(--amber)">${t}%</td><td class="mn">${m}%</td><td class="mn" style="color:var(--green)">$${ret}</td><td class="mn" style="color:var(--green)">+$${p}</td></tr>`;
   }).join('');
 }
 
