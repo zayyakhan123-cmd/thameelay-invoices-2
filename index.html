@@ -607,6 +607,21 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </style>
 </head>
 <body>
+<div class="login-gate" id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">📊</div>
+    <div class="login-title">Thameelay</div>
+    <div id="login-sub" class="login-sub">Sign in with your email and password.</div>
+    <form id="login-form" onsubmit="loginSubmit(event)" autocomplete="on">
+      <input id="login-email" class="login-input" type="email" placeholder="you@example.com" required autocomplete="email">
+      <input id="login-password" class="login-input" type="password" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <button id="login-btn" class="login-btn" type="submit">Sign in</button>
+    </form>
+    <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()">Don't have an account? Create one</button>
+    <div id="login-msg" class="login-msg"></div>
+    <div class="login-foot">Each account is private. Your data is not visible to other users.</div>
+  </div>
+</div>
 <div class="app-wrap">
 <header>
   <div class="h-l">
@@ -1828,7 +1843,7 @@ function invalidateCache(){ _CACHE.hist = null; _CACHE.db = null; }
 // Then deploy schema.sql and the ai/ Edge Function (see SUPABASE_SETUP.md).
 const SUPABASE_URL      = 'https://fslrqqaplwfyqemdumfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
-const CLOUD_ENABLED = false;
+const CLOUD_ENABLED = SUPABASE_URL && !SUPABASE_URL.startsWith('__');
 
 let _supabase = null;
 let _USER = null;
@@ -1849,14 +1864,18 @@ function cloudMark(table){
 async function cloudInit(){
   if(!CLOUD_ENABLED) return;
   document.body.classList.add('cloud-active');
+  document.body.classList.add('app-locked');
   try{
     const mod = await import('https://esm.sh/@supabase/supabase-js@2');
     _supabase = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: { session } } = await _supabase.auth.getSession();
     _USER = session?.user || null;
+    if(_USER) document.body.classList.remove('app-locked');
     _supabase.auth.onAuthStateChange(async (_evt, sess) => {
       const wasUser = _USER;
       _USER = sess?.user || null;
+      if(_USER) document.body.classList.remove('app-locked');
+      else document.body.classList.add('app-locked');
       cloudUpdateAuthUI();
       if(_USER && !wasUser){
         // Signed in. Pull cloud → local; if cloud is empty AND local has data, push it up first.
@@ -1875,6 +1894,7 @@ async function cloudInit(){
     }
   }catch(e){
     console.warn('Cloud init failed (running in local-only mode):', e);
+    document.body.classList.remove('app-locked');
   }
 }
 
@@ -1966,6 +1986,7 @@ async function cloudSignOut(){
   cloudUpdateAuthUI();
 }
 function cloudPromptSignIn(){
+  document.body.classList.add('app-locked');
 }
 function cloudUpdateAuthUI(){
   const el = document.getElementById('cloud-auth');
