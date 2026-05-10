@@ -545,6 +545,33 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 
 /* ─── TOAST ─────────────────────────────────────── */
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+
+/* ─── Login gate: covers the entire app until the user signs in ─── */
+/* Hides the underlying app so nothing leaks — the only visible thing is the sign-in form. */
+body.app-locked > .app-wrap{display:none !important}
+.login-gate{display:none;position:fixed;inset:0;background:#1e293b;z-index:10000;align-items:center;justify-content:center;padding:24px;flex-direction:column}
+body.app-locked .login-gate{display:flex}
+.login-card{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.35);text-align:center}
+.login-logo{font-size:40px;line-height:1;margin-bottom:8px}
+.login-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.5}
+.login-input{width:100%;padding:12px 14px;border:1px solid var(--border2);border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:12px;box-sizing:border-box}
+.login-input:focus{outline:none;border-color:var(--c1)}
+.login-btn{width:100%;padding:12px 14px;background:var(--c1);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.login-btn:hover{background:var(--c1d)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-msg{font-size:12px;color:var(--text3);margin-top:14px;min-height:18px}
+.login-msg.success{color:var(--green)}
+.login-msg.error{color:var(--red)}
+.login-foot{font-size:11px;color:var(--text4);margin-top:20px;line-height:1.5}
+.login-toggle{background:none;border:none;color:var(--c1);font-size:12px;cursor:pointer;margin-top:14px;font-family:inherit;text-decoration:underline;padding:4px}
+.login-toggle:hover{color:var(--c1d)}
+
+/* When the app is in cloud mode, the local API-key UI is dead — users get
+   AI through the server-side proxy. Hide every element marked data-cloud-hide. */
+body.cloud-active [data-cloud-hide]{display:none !important}
+/* And show every element marked data-cloud-show. */
+body.cloud-active [data-cloud-show]{display:block !important}
 .toast{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:12px 16px;box-shadow:var(--sh-lg);font-size:12px;display:flex;align-items:center;gap:10px;min-width:240px;max-width:380px;pointer-events:auto;animation:toast-in .3s ease-out;border-left:4px solid var(--c1)}
 .toast.success{border-left-color:var(--green)}
 .toast.error{border-left-color:var(--red)}
@@ -587,6 +614,25 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 </style>
 </head>
 <body>
+<!-- Login gate: shown when CLOUD_ENABLED + not signed in. Body gets .app-locked class
+     to hide the app-wrap underneath. Sign in success removes the class. -->
+<div class="login-gate" id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">📊</div>
+    <div class="login-title">Thameelay</div>
+    <div id="login-sub" class="login-sub">Sign in with your email and password.</div>
+    <form id="login-form" onsubmit="loginSubmit(event)" autocomplete="on">
+      <input id="login-email" class="login-input" type="email" placeholder="you@example.com" required autocomplete="email">
+      <input id="login-password" class="login-input" type="password" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <button id="login-btn" class="login-btn" type="submit">Sign in</button>
+    </form>
+    <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()">Don't have an account? Create one</button>
+    <div id="login-msg" class="login-msg"></div>
+    <div class="login-foot">Each account is private. Your data is not visible to other users.</div>
+  </div>
+</div>
+
+<div class="app-wrap">
 <header>
   <div class="h-l">
     <div class="h-icon-btn" onclick="document.querySelector('.side').classList.toggle('hide')" title="Toggle sidebar">☰</div>
@@ -630,7 +676,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
     <a data-pg="history"><span class="sico">🗂</span>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
   </div>
   <div class="sg"><div class="slabel">Settings</div>
-    <a data-pg="api-settings"><span class="sico">🔑</span>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
+    <a data-pg="api-settings" data-cloud-hide><span class="sico">🔑</span>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
     <a data-pg="db-settings"><span class="sico">🗄</span>Database <span class="scnt scnt-red" id="db-warn" style="display:none">!</span></a>
     <a data-pg="pricing"><span class="sico">⚙️</span>Pricing Rules</a>
     <a data-pg="calc"><span class="sico">🧮</span>Margin Calculator</a>
@@ -922,9 +968,9 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" onclick="event.stopPropagation()">
         <button onclick="document.getElementById('file-in').click()">📁 Choose file(s)</button>
         <button class="bp" onclick="loadDemo()">▶ Load demo invoice</button>
-        <button class="bgo" onclick="goTo('api-settings')" id="setup-key-btn">🔑 Set up API key</button>
+        <button class="bgo" onclick="goTo('api-settings')" id="setup-key-btn" data-cloud-hide>🔑 Set up API key</button>
       </div>
-      <div id="no-key-notice" style="display:none;margin-top:12px;padding:8px 14px;background:var(--amberl);border-radius:var(--r);font-size:12px;color:var(--amberd);font-weight:500">
+      <div id="no-key-notice" data-cloud-hide style="display:none;margin-top:12px;padding:8px 14px;background:var(--amberl);border-radius:var(--r);font-size:12px;color:var(--amberd);font-weight:500">
         ⚠ No API key saved — real PDFs will fall back to demo mode. <a onclick="goTo('api-settings')" style="cursor:pointer;text-decoration:underline;color:var(--c1d)">Set up your key →</a>
       </div>
     </div>
@@ -1236,6 +1282,10 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 <!-- API SETTINGS -->
 <div class="pg" id="pg-api-settings">
   <div class="pgh"><div class="pgt">API Settings</div><div class="pgs">Connect your Anthropic API key to enable real PDF extraction from your invoices</div></div>
+  <!-- Visible only in cloud mode: explains the local key UI below is vestigial. -->
+  <div data-cloud-show style="display:none;background:var(--c1l);border:1px solid var(--c1);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--c1d)">
+    <b>✓ AI is configured for you.</b> Your account uses a server-side key — you don't need to enter anything here. The fields below are inactive.
+  </div>
   <div id="api-status-banner" style="display:none;border-radius:var(--r);padding:11px 16px;margin-bottom:14px;font-size:13px;font-weight:500"></div>
   <div class="g2">
     <div>
@@ -1578,6 +1628,7 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 
 </main>
 </div>
+</div><!-- /.app-wrap -->
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <!-- Vendor drill-down modal: opened by clicking a vendor card on the Vendor Dashboard -->
@@ -1823,15 +1874,25 @@ function cloudMark(table){
 
 async function cloudInit(){
   if(!CLOUD_ENABLED) return;
+  // App is in cloud mode: hide the local API-key UI (it's not needed; AI runs via Edge Function)
+  // and start locked until we confirm a session.
+  document.body.classList.add('cloud-active');
+  document.body.classList.add('app-locked');
   try{
     const mod = await import('https://esm.sh/@supabase/supabase-js@2');
     _supabase = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: { session } } = await _supabase.auth.getSession();
     _USER = session?.user || null;
+    if(_USER) document.body.classList.remove('app-locked');
     _supabase.auth.onAuthStateChange(async (_evt, sess) => {
       const wasUser = _USER;
       _USER = sess?.user || null;
       cloudUpdateAuthUI();
+      if(_USER){
+        document.body.classList.remove('app-locked');
+      } else {
+        document.body.classList.add('app-locked');
+      }
       if(_USER && !wasUser){
         // Signed in. Pull cloud → local; if cloud is empty AND local has data, push it up first.
         await cloudPullAll();
@@ -1849,20 +1910,92 @@ async function cloudInit(){
     }
   }catch(e){
     console.warn('Cloud init failed (running in local-only mode):', e);
+    // Don't trap the user behind a login screen if cloud init itself failed.
+    document.body.classList.remove('app-locked');
   }
 }
 
-async function cloudSignIn(email){
-  if(!_supabase) return;
-  const { error } = await _supabase.auth.signInWithOtp({
+// Login form handler — submitted from the login gate.
+let _LOGIN_MODE = 'signin'; // 'signin' | 'signup'
+
+function loginToggleMode(){
+  _LOGIN_MODE = _LOGIN_MODE === 'signin' ? 'signup' : 'signin';
+  const btn = document.getElementById('login-btn');
+  const toggle = document.getElementById('login-toggle');
+  const pwd = document.getElementById('login-password');
+  const sub = document.getElementById('login-sub');
+  const msg = document.getElementById('login-msg');
+  if(_LOGIN_MODE === 'signup'){
+    btn.textContent = 'Create account';
+    toggle.textContent = 'Already have an account? Sign in';
+    pwd.autocomplete = 'new-password';
+    if(sub) sub.textContent = 'Create an account with your email and a password.';
+  } else {
+    btn.textContent = 'Sign in';
+    toggle.textContent = "Don't have an account? Create one";
+    pwd.autocomplete = 'current-password';
+    if(sub) sub.textContent = 'Sign in with your email and password.';
+  }
+  if(msg){ msg.className = 'login-msg'; msg.textContent = ''; }
+}
+
+async function loginSubmit(ev){
+  ev.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const msg = document.getElementById('login-msg');
+  const btn = document.getElementById('login-btn');
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    msg.className = 'login-msg error';
+    msg.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  if(!password || password.length < 6){
+    msg.className = 'login-msg error';
+    msg.textContent = 'Password must be at least 6 characters.';
+    return;
+  }
+  const isSignup = _LOGIN_MODE === 'signup';
+  const origLabel = isSignup ? 'Create account' : 'Sign in';
+  btn.disabled = true; btn.textContent = isSignup ? 'Creating…' : 'Signing in…';
+  msg.className = 'login-msg'; msg.textContent = '';
+  try{
+    if(isSignup){
+      const res = await cloudSignUp(email, password);
+      if(res && res.user && !res.session){
+        msg.className = 'login-msg success';
+        msg.textContent = 'Account created. Check your email to confirm before signing in.';
+      } else {
+        msg.className = 'login-msg success';
+        msg.textContent = 'Account created. Signing you in…';
+      }
+    } else {
+      await cloudSignIn(email, password);
+      // onAuthStateChange handles unlocking the gate.
+    }
+  }catch(e){
+    msg.className = 'login-msg error';
+    msg.textContent = e.message || (isSignup ? 'Sign-up failed. Please try again.' : 'Sign-in failed. Please try again.');
+  }finally{
+    btn.disabled = false; btn.textContent = origLabel;
+  }
+}
+
+async function cloudSignIn(email, password){
+  if(!_supabase) throw new Error('Cloud not initialised');
+  const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+  if(error) throw error;
+  return data;
+}
+async function cloudSignUp(email, password){
+  if(!_supabase) throw new Error('Cloud not initialised');
+  const { data, error } = await _supabase.auth.signUp({
     email,
+    password,
     options: { emailRedirectTo: location.href },
   });
-  if(error){
-    if(typeof showToast === 'function') showToast('error', error.message);
-  } else {
-    if(typeof showToast === 'function') showToast('success', `Magic link sent to ${email}. Check your inbox.`);
-  }
+  if(error) throw error;
+  return data;
 }
 async function cloudSignOut(){
   if(!_supabase) return;
@@ -1871,9 +2004,7 @@ async function cloudSignOut(){
   cloudUpdateAuthUI();
 }
 function cloudPromptSignIn(){
-  const email = (prompt('Enter your email — we\'ll send you a magic link to sign in.') || '').trim();
-  if(email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) cloudSignIn(email);
-  else if(email) alert('That doesn\'t look like a valid email address.');
+  document.body.classList.add('app-locked');
 }
 function cloudUpdateAuthUI(){
   const el = document.getElementById('cloud-auth');

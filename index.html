@@ -561,6 +561,8 @@ body.app-locked .login-gate{display:flex}
 .login-msg.success{color:var(--green)}
 .login-msg.error{color:var(--red)}
 .login-foot{font-size:11px;color:var(--text4);margin-top:20px;line-height:1.5}
+.login-toggle{background:none;border:none;color:var(--c1);font-size:12px;cursor:pointer;margin-top:14px;font-family:inherit;text-decoration:underline;padding:4px}
+.login-toggle:hover{color:var(--c1d)}
 body.cloud-active [data-cloud-hide]{display:none !important}
 body.cloud-active [data-cloud-show]{display:block !important}
 .toast{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:12px 16px;box-shadow:var(--sh-lg);font-size:12px;display:flex;align-items:center;gap:10px;min-width:240px;max-width:380px;pointer-events:auto;animation:toast-in .3s ease-out;border-left:4px solid var(--c1)}
@@ -609,11 +611,13 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="login-card">
     <div class="login-logo">📊</div>
     <div class="login-title">Thameelay</div>
-    <div class="login-sub">Sign in with your email — we'll send you a magic link.<br>No password needed.</div>
+    <div id="login-sub" class="login-sub">Sign in with your email and password.</div>
     <form id="login-form" onsubmit="loginSubmit(event)" autocomplete="on">
       <input id="login-email" class="login-input" type="email" placeholder="you@example.com" required autocomplete="email">
-      <button id="login-btn" class="login-btn" type="submit">Send magic link</button>
+      <input id="login-password" class="login-input" type="password" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <button id="login-btn" class="login-btn" type="submit">Sign in</button>
     </form>
+    <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()">Don't have an account? Create one</button>
     <div id="login-msg" class="login-msg"></div>
     <div class="login-foot">Each account is private. Your data is not visible to other users.</div>
   </div>
@@ -1894,9 +1898,33 @@ async function cloudInit(){
   }
 }
 
+let _LOGIN_MODE = 'signin'; // 'signin' | 'signup'
+
+function loginToggleMode(){
+  _LOGIN_MODE = _LOGIN_MODE === 'signin' ? 'signup' : 'signin';
+  const btn = document.getElementById('login-btn');
+  const toggle = document.getElementById('login-toggle');
+  const pwd = document.getElementById('login-password');
+  const sub = document.getElementById('login-sub');
+  const msg = document.getElementById('login-msg');
+  if(_LOGIN_MODE === 'signup'){
+    btn.textContent = 'Create account';
+    toggle.textContent = 'Already have an account? Sign in';
+    pwd.autocomplete = 'new-password';
+    if(sub) sub.textContent = 'Create an account with your email and a password.';
+  } else {
+    btn.textContent = 'Sign in';
+    toggle.textContent = "Don't have an account? Create one";
+    pwd.autocomplete = 'current-password';
+    if(sub) sub.textContent = 'Sign in with your email and password.';
+  }
+  if(msg){ msg.className = 'login-msg'; msg.textContent = ''; }
+}
+
 async function loginSubmit(ev){
   ev.preventDefault();
   const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
   const msg = document.getElementById('login-msg');
   const btn = document.getElementById('login-btn');
   if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
@@ -1904,31 +1932,52 @@ async function loginSubmit(ev){
     msg.textContent = 'Please enter a valid email address.';
     return;
   }
-  btn.disabled = true; btn.textContent = 'Sending…';
+  if(!password || password.length < 6){
+    msg.className = 'login-msg error';
+    msg.textContent = 'Password must be at least 6 characters.';
+    return;
+  }
+  const isSignup = _LOGIN_MODE === 'signup';
+  const origLabel = isSignup ? 'Create account' : 'Sign in';
+  btn.disabled = true; btn.textContent = isSignup ? 'Creating…' : 'Signing in…';
   msg.className = 'login-msg'; msg.textContent = '';
   try{
-    await cloudSignIn(email);
-    msg.className = 'login-msg success';
-    msg.textContent = 'Magic link sent to ' + email + '. Check your inbox.';
+    if(isSignup){
+      const res = await cloudSignUp(email, password);
+      if(res && res.user && !res.session){
+        msg.className = 'login-msg success';
+        msg.textContent = 'Account created. Check your email to confirm before signing in.';
+      } else {
+        msg.className = 'login-msg success';
+        msg.textContent = 'Account created. Signing you in…';
+      }
+    } else {
+      await cloudSignIn(email, password);
+      // onAuthStateChange handles unlocking the gate.
+    }
   }catch(e){
     msg.className = 'login-msg error';
-    msg.textContent = e.message || 'Sign-in failed. Please try again.';
+    msg.textContent = e.message || (isSignup ? 'Sign-up failed. Please try again.' : 'Sign-in failed. Please try again.');
   }finally{
-    btn.disabled = false; btn.textContent = 'Send magic link';
+    btn.disabled = false; btn.textContent = origLabel;
   }
 }
 
-async function cloudSignIn(email){
-  if(!_supabase) return;
-  const { error } = await _supabase.auth.signInWithOtp({
+async function cloudSignIn(email, password){
+  if(!_supabase) throw new Error('Cloud not initialised');
+  const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+  if(error) throw error;
+  return data;
+}
+async function cloudSignUp(email, password){
+  if(!_supabase) throw new Error('Cloud not initialised');
+  const { data, error } = await _supabase.auth.signUp({
     email,
+    password,
     options: { emailRedirectTo: location.href },
   });
-  if(error){
-    if(typeof showToast === 'function') showToast('error', error.message);
-  } else {
-    if(typeof showToast === 'function') showToast('success', `Magic link sent to ${email}. Check your inbox.`);
-  }
+  if(error) throw error;
+  return data;
 }
 async function cloudSignOut(){
   if(!_supabase) return;
@@ -1937,9 +1986,7 @@ async function cloudSignOut(){
   cloudUpdateAuthUI();
 }
 function cloudPromptSignIn(){
-  const email = (prompt('Enter your email — we\'ll send you a magic link to sign in.') || '').trim();
-  if(email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) cloudSignIn(email);
-  else if(email) alert('That doesn\'t look like a valid email address.');
+  document.body.classList.add('app-locked');
 }
 function cloudUpdateAuthUI(){
   const el = document.getElementById('cloud-auth');
