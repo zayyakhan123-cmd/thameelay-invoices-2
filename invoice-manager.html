@@ -1801,8 +1801,8 @@ function invalidateCache(){ _CACHE.hist = null; _CACHE.db = null; }
 // To enable: fill SUPABASE_URL and SUPABASE_ANON_KEY below with the values
 // from your Supabase project (Settings → API → "Project URL" and "anon public").
 // Then deploy schema.sql and the ai/ Edge Function (see SUPABASE_SETUP.md).
-const SUPABASE_URL      = 'https://fslrqqaplwfyqemdumfz.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
+const SUPABASE_URL      = '__YOUR_SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__YOUR_SUPABASE_ANON_KEY__';
 const CLOUD_ENABLED = SUPABASE_URL && !SUPABASE_URL.startsWith('__');
 
 let _supabase = null;
