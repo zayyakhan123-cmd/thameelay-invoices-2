@@ -60,27 +60,38 @@ serve(async (req) => {
     return json({ error: "Invalid session" }, { status: 401 });
   }
 
-  // Approval gate — every new account starts unapproved; an admin flips
-  // user_profiles.approved=true in Supabase Studio to let them in.
-  const { data: profile, error: profileErr } = await supabase
-    .from("user_profiles")
-    .select("approved")
-    .eq("user_id", userData.user.id)
-    .maybeSingle();
-  if (profileErr) {
-    return json(
-      { error: "Approval check failed: " + profileErr.message },
-      { status: 500 },
-    );
-  }
-  if (!profile?.approved) {
-    return json(
-      {
-        error: "Your account is pending approval. The admin will let you in soon.",
-        code: "not_approved",
-      },
-      { status: 403 },
-    );
+  // Exemption — comma-separated list of UUIDs in EXEMPT_USER_IDS skip the
+  // approval gate and the daily cap entirely. Used so the admin can test
+  // and burn invoices without locking themselves out.
+  const exemptRaw = Deno.env.get("EXEMPT_USER_IDS") || "";
+  const exemptSet = new Set(
+    exemptRaw.split(",").map((s) => s.trim()).filter(Boolean),
+  );
+  const isExempt = exemptSet.has(userData.user.id);
+
+  if (!isExempt) {
+    // Approval gate — every new account starts unapproved; an admin flips
+    // user_profiles.approved=true in Supabase Studio to let them in.
+    const { data: profile, error: profileErr } = await supabase
+      .from("user_profiles")
+      .select("approved")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    if (profileErr) {
+      return json(
+        { error: "Approval check failed: " + profileErr.message },
+        { status: 500 },
+      );
+    }
+    if (!profile?.approved) {
+      return json(
+        {
+          error: "Your account is pending approval. The admin will let you in soon.",
+          code: "not_approved",
+        },
+        { status: 403 },
+      );
+    }
   }
 
   // Parse request body before charging quota — a malformed request shouldn't
@@ -92,24 +103,26 @@ serve(async (req) => {
     return json({ error: "Invalid JSON in request body" }, { status: 400 });
   }
 
-  // Per-user daily rate limit (atomic check-and-increment inside Postgres).
-  const DAILY_LIMIT = 10;
-  const { data: rateRows, error: rateErr } = await supabase
-    .rpc("check_and_increment_ai_usage", { lim: DAILY_LIMIT });
-  if (rateErr) {
-    return json({ error: "Rate check failed: " + rateErr.message }, { status: 500 });
-  }
-  const rate = Array.isArray(rateRows) ? rateRows[0] : rateRows;
-  if (!rate?.allowed) {
-    return json(
-      {
-        error: `Daily limit reached (${DAILY_LIMIT} extractions/day). Try again tomorrow.`,
-        code: "rate_limited",
-        used: rate?.current_count ?? DAILY_LIMIT,
-        limit: DAILY_LIMIT,
-      },
-      { status: 429 },
-    );
+  if (!isExempt) {
+    // Per-user daily rate limit (atomic check-and-increment inside Postgres).
+    const DAILY_LIMIT = 10;
+    const { data: rateRows, error: rateErr } = await supabase
+      .rpc("check_and_increment_ai_usage", { lim: DAILY_LIMIT });
+    if (rateErr) {
+      return json({ error: "Rate check failed: " + rateErr.message }, { status: 500 });
+    }
+    const rate = Array.isArray(rateRows) ? rateRows[0] : rateRows;
+    if (!rate?.allowed) {
+      return json(
+        {
+          error: `Daily limit reached (${DAILY_LIMIT} extractions/day). Try again tomorrow.`,
+          code: "rate_limited",
+          used: rate?.current_count ?? DAILY_LIMIT,
+          limit: DAILY_LIMIT,
+        },
+        { status: 429 },
+      );
+    }
   }
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
