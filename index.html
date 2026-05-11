@@ -2543,6 +2543,9 @@ function resetUpload(){
 
 // ═══════════ INVOICE EXTRACTION ═══════════
 function AI_KEY(){return localStorage.getItem('tm_api_key')||'';}
+// AI is available if the user is signed in (server-side key via the Edge Function)
+// or a local Anthropic key is saved. callAI prefers cloud when both are present.
+function aiAvailable(){ return !!(_USER && _supabase) || !!AI_KEY(); }
 
 // ─── Single point of contact for all LLM calls ─────────────────────────────
 // Today: hits api.anthropic.com directly with the user's key.
@@ -2660,11 +2663,11 @@ Return ONLY raw JSON with no markdown, no backticks, no explanation:
 
 async function extractInvoice(file, onStep){
   const step=(s)=>{ if(typeof onStep==='function') onStep(s); };
-  const key=AI_KEY(); if(!key){
-    // No API key — redirect to settings instead of silently loading demo
+  if(!aiAvailable()){
+    // Unreachable in cloud-enabled mode (login gate ensures _USER is set).
+    // Only fires in local-only mode with no Anthropic key saved.
     show('extracting',false); show('dz-wrap',true);
     goTo('api-settings');
-    showBanner('⚠ No API key saved. Enter your key below to extract real invoices — or use the demo button.','var(--amberl)','var(--amberd)');
     throw new Error('no_api_key');
   }
   step('reading');
@@ -5507,9 +5510,8 @@ async function pcAiMatch(invoiceTexts){
   const cat = pcLoadCatalog();
   if(!cat.length || !invoiceTexts.length) return {};
   
-  const key = AI_KEY();
-  if(!key){
-    // No API key — fall back to local fuzzy
+  if(!aiAvailable()){
+    // No AI available — fall back to local fuzzy
     const out = {};
     for(const t of invoiceTexts){
       const m = pcMatchLineLocal(t);
