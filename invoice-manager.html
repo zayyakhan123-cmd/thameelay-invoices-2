@@ -1974,8 +1974,15 @@ async function loginSubmit(ev){
       // onAuthStateChange handles unlocking the gate.
     }
   }catch(e){
-    msg.className = 'login-msg error';
-    msg.textContent = e.message || (isSignup ? 'Sign-up failed. Please try again.' : 'Sign-in failed. Please try again.');
+    const emailNotConfirmed = e?.code === 'email_not_confirmed'
+      || /email\s+not\s+confirmed/i.test(e?.message || '');
+    if(emailNotConfirmed){
+      msg.className = 'login-msg success';
+      msg.textContent = 'Please check your email to confirm your account before signing in.';
+    } else {
+      msg.className = 'login-msg error';
+      msg.textContent = e.message || (isSignup ? 'Sign-up failed. Please try again.' : 'Sign-in failed. Please try again.');
+    }
   }finally{
     btn.disabled = false; btn.textContent = origLabel;
   }
