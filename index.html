@@ -2386,6 +2386,7 @@ DZ.addEventListener('drop',e=>{
   if(!files.length)return;
   routeFiles(files);
 });
+DZ.addEventListener('click', () => document.getElementById('file-in').click());
 
 // ═══════════ UPLOAD FLOW ═══════════
 function handleFiles(e){
@@ -2614,7 +2615,10 @@ async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, sy
       },
       body: JSON.stringify(body)
     });
-    const data = await resp.json();
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { throw new Error(`AI proxy returned non-JSON (status ${resp.status}): ${text.slice(0, 200)}`); }
     if(data.type === 'error') throw new Error(data.error?.message || 'API error');
     if(data.error) throw new Error(data.error.message || data.error);
     if(!data.content) throw new Error('Empty response from AI');
@@ -2643,7 +2647,10 @@ async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, sy
     body: JSON.stringify(body)
   });
 
-  const data = await resp.json();
+  const text = await resp.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error(`Direct AI call returned non-JSON (status ${resp.status}): ${text.slice(0, 200)}`); }
   if(data.type === 'error') throw new Error(data.error?.message || 'API error');
   if(!data.content) throw new Error('Empty response from AI');
 
@@ -2671,9 +2678,11 @@ function buildAiPrompt(){
   const cats = loadCats();
   const ids = cats.map(c => c.id).join(' OR ');
   const rules = cats.map(c => `  ${c.id}=${c.matchRule || c.label}`).join('\n');
-  return `You are extracting a vendor invoice. Read EVERY line item carefully including OOS and zero-quantity rows.
+  return `You are extracting line items from a vendor document. The document may be an invoice, sales order, purchase order, packing slip, WIP order, pro forma invoice, or bill — extract line items the same way regardless of type. Read EVERY line item carefully including OOS and zero-quantity rows.
 
-DOCUMENT: Check the header — is this an INVOICE or SALES ORDER? Extract the exact invoice/order number and date.
+IMAGES: If the input is an image (a scan or photo), read all visible text including small print and table rows just as you would from a PDF. Do not skip rows because of perspective, slight blur, or scan artifacts.
+
+DOCUMENT: Read the header to identify the document type and extract the document number and date. Set docType to one of: "invoice", "sales_order", "purchase_order", "packing_slip", "wip", "pro_forma", or "bill".
 
 FOR EACH LINE ITEM extract ALL of these fields:
 - item: the item/product number (e.g. "12006", "503000")
