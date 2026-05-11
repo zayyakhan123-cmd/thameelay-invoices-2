@@ -566,6 +566,12 @@ body.app-locked .login-gate{display:flex}
 .login-foot{font-size:11px;color:var(--text4);margin-top:20px;line-height:1.5}
 .login-toggle{background:none;border:none;color:var(--c1);font-size:12px;cursor:pointer;margin-top:14px;font-family:inherit;text-decoration:underline;padding:4px}
 .login-toggle:hover{color:var(--c1d)}
+.login-pending{display:none}
+body.pending-approval #login-pending{display:block}
+body.pending-approval #login-sub,
+body.pending-approval #login-form,
+body.pending-approval #login-toggle,
+body.pending-approval #login-msg{display:none !important}
 
 /* When the app is in cloud mode, the local API-key UI is dead — users get
    AI through the server-side proxy. Hide every element marked data-cloud-hide. */
@@ -628,6 +634,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </form>
     <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()">Don't have an account? Create one</button>
     <div id="login-msg" class="login-msg"></div>
+    <div id="login-pending" class="login-pending">
+      <div class="login-sub">Your account is pending approval.<br>The admin will let you in soon — check back later.</div>
+      <button type="button" class="login-btn" onclick="cloudSignOut()">Sign out</button>
+    </div>
     <div class="login-foot">Each account is private. Your data is not visible to other users.</div>
   </div>
 </div>
@@ -1872,6 +1882,28 @@ function cloudMark(table){
   _CLOUD_FLUSH_T = setTimeout(cloudFlush, 1500);
 }
 
+// Looks up the caller's user_profiles row and toggles body.pending-approval.
+// The Edge Function also enforces approval server-side (defense in depth);
+// this is the UX layer so the user sees a friendly screen, not a 403.
+async function checkApprovalAndGate(){
+  if(!_USER || !_supabase) return;
+  try{
+    const { data, error } = await _supabase
+      .from('user_profiles')
+      .select('approved')
+      .eq('user_id', _USER.id)
+      .maybeSingle();
+    if(error){ console.warn('Approval check failed:', error.message); return; }
+    if(data?.approved){
+      document.body.classList.remove('pending-approval');
+      document.body.classList.remove('app-locked');
+    } else {
+      document.body.classList.add('pending-approval');
+      document.body.classList.add('app-locked');
+    }
+  }catch(e){ console.warn('Approval check failed:', e); }
+}
+
 async function cloudInit(){
   if(!CLOUD_ENABLED) return;
   // App is in cloud mode: hide the local API-key UI (it's not needed; AI runs via Edge Function)
@@ -1883,15 +1915,16 @@ async function cloudInit(){
     _supabase = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: { session } } = await _supabase.auth.getSession();
     _USER = session?.user || null;
-    if(_USER) document.body.classList.remove('app-locked');
+    if(_USER) await checkApprovalAndGate();
     _supabase.auth.onAuthStateChange(async (_evt, sess) => {
       const wasUser = _USER;
       _USER = sess?.user || null;
       cloudUpdateAuthUI();
       if(_USER){
-        document.body.classList.remove('app-locked');
+        await checkApprovalAndGate();
       } else {
         document.body.classList.add('app-locked');
+        document.body.classList.remove('pending-approval');
       }
       if(_USER && !wasUser){
         // Signed in. Pull cloud → local; if cloud is empty AND local has data, push it up first.

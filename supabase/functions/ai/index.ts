@@ -60,8 +60,31 @@ serve(async (req) => {
     return json({ error: "Invalid session" }, { status: 401 });
   }
 
-  // Forward the body to Anthropic. We don't massage the body — clients send the
-  // same JSON they'd send to api.anthropic.com directly.
+  // Approval gate — every new account starts unapproved; an admin flips
+  // user_profiles.approved=true in Supabase Studio to let them in.
+  const { data: profile, error: profileErr } = await supabase
+    .from("user_profiles")
+    .select("approved")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+  if (profileErr) {
+    return json(
+      { error: "Approval check failed: " + profileErr.message },
+      { status: 500 },
+    );
+  }
+  if (!profile?.approved) {
+    return json(
+      {
+        error: "Your account is pending approval. The admin will let you in soon.",
+        code: "not_approved",
+      },
+      { status: 403 },
+    );
+  }
+
+  // Parse request body before charging quota — a malformed request shouldn't
+  // burn one of the user's daily extractions.
   let body: unknown;
   try {
     body = await req.json();
@@ -69,9 +92,25 @@ serve(async (req) => {
     return json({ error: "Invalid JSON in request body" }, { status: 400 });
   }
 
-  // Optional: enforce a per-user usage cap here before calling out.
-  // For now, we trust authenticated users. To add limits, query a usage table
-  // keyed by userData.user.id and bail if over budget.
+  // Per-user daily rate limit (atomic check-and-increment inside Postgres).
+  const DAILY_LIMIT = 10;
+  const { data: rateRows, error: rateErr } = await supabase
+    .rpc("check_and_increment_ai_usage", { lim: DAILY_LIMIT });
+  if (rateErr) {
+    return json({ error: "Rate check failed: " + rateErr.message }, { status: 500 });
+  }
+  const rate = Array.isArray(rateRows) ? rateRows[0] : rateRows;
+  if (!rate?.allowed) {
+    return json(
+      {
+        error: `Daily limit reached (${DAILY_LIMIT} extractions/day). Try again tomorrow.`,
+        code: "rate_limited",
+        used: rate?.current_count ?? DAILY_LIMIT,
+        limit: DAILY_LIMIT,
+      },
+      { status: 429 },
+    );
+  }
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
