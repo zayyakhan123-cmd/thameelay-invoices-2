@@ -1748,16 +1748,50 @@ const RT={PURCHASED:'purchased',OOS:'oos',ZERO_DUP:'zero_dup',CHARGE:'charge',MA
 const CHARGE_RE=/pallet|charge|fee|handling|service|freight|shipping|surcharge|deposit/i;
 const CHARGE_ITEM=/^503\d{3}$|^9\d{5}$/;
 
+// Parse a size string like "12X2LBS", "1X33#", "24X15OZ", "1X10KG" into the
+// pieces needed to figure out cost-per-unit:
+//   boxCount      = number of boxes/packages in the case (the N in "NxA")
+//   perBoxAmount  = the A in "NxA" (weight or count per box)
+//   unit          = 'lb' | 'kg' | 'oz' | 'pcs' | null
+//   inferredSoldBy = 'box' | 'lb' | 'kg' | 'package' — the right divisor:
+//     "1xN#" / "1xN LB"           → 'lb'   (single bulk box, sold per pound)
+//     "1xN KG"                    → 'kg'
+//     "AxN#" / "AxN LB" with A>1  → 'box'  (multi-box case, sold per box)
+//     "AxN KG" with A>1           → 'box'
+//     "AxB OZ" / "AxB PCS/CT/EA"  → 'package' (sold per individual package)
+//     otherwise                   → 'box'
+//   u             = the divisor for cost-per-unit:
+//                   boxCount * perBoxAmount when sold_by ∈ {lb, kg}
+//                   boxCount                otherwise (preserves legacy meaning)
 function parseUnitsRobust(size){
-  if(!size) return {u:1,conf:0.5,note:'Missing size'};
+  if(!size) return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.5,note:'Missing size'};
   const s=size.trim();
   // Outer × (Inner×SIZE) pattern: "4 X (6X10.82" — outer N packs per case
   const oi=s.match(/^(\d+)\s*[xX]\s*\(/);
-  if(oi){const n=parseInt(oi[1]);return {u:n,conf:0.75,note:`Outer pack format: ${n} inner packs per case`};}
-  // Simple NxSIZE
+  if(oi){const n=parseInt(oi[1]);return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.75,note:`Outer pack format: ${n} inner packs per case`};}
+  // NxAMOUNT[UNIT]: capture the second number and unit token so we can detect
+  // single-box bulk-weight items.
+  const m=s.match(/^(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|PCS?|CT|EA)?\b/i);
+  if(m){
+    const boxCount=parseInt(m[1]);
+    const perBoxAmount=parseFloat(m[2]);
+    const rawUnit=(m[3]||'').toUpperCase().replace(/S$/,'');
+    let unit=null;
+    if(rawUnit==='#'||rawUnit==='LB') unit='lb';
+    else if(rawUnit==='KG') unit='kg';
+    else if(rawUnit==='OZ') unit='oz';
+    else if(rawUnit==='PC'||rawUnit==='PCS'||rawUnit==='CT'||rawUnit==='EA') unit='pcs';
+    let inferredSoldBy='box';
+    if(boxCount===1 && (unit==='lb'||unit==='kg')) inferredSoldBy=unit;
+    else if(unit==='oz'||unit==='pcs') inferredSoldBy='package';
+    const u=(inferredSoldBy==='lb'||inferredSoldBy==='kg')?boxCount*perBoxAmount:boxCount;
+    if(boxCount<1||boxCount>500) return {u,boxCount,perBoxAmount,unit,inferredSoldBy,conf:0.6,note:`Unusual unit count: ${boxCount}`};
+    return {u,boxCount,perBoxAmount,unit,inferredSoldBy,conf:0.95,note:''};
+  }
+  // Simple "Nx" fallback (no amount after the x)
   const simple=s.match(/^(\d+)\s*[xX]/i);
-  if(simple){const n=parseInt(simple[1]);if(n>=1&&n<=500)return {u:n,conf:0.95,note:''}; return {u:n,conf:0.6,note:`Unusual unit count: ${n}`};}
-  return {u:1,conf:0.4,note:`Cannot parse: "${s}"`};
+  if(simple){const n=parseInt(simple[1]);if(n>=1&&n<=500)return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.95,note:''}; return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.6,note:`Unusual unit count: ${n}`};}
+  return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.4,note:`Cannot parse: "${s}"`};
 }
 
 function classifyRow(item,allItems){
@@ -1781,10 +1815,18 @@ function classifyRow(item,allItems){
 const SAUCE_RE = /\b(sauc|fish\s*sauce|soy\s*sauce|oyster|sriracha|sambal|hoisin|chili\s*(paste|oil|garlic)|curry\s*paste|shrimp\s*paste|crab\s*paste|galingale|galangal|peppercorn|pickled\s*chil|tamarind\s*paste|vinegar|seasoning|miso|gochujang|nam\s*pla|nuoc\s*mam|paste|condiment)\b/i;
 
 function classifyInvoice(inv){
+  const meta = loadProdMeta();
   inv.items.forEach(item=>{
     const r=classifyRow(item,inv.items);
     item._rt=r.rt; item._conf=r.conf; item._notes=r.notes||[];
-    item._u=r.u||parseUnitsRobust(item.size).u;
+    const p = parseUnitsRobust(item.size);
+    item._u = r.u || p.u;
+    item._boxCount = p.boxCount;
+    item._perBoxAmount = p.perBoxAmount;
+    item._inferredSoldBy = p.inferredSoldBy;
+    const override = meta[prodMetaKey(item.desc, inv.vendor)]?.sold_by;
+    item._soldByOverride = override || null;
+    item._soldBy = override || p.inferredSoldBy;
     item._isNew=r.isNew||false;
     // Post-AI category correction: catch sauces miscategorized as other/snacks
     if(item.desc && SAUCE_RE.test(item.desc) && (item.cat==='other'||item.cat==='snacks')){
@@ -1811,7 +1853,15 @@ function charmRoundUp(price, tiers){
   return Math.round((dollars + 1 + tiers[0])*100)/100;
 }
 function getTgt(cat){const el=document.getElementById('tgt-'+cat);return el?parseFloat(el.value)||TARGETS[cat]:TARGETS[cat];}
-function unitCost(item){return item.caseCost/(item._u||parseUnitsRobust(item.size).u);}
+function unitCost(item){
+  const sb = item._soldBy || 'box';
+  const divisor = (sb === 'lb' || sb === 'kg')
+    ? (item._boxCount || 1) * (item._perBoxAmount || 1)
+    : (item._u || parseUnitsRobust(item.size).u || 1);
+  return divisor > 0 ? item.caseCost / divisor : 0;
+}
+function soldByLabel(item){ return ({lb:'lb', kg:'kg', package:'pkg'})[item._soldBy] || 'box'; }
+function soldByLabelPlural(item){ return ({lb:'lbs', kg:'kgs', package:'pkgs'})[item._soldBy] || 'boxes'; }
 function retailUnit(item){return unitCost(item)*(1+getTgt(item.cat)/100);}
 function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -2183,6 +2233,7 @@ async function cloudReplaceProductMeta(){
   const meta = lsGet(SK.PROD_META) || {};
   const rows = Object.entries(meta).map(([key, v]) => ({
     tenant_id: _USER.id, key, discontinued: !!v.discontinued, note: v.note || null,
+    sold_by: v.sold_by || null,
   }));
   await _supabase.from('product_meta').delete().eq('tenant_id', _USER.id);
   if(rows.length) await _supabase.from('product_meta').insert(rows);
@@ -2278,7 +2329,7 @@ async function cloudPullAll(){
     }
     if(metaR.data){
       const meta = {};
-      metaR.data.forEach(r => { meta[r.key] = { discontinued: !!r.discontinued, note: r.note }; });
+      metaR.data.forEach(r => { meta[r.key] = { discontinued: !!r.discontinued, note: r.note, sold_by: r.sold_by || undefined }; });
       lsSet(SK.PROD_META, meta);
     }
   } finally {
@@ -2368,7 +2419,7 @@ function migrateDB(){
   saveDB(nd);
   // Also re-run on history to ensure _rt is set
   const hist=loadHist();
-  hist.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt))classifyInvoice(inv);});
+  hist.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt||!i._soldBy))classifyInvoice(inv);});
   saveHist(hist);
 }
 
@@ -2836,9 +2887,16 @@ function renderApprovals(filter){
       <input type="checkbox" class="chk apchk" data-item="${esc(i.item)}">
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:13px;margin-bottom:3px">${esc(i.desc)} ${i._isNew?'<span class="tag tb">NEW</span>':''}</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:5px">${esc(CLABEL[i.cat]||'')} · ${esc(i.size)} · ${i._u||1} units/case · ${i.qty} cases</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:5px">${esc(CLABEL[i.cat]||'')} · ${esc(i.size)} · ${i._u||1} ${soldByLabelPlural(i)}/case · ${i.qty} cases</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:12px">Cost: <b class="mn">${f2(cu)}/unit</b> · Box: <b class="mn">${f2(i.caseCost)}</b></span>
+          <span style="font-size:12px">Cost: <b class="mn">${f2(cu)}</b>/${soldByLabel(i)} · Case: <b class="mn">${f2(i.caseCost)}</b></span>
+          <select onchange="setProdSoldBy('${escJs(i.desc)}','${escJs(INV.vendor||'')}',this.value)" style="font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:#fff" title="Sold by">
+            <option value="">Auto (${i._inferredSoldBy||'box'})</option>
+            <option value="box" ${i._soldByOverride==='box'?'selected':''}>Box</option>
+            <option value="lb" ${i._soldByOverride==='lb'?'selected':''}>Pound</option>
+            <option value="kg" ${i._soldByOverride==='kg'?'selected':''}>Kg</option>
+            <option value="package" ${i._soldByOverride==='package'?'selected':''}>Package</option>
+          </select>
           ${chTag}
         </div>
       </div>
@@ -2849,7 +2907,7 @@ function renderApprovals(filter){
             onchange="updateRetail('${escJs(i.item)}',parseFloat(this.value))">
         </div>
         <div style="text-align:center">
-          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/BOX</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/CASE</div>
           <div class="mn" style="font-size:14px;font-weight:700;color:var(--c1)">${f2(retail*(i._u||1))}</div>
         </div>
         <div style="text-align:center">
@@ -3040,6 +3098,27 @@ function toggleProdDisc(name, vendor){
   const m = loadProdMeta(); const k = prodMetaKey(name, vendor);
   m[k] = m[k] || {}; m[k].discontinued = !m[k].discontinued; saveProdMeta(m);
   renderTracker(_lastTrFilter || 'all');
+}
+// Persist a sold_by override for one product. Empty string clears the
+// override (falls back to size-string inference). Updates the live invoice
+// in memory so the next render reflects the new unit cost immediately.
+function setProdSoldBy(name, vendor, value){
+  const m = loadProdMeta(); const k = prodMetaKey(name, vendor);
+  m[k] = m[k] || {};
+  if(value) m[k].sold_by = value; else delete m[k].sold_by;
+  saveProdMeta(m);
+  if(typeof INV !== 'undefined' && INV && INV.items){
+    INV.items.forEach(it => {
+      if(it.desc === name){
+        it._soldByOverride = value || null;
+        it._soldBy = value || it._inferredSoldBy || parseUnitsRobust(it.size).inferredSoldBy;
+      }
+    });
+    if(typeof renderApprovals === 'function'){
+      const p = document.querySelector('#af-pills .pill.on');
+      renderApprovals(p ? p.dataset.af : 'all');
+    }
+  }
 }
 
 // Track last filter so search & checkbox re-render the same view
@@ -4500,7 +4579,7 @@ async function loadFromDb(){
     }));
     
     // Re-classify items
-    invoices.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt))classifyInvoice(inv);});
+    invoices.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt||!i._soldBy))classifyInvoice(inv);});
     saveHist(invoices);
     
     // Load price history
