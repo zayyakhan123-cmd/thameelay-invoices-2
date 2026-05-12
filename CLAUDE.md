@@ -35,9 +35,11 @@ up, `resolveSuggestedRetail` prefills the input with that stored value and
 labels it `↻ from last decision`.
 
 The ↺ button on the row only adds the product's `prodMetaKey` to the
-session-only `_RETAIL_OVERRIDE` Set — it does **not** delete the
-`product_meta` row. After reload (or sign-out/back-in) the memory wins
-again. That's intentional: ↺ is for "ignore my last call on THIS invoice."
+per-invoice `_RETAIL_OVERRIDE` Set — it does **not** delete the
+`product_meta` row. `loadInvoice` clears the Set on every invoice load,
+so opening a different invoice (or reloading / signing out and back in)
+restores the memory. That's intentional: ↺ is for "ignore my last call
+on THIS invoice."
 
 A real "forget this product's retail entirely" affordance is intentionally
 out of scope for this batch. When we add it, the natural home is the

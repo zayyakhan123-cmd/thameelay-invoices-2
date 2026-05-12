@@ -2926,6 +2926,7 @@ function loadInvoice(inv){
   const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=inv.vendor+' #'+inv.invoiceNo+' · '+inv.date;
   const vk=normV(inv.vendor);
   APPROVALS={};
+  _RETAIL_OVERRIDE.clear();
   inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{
     const ch=detectChange(i,vk,inv.invoiceNo,inv.date);
     APPROVALS[i.item]={status:'pending',retailPrice:resolveSuggestedRetail(i,inv.vendor).retail,change:ch,
@@ -5073,28 +5074,16 @@ function renderDashboardTable(){
     // Recommended action
     let actHtml = '<span class="act-tag act-keep">Do Nothing</span>';
     let reasonHtml = 'Pricing optimal; margin within target range';
-    let riskClass = 'risk-low';
-    let riskTag = 'LOW';
-    let riskMsg = 'No material impact';
-    
+
     if(ch.status === 'increase' && Math.abs(ch.pct) > 2){
       actHtml = '<span class="act-tag act-up">Increase Price</span>';
       reasonHtml = `Cost increased ${ch.pct.toFixed(1)}% from vendor; margin below target`;
-      riskClass = 'risk-high';
-      riskTag = 'HIGH';
-      riskMsg = `Margin will drop to ${curMargin.toFixed(1)}%`;
     } else if(ch.status === 'decrease' && Math.abs(ch.pct) > 2){
       actHtml = '<span class="act-tag act-dn">Decrease Price</span>';
       reasonHtml = `Cost decreased ${Math.abs(ch.pct).toFixed(1)}%; pass on benefit`;
-      riskClass = 'risk-low';
-      riskTag = 'LOW';
-      riskMsg = 'Opportunity to gain market share';
     } else if(item._conf < 0.7){
       actHtml = '<span class="act-tag act-flag">Review</span>';
       reasonHtml = 'Match confidence low; verify item details';
-      riskClass = 'risk-med';
-      riskTag = 'MEDIUM';
-      riskMsg = 'Possible mismatch';
     }
     
     // Cross-vendor cheaper option
