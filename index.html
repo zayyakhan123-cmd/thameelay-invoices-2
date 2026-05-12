@@ -3322,7 +3322,7 @@ function updateApprovalCounts(){
   document.getElementById('am-a').textContent=vals.filter(v=>v.status==='approved').length;
   document.getElementById('am-u').textContent=vals.filter(v=>v.change&&v.change.status==='increase').length;
   document.getElementById('am-d').textContent=vals.filter(v=>v.change&&v.change.status==='decrease').length;
-  document.getElementById('ap-cnt').textContent=vals.filter(v=>v.status==='pending').length;
+  const apc=document.getElementById('ap-cnt');if(apc)apc.textContent=vals.filter(v=>v.status==='pending').length;
 }
 
 // ═══════════ EXPORT ═══════════
@@ -4113,7 +4113,7 @@ function renderAlerts(){buildAlerts();}
 // ═══════════ HISTORY ═══════════
 function renderHistory(){
   const hist=loadHist();
-  document.getElementById('hi-cnt').textContent=hist.length;
+  const hc=document.getElementById('hi-cnt');if(hc)hc.textContent=hist.length;
   if(!hist.length){show('hi-empty',true);document.getElementById('hi-list').innerHTML='';return;}
   show('hi-empty',false);
   document.getElementById('hi-list').innerHTML=hist.map((inv,idx)=>{
@@ -4283,7 +4283,8 @@ function calcRun(){
 // ═══════════ UTILS ═══════════
 function show(id,v){const el=document.getElementById(id);if(el)el.style.display=v?'block':'none';}
 function updateNavCounts(){
-  const h=loadHist();document.getElementById('hi-cnt').textContent=h.length;
+  const h=loadHist();
+  const el=document.getElementById('hi-cnt');if(el)el.textContent=h.length;
 }
 function clearAllData(){
   if(!confirm('Delete ALL saved data? This cannot be undone.'))return;
