@@ -1793,8 +1793,10 @@ function parseUnitsRobust(size){
     return {u:amt||1,boxCount:1,perBoxAmount:amt,unit,inferredSoldBy,conf:0.9,note:''};
   }
   // NxAMOUNT[UNIT]: capture the second number and unit token so we can detect
-  // single-box bulk-weight items and consumer-package items.
-  const m=s.match(/^(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|ML|L|PCS?|CT|EA|G|GR)?\b/i);
+  // single-box bulk-weight items and consumer-package items. The leading
+  // boundary `(?:^|\s|-)` lets us find the pattern after prefixes like
+  // "HLSO 6X4LB" or "U-10 BLACK TIGER 4X4LB" without anchoring to start.
+  const m=s.match(/(?:^|\s|-)(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|ML|L|PCS?|CT|EA|G|GR)?(?!\w)/i);
   if(m){
     const boxCount=parseInt(m[1]);
     const perBoxAmount=parseFloat(m[2]);
@@ -1842,6 +1844,12 @@ function classifyRow(item,allItems){
 // This pattern post-corrects items where the description clearly indicates a sauce/condiment.
 const SAUCE_RE = /\b(sauc|fish\s*sauce|soy\s*sauce|oyster|sriracha|sambal|hoisin|chili\s*(paste|oil|garlic)|curry\s*paste|shrimp\s*paste|crab\s*paste|galingale|galangal|peppercorn|pickled\s*chil|tamarind\s*paste|vinegar|seasoning|miso|gochujang|nam\s*pla|nuoc\s*mam|paste|condiment)\b/i;
 
+// Shrimp count grade markers — "20/30", "30/40 CT", "U-10" / "U/10" / "U10".
+// Presence anywhere in size or description means the item is sold per-pound;
+// the actual case weight still comes from an AxB# pattern elsewhere in the
+// size (e.g. "HLSO 6X4LB 20/30 CT" → 24 lb total, $/lb).
+const SHRIMP_COUNT_RE = /\b\d{2,}\s*\/\s*\d{2,}\b(?:\s*CT)?|\bU[-\/]?\d+\b/i;
+
 // "Butcher" words in a description force sold_by='lb' regardless of the size
 // pattern (e.g. "WHOLE FISH 1X10LB" is sold per pound, not as one 10-lb box).
 // Suppressed when the description also contains a blacklist term — fish-flavored
@@ -1860,7 +1868,22 @@ function classifyInvoice(inv){
   inv.items.forEach(item=>{
     const r=classifyRow(item,inv.items);
     item._rt=r.rt; item._conf=r.conf; item._notes=r.notes||[];
-    const p = parseUnitsRobust(item.size);
+    let p = parseUnitsRobust(item.size);
+    // Shrimp count grade in size OR description → sold per pound. Strip the
+    // count from the size and re-parse so the AxB# match finds the weight
+    // (e.g. "HLSO 6X4LB 20/30 CT" → strip "20/30 CT" → parse "HLSO 6X4LB" →
+    // boxCount=6, perBoxAmount=4 → total 24 lb, sold by lb).
+    const sizeForCount = (item.size || '') + ' ' + (item.desc || '');
+    const isShrimpCount = SHRIMP_COUNT_RE.test(sizeForCount);
+    if(isShrimpCount){
+      const cleaned = (item.size || '').replace(SHRIMP_COUNT_RE, ' ').replace(/\s+/g, ' ').trim();
+      const pClean = parseUnitsRobust(cleaned);
+      if(pClean.unit === 'lb' || pClean.unit === 'kg'){
+        p = { ...pClean, inferredSoldBy: pClean.unit, u: pClean.boxCount * pClean.perBoxAmount };
+      } else {
+        item._notes = (item._notes || []).concat('Shrimp count detected but no weight in size — verify sold-by');
+      }
+    }
     item._u = r.u || p.u;
     item._boxCount = p.boxCount;
     item._perBoxAmount = p.perBoxAmount;
@@ -1913,8 +1936,8 @@ function unitCost(item){
 }
 // 'package' is the pre-rename value kept for backwards compat — historical
 // invoices loaded from cache may still have it stamped on items.
-function soldByLabel(item){ return ({lb:'lb', kg:'kg', oz:'oz', each:'pkg', package:'pkg'})[item._soldBy] || 'box'; }
-function soldByLabelPlural(item){ return ({lb:'lbs', kg:'kgs', oz:'ozs', each:'pkgs', package:'pkgs'})[item._soldBy] || 'boxes'; }
+function soldByLabel(item){ return ({lb:'lb', kg:'kg', oz:'oz', each:'each', package:'each'})[item._soldBy] || 'box'; }
+function soldByLabelPlural(item){ return ({lb:'lbs', kg:'kgs', oz:'oz', each:'each', package:'each'})[item._soldBy] || 'boxes'; }
 function retailUnit(item){return unitCost(item)*(1+getTgt(item.cat)/100);}
 function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
