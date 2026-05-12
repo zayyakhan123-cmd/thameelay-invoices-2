@@ -5027,7 +5027,7 @@ function renderDashboardTable(){
       curMargin = oldRetail>0 ? ((oldRetail - cu)/oldRetail)*100 : 0;
     }
     
-    return { item, ch, cu, ru, curMargin, projMargin };
+    return { item, ch, cu, ru, curMargin, projMargin, resolved };
   });
   
   if(search){
@@ -5055,7 +5055,7 @@ function renderDashboardTable(){
   const pageRows = rows.slice(start, start + DB_PAGE_SIZE);
   
   tbody.innerHTML = pageRows.map(r=>{
-    const {item, ch, cu, ru, curMargin, projMargin} = r;
+    const {item, ch, cu, ru, curMargin, projMargin, resolved} = r;
     
     // Item icon emoji based on category
     const catIcon = {snacks:'🍪', candy:'🍬', frozen:'🧊', bev:'🥤', dry:'🍚', other:'📦'}[item.cat] || '📦';
