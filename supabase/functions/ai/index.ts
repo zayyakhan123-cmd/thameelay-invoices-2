@@ -32,6 +32,80 @@ const json = (body: unknown, init: ResponseInit = {}) =>
     headers: { ...corsHeaders, "Content-Type": "application/json", ...(init.headers || {}) },
   });
 
+// Retry the upstream Anthropic call on transient failures.
+//
+// Retriable: HTTP 429/502/503/504/529, OR a parsed body whose type/error.type/
+// message/error.message contains "overloaded" or "rate_limit". Other 4xx are
+// real failures (auth, malformed request) and propagate immediately.
+//
+// 3 total attempts; sleeps 2s before attempt 2 and 5s before attempt 3.
+// Each attempt is logged for incident debugging via supabase function logs.
+//
+// On exhaustion the caller gets a 503 with a friendly busy-message; the
+// raw response from the final attempt is otherwise passed through unchanged.
+export async function callAnthropicWithRetry(
+  body: unknown,
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Response> {
+  const MAX_ATTEMPTS = 3;
+  const SLEEPS_MS = [0, 2000, 5000]; // sleep BEFORE attempt N (1-indexed)
+  const RETRY_STATUSES = new Set([429, 502, 503, 504, 529]);
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (attempt > 1) {
+      const ms = SLEEPS_MS[attempt - 1];
+      await new Promise((r) => setTimeout(r, ms));
+    }
+
+    const resp = await fetchImpl("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const text = await resp.text();
+    let parsed: { type?: string; message?: string; error?: { type?: string; message?: string } } | null = null;
+    try { parsed = JSON.parse(text); } catch { /* non-JSON body — fine, won't trip retry */ }
+
+    const sigs = [
+      parsed?.type, parsed?.message,
+      parsed?.error?.type, parsed?.error?.message,
+    ].map((s) => (s || "").toString().toLowerCase());
+    const bodySignalsTransient = sigs.some((s) =>
+      s.includes("overloaded") || s.includes("rate_limit")
+    );
+
+    const retriable = RETRY_STATUSES.has(resp.status) || bodySignalsTransient;
+    const errType = parsed?.error?.type || parsed?.type || "";
+
+    console.log(
+      `[ai-retry] attempt=${attempt}/${MAX_ATTEMPTS} status=${resp.status} errType=${errType || "none"} retriable=${retriable}`,
+    );
+
+    if (!retriable) {
+      // Real success OR real non-retriable failure — pass through unchanged.
+      return new Response(text, {
+        status: resp.status,
+        headers: { "Content-Type": resp.headers.get("Content-Type") || "application/json" },
+      });
+    }
+
+    // Retriable. If more attempts remain, loop. Otherwise fall through to the
+    // friendly 503 below.
+  }
+
+  console.log(`[ai-retry] exhausted ${MAX_ATTEMPTS} attempts — returning 503`);
+  return new Response(
+    JSON.stringify({ error: "Anthropic AI is currently busy. Please wait a moment and try again." }),
+    { status: 503, headers: { "Content-Type": "application/json" } },
+  );
+}
+
 serve(async (req) => {
   // CORS preflight
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -125,18 +199,11 @@ serve(async (req) => {
     }
   }
 
-  const upstream = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify(body),
-  });
+  const upstream = await callAnthropicWithRetry(body, apiKey);
 
   // Pass through Anthropic's response (status + body) so the client error
-  // handling continues to work.
+  // handling continues to work. On exhausted retries the helper returns its
+  // own 503 with a friendly message.
   const text = await upstream.text();
   return new Response(text, {
     status: upstream.status,
