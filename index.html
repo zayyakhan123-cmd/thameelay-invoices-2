@@ -1644,6 +1644,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <input type="checkbox" id="vnd-show-retail" onchange="vendorRerender()" style="cursor:pointer">
         Show retail
       </label>
+      <button onclick="vendorRecomputeSoldBy()" style="font-size:12px;padding:7px 12px" title="Re-run sold-by inference on every saved invoice for this vendor. Use after the sold-by rules change.">⟳ Recompute sold-by</button>
       <button onclick="vendorExportCSV()" style="font-size:12px;padding:7px 12px">⬇ CSV</button>
       <button onclick="vendorExportPDF()" style="font-size:12px;padding:7px 12px">⬇ PDF</button>
       <button onclick="vendorClose()" style="font-size:18px;padding:4px 10px;background:transparent;border:none;cursor:pointer;color:var(--text3)" title="Close">×</button>
@@ -1753,14 +1754,36 @@ const CHARGE_ITEM=/^503\d{3}$|^9\d{5}$/;
 //                   boxCount * perBoxAmount when sold_by ∈ {lb, kg}
 //                   boxCount                otherwise (preserves legacy meaning)
 function parseUnitsRobust(size){
-  if(!size) return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.5,note:'Missing size'};
+  if(!size) return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.5,note:'Missing size'};
   const s=size.trim();
   // Outer × (Inner×SIZE) pattern: "4 X (6X10.82" — outer N packs per case
   const oi=s.match(/^(\d+)\s*[xX]\s*\(/);
   if(oi){const n=parseInt(oi[1]);return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.75,note:`Outer pack format: ${n} inner packs per case`};}
+  // Variable-weight range (no AxB): "10-15LB", "10/15LB", "10-15KG" — bag of
+  // variable weight, sold per pound/kg. Average the bounds.
+  const varRange=s.match(/^(\d+(?:\.\d+)?)\s*[-\/]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?)\b/i);
+  if(varRange){
+    const lo=parseFloat(varRange[1]);
+    const hi=parseFloat(varRange[2]);
+    const avg=(lo+hi)/2;
+    const rawU=varRange[3].toUpperCase().replace(/S$/,'');
+    const unit=(rawU==='#'||rawU==='LB')?'lb':'kg';
+    return {u:avg||1,boxCount:1,perBoxAmount:avg,unit,inferredSoldBy:unit,conf:0.85,note:`Variable weight: ${lo}-${hi} ${unit} (avg ${avg})`};
+  }
+  // Single-weight without AxB: "10LB", "33#", "10KG", "500G"
+  const simpleWt=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|G|GR)\b/i);
+  if(simpleWt){
+    const amt=parseFloat(simpleWt[1]);
+    const rawU=simpleWt[2].toUpperCase().replace(/S$/,'');
+    let unit,inferredSoldBy;
+    if(rawU==='#'||rawU==='LB'){unit='lb';inferredSoldBy='lb';}
+    else if(rawU==='KG'){unit='kg';inferredSoldBy='kg';}
+    else {unit='g';inferredSoldBy='each';}
+    return {u:amt||1,boxCount:1,perBoxAmount:amt,unit,inferredSoldBy,conf:0.9,note:''};
+  }
   // NxAMOUNT[UNIT]: capture the second number and unit token so we can detect
-  // single-box bulk-weight items.
-  const m=s.match(/^(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|PCS?|CT|EA)?\b/i);
+  // single-box bulk-weight items and consumer-package items.
+  const m=s.match(/^(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|ML|L|PCS?|CT|EA|G|GR)?\b/i);
   if(m){
     const boxCount=parseInt(m[1]);
     const perBoxAmount=parseFloat(m[2]);
@@ -1769,18 +1792,23 @@ function parseUnitsRobust(size){
     if(rawUnit==='#'||rawUnit==='LB') unit='lb';
     else if(rawUnit==='KG') unit='kg';
     else if(rawUnit==='OZ') unit='oz';
+    else if(rawUnit==='ML') unit='ml';
+    else if(rawUnit==='L') unit='l';
     else if(rawUnit==='PC'||rawUnit==='PCS'||rawUnit==='CT'||rawUnit==='EA') unit='pcs';
+    else if(rawUnit==='G'||rawUnit==='GR') unit='g';
     let inferredSoldBy='box';
+    let note='';
     if(boxCount===1 && (unit==='lb'||unit==='kg')) inferredSoldBy=unit;
-    else if(unit==='oz'||unit==='pcs') inferredSoldBy='package';
+    else if(boxCount===2 && (unit==='lb'||unit==='kg')){ inferredSoldBy='box'; note='A==2 borderline: verify sold-by'; }
+    else if(['oz','ml','l','pcs','g'].includes(unit)) inferredSoldBy='each';
     const u=(inferredSoldBy==='lb'||inferredSoldBy==='kg')?boxCount*perBoxAmount:boxCount;
     if(boxCount<1||boxCount>500) return {u,boxCount,perBoxAmount,unit,inferredSoldBy,conf:0.6,note:`Unusual unit count: ${boxCount}`};
-    return {u,boxCount,perBoxAmount,unit,inferredSoldBy,conf:0.95,note:''};
+    return {u,boxCount,perBoxAmount,unit,inferredSoldBy,conf:0.95,note};
   }
   // Simple "Nx" fallback (no amount after the x)
   const simple=s.match(/^(\d+)\s*[xX]/i);
   if(simple){const n=parseInt(simple[1]);if(n>=1&&n<=500)return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.95,note:''}; return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.6,note:`Unusual unit count: ${n}`};}
-  return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.4,note:`Cannot parse: "${s}"`};
+  return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.4,note:`Cannot parse: "${s}"`};
 }
 
 function classifyRow(item,allItems){
@@ -1803,6 +1831,19 @@ function classifyRow(item,allItems){
 // This pattern post-corrects items where the description clearly indicates a sauce/condiment.
 const SAUCE_RE = /\b(sauc|fish\s*sauce|soy\s*sauce|oyster|sriracha|sambal|hoisin|chili\s*(paste|oil|garlic)|curry\s*paste|shrimp\s*paste|crab\s*paste|galingale|galangal|peppercorn|pickled\s*chil|tamarind\s*paste|vinegar|seasoning|miso|gochujang|nam\s*pla|nuoc\s*mam|paste|condiment)\b/i;
 
+// "Butcher" words in a description force sold_by='lb' regardless of the size
+// pattern (e.g. "WHOLE FISH 1X10LB" is sold per pound, not as one 10-lb box).
+// Suppressed when the description also contains a blacklist term — fish-flavored
+// soup/sauce/oil aren't butchered-at-counter items.
+const BUTCHER_RE = /\b(?:WHOLE\s+(?:FISH|SQUID|OCTOPUS|CHICKEN|DUCK|RABBIT|PIG|GOAT|LAMB)|FILLETS?|FILETS?|STEAKS?|CHOPS?|GROUND)\b/i;
+const BUTCHER_BLACKLIST = ['SAUCE','PASTE','MARINADE','DRESSING','SOUP','BROTH','STOCK','JUICE','OIL','FLAVOR'];
+function descForcesLb(desc){
+  if(!desc) return false;
+  const upper = desc.toUpperCase();
+  if(BUTCHER_BLACKLIST.some(t => upper.includes(t))) return false;
+  return BUTCHER_RE.test(desc);
+}
+
 function classifyInvoice(inv){
   const meta = loadProdMeta();
   inv.items.forEach(item=>{
@@ -1813,9 +1854,16 @@ function classifyInvoice(inv){
     item._boxCount = p.boxCount;
     item._perBoxAmount = p.perBoxAmount;
     item._inferredSoldBy = p.inferredSoldBy;
+    if(p.note && p.note.startsWith('A==2 borderline')) item._notes.push(p.note);
+    // Precedence: user override > description override (WHOLE FISH/FILLET) > AI's soldBy > parser inference.
     const override = meta[prodMetaKey(item.desc, inv.vendor)]?.sold_by;
+    const aiSoldBy = (typeof item.soldBy === 'string' && item.soldBy) ? item.soldBy : null;
+    const descOverride = descForcesLb(item.desc) ? 'lb' : null;
+    item._aiSoldBy = aiSoldBy;
     item._soldByOverride = override || null;
-    item._soldBy = override || p.inferredSoldBy;
+    item._soldBy = override || descOverride || aiSoldBy || p.inferredSoldBy;
+    // ⚠ flag for the verify-row: AI and parser disagreed AND user hasn't pinned a choice.
+    item._soldByDisagrees = !override && aiSoldBy && p.inferredSoldBy && aiSoldBy !== p.inferredSoldBy;
     item._isNew=r.isNew||false;
     // Post-AI category correction: catch sauces miscategorized as other/snacks
     if(item.desc && SAUCE_RE.test(item.desc) && (item.cat==='other'||item.cat==='snacks')){
@@ -1844,13 +1892,18 @@ function charmRoundUp(price, tiers){
 function getTgt(cat){const el=document.getElementById('tgt-'+cat);return el?parseFloat(el.value)||TARGETS[cat]:TARGETS[cat];}
 function unitCost(item){
   const sb = item._soldBy || 'box';
-  const divisor = (sb === 'lb' || sb === 'kg')
+  // Weight-based sold_by divides by total weight (boxCount × perBoxAmount).
+  // 'each' / 'box' / 'package' (legacy) all divide by inner-pack count (_u).
+  const isWeight = sb === 'lb' || sb === 'kg' || sb === 'oz';
+  const divisor = isWeight
     ? (item._boxCount || 1) * (item._perBoxAmount || 1)
     : (item._u || parseUnitsRobust(item.size).u || 1);
   return divisor > 0 ? item.caseCost / divisor : 0;
 }
-function soldByLabel(item){ return ({lb:'lb', kg:'kg', package:'pkg'})[item._soldBy] || 'box'; }
-function soldByLabelPlural(item){ return ({lb:'lbs', kg:'kgs', package:'pkgs'})[item._soldBy] || 'boxes'; }
+// 'package' is the pre-rename value kept for backwards compat — historical
+// invoices loaded from cache may still have it stamped on items.
+function soldByLabel(item){ return ({lb:'lb', kg:'kg', oz:'oz', each:'pkg', package:'pkg'})[item._soldBy] || 'box'; }
+function soldByLabelPlural(item){ return ({lb:'lbs', kg:'kgs', oz:'ozs', each:'pkgs', package:'pkgs'})[item._soldBy] || 'boxes'; }
 function retailUnit(item){return unitCost(item)*(1+getTgt(item.cat)/100);}
 function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -2403,7 +2456,7 @@ function migrateDB(){
   saveDB(nd);
   // Also re-run on history to ensure _rt is set
   const hist=loadHist();
-  hist.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt||!i._soldBy))classifyInvoice(inv);});
+  hist.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt))classifyInvoice(inv);});
   saveHist(hist);
 }
 
@@ -2743,6 +2796,22 @@ FOR EACH LINE ITEM extract ALL of these fields:
 - caseCost: the UNIT PRICE column (price per case), use 0 if blank
 - cat: ${ids}
 ${rules}
+- soldBy: how the retailer sells this product to end customers. One of:
+    "each" — sold as individual consumer packages (OZ/ML/L/PCS/CT/EA/G unit, or no parseable size)
+    "lb"   — sold by the pound (single bulk container, OR description contains WHOLE FISH / FILLET / FILET / STEAK / CHOPS / GROUND)
+    "kg"   — sold by the kilogram (single bulk container with KG unit)
+    "box"  — sold by the inner box (multi-pack weight items like "6X4#" or "12X1LB")
+  Default rules to apply mechanically:
+    "1xB #" or "1xB LB"               → "lb"
+    "AxB #" or "AxB LB" with A >= 2   → "box"
+    "1xB KG"                          → "kg"
+    "AxB KG" with A >= 2              → "box"
+    "AxB OZ/ML/L/PCS/CT/EA/G"         → "each"
+    "10LB", "10-15LB", "10/15LB"      → "lb"
+    "20/30 CT" shrimp count grade     → "lb"
+    Description contains WHOLE FISH / FILLET / STEAK / CHOPS / GROUND → ALWAYS "lb" (overrides the size rule),
+      UNLESS the description also contains SAUCE / PASTE / MARINADE / DRESSING / SOUP / BROTH / STOCK / JUICE / OIL / FLAVOR — then use the size-based rule
+    No parseable size                 → "each"
 - isNew: true if description contains *NEW* or NEW
 - isOOS: true if quantity is 0 or row says OOS
 
@@ -2753,7 +2822,7 @@ IMPORTANT RULES:
 - Charge rows like "Pallet Charge" should be included with cat:"other"
 
 Return ONLY raw JSON with no markdown, no backticks, no explanation:
-{"vendor":"","invoiceNo":"","date":"","docType":"invoice","customer":"","total":0,"items":[{"item":"","desc":"","size":"","qty":0,"caseCost":0.00,"cat":"other","isNew":false,"isOOS":false}]}`;
+{"vendor":"","invoiceNo":"","date":"","docType":"invoice","customer":"","total":0,"items":[{"item":"","desc":"","size":"","qty":0,"caseCost":0.00,"cat":"other","soldBy":"each","isNew":false,"isOOS":false}]}`;
 }
 
 async function extractInvoice(file, onStep){
@@ -2875,12 +2944,14 @@ function renderApprovals(filter){
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
           <span style="font-size:12px">Cost: <b class="mn">${f2(cu)}</b>/${soldByLabel(i)} · Case: <b class="mn">${f2(i.caseCost)}</b></span>
           <select onchange="setProdSoldBy('${escJs(i.desc)}','${escJs(INV.vendor||'')}',this.value)" style="font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:#fff" title="Sold by">
-            <option value="">Auto (${i._inferredSoldBy||'box'})</option>
+            <option value="">Auto (${i._inferredSoldBy||'each'})</option>
+            <option value="each" ${i._soldByOverride==='each'?'selected':''}>Each</option>
             <option value="box" ${i._soldByOverride==='box'?'selected':''}>Box</option>
             <option value="lb" ${i._soldByOverride==='lb'?'selected':''}>Pound</option>
             <option value="kg" ${i._soldByOverride==='kg'?'selected':''}>Kg</option>
-            <option value="package" ${i._soldByOverride==='package'?'selected':''}>Package</option>
+            <option value="oz" ${i._soldByOverride==='oz'?'selected':''}>Ounce</option>
           </select>
+          ${i._soldByDisagrees ? `<span title="AI suggested '${esc(i._aiSoldBy)}' but the size pattern looks like '${esc(i._inferredSoldBy)}' — please verify." style="font-size:13px;cursor:help;color:var(--amber)">⚠</span>` : ''}
           ${chTag}
         </div>
       </div>
@@ -3459,6 +3530,24 @@ let _vndSearchT = null;
 function vendorSearchDebounced(){
   clearTimeout(_vndSearchT);
   _vndSearchT = setTimeout(vendorRerender, 150);
+}
+// On-demand: recompute sold_by for every saved invoice from this vendor.
+// Default loadInvoice / history-render paths do NOT re-classify old invoices
+// (their unit costs stay frozen). This button forces it for one vendor at a
+// time, persists the updated _soldBy / _u stamps to history + Supabase, and
+// re-renders the vendor table.
+async function vendorRecomputeSoldBy(){
+  const vendorName = document.getElementById('vnd-modal').dataset.vendor;
+  if(!vendorName) return;
+  const hist = loadHist();
+  const matches = hist.filter(h => h.vendor === vendorName);
+  if(!matches.length){ showToast('warn', 'No saved invoices for this vendor'); return; }
+  if(!confirm(`Recompute sold-by for ${matches.length} saved invoice${matches.length===1?'':'s'} from ${vendorName}? Unit costs may change for bulk-weight items.`)) return;
+  matches.forEach(inv => { classifyInvoice(inv); });
+  saveHist(hist);
+  for(const inv of matches){ try { saveInvoiceToDB(inv); } catch(e){ console.warn('DB save failed for', inv.invoiceNo, e); } }
+  vendorRerender();
+  showToast('success', `✅ Recomputed sold-by for ${matches.length} invoice${matches.length===1?'':'s'}`);
 }
 function vendorRenderTable(vendorName){
   let items = vendorBuildItems(vendorName);
@@ -4563,7 +4652,7 @@ async function loadFromDb(){
     }));
     
     // Re-classify items
-    invoices.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt||!i._soldBy))classifyInvoice(inv);});
+    invoices.forEach(inv=>{if(inv.items&&inv.items.some(i=>!i._rt))classifyInvoice(inv);});
     saveHist(invoices);
     
     // Load price history
@@ -6589,6 +6678,19 @@ async function pcExportPDF(){
 
 // ═══════════ INIT ═══════════
 migrateDB();
+// One-shot localStorage rename: 'package' → 'each' so the dropdown's saved
+// override label stays in sync with the renamed sold_by vocabulary. The
+// matching Supabase row update ran in migration 20260511020000.
+(function migrateProdMetaSoldBy(){
+  try {
+    const m = lsGet(SK.PROD_META) || {};
+    let changed = false;
+    for(const k in m){
+      if(m[k] && m[k].sold_by === 'package'){ m[k].sold_by = 'each'; changed = true; }
+    }
+    if(changed){ lsSet(SK.PROD_META, m); if(typeof cloudMark === 'function') cloudMark('product_meta'); }
+  } catch(e){ console.warn('sold_by localStorage normalization failed:', e); }
+})();
 checkApiOnLoad();
 renderDashboard();
 updateDbStatus();
