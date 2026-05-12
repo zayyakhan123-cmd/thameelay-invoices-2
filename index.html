@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
@@ -623,7 +624,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <body>
 <div class="login-gate" id="login-gate">
   <div class="login-card">
-    <div class="login-logo">📊</div>
+    <div class="login-logo"><i class="ti ti-layout-dashboard"></i></div>
     <div class="login-title">Thameelay</div>
     <div id="login-sub" class="login-sub">Sign in with your email and password.</div>
     <form id="login-form" onsubmit="loginSubmit(event)" autocomplete="on">
@@ -643,7 +644,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <div class="app-wrap">
 <header>
   <div class="h-l">
-    <div class="h-icon-btn" onclick="document.querySelector('.side').classList.toggle('hide')" title="Toggle sidebar">☰</div>
+    <div class="h-icon-btn" onclick="document.querySelector('.side').classList.toggle('hide')" title="Toggle sidebar"><i class="ti ti-menu-2"></i></div>
     <div class="h-title">
       <div class="h-name" id="page-title">Dashboard</div>
       <div class="h-sub" id="page-subtitle">AI-powered invoice analysis and price optimization</div>
@@ -651,7 +652,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
   <div class="h-r">
     <div class="h-data"><span class="live-dot"></span><span id="data-fresh">Live · just now</span></div>
-    <div class="h-icon-btn h-bell" title="Notifications">🔔<span class="h-bell-cnt" id="bell-cnt">0</span></div>
+    <div class="h-icon-btn h-bell" title="Notifications"><i class="ti ti-bell"></i><span class="h-bell-cnt" id="bell-cnt">0</span></div>
     <div class="h-icon-btn" title="Help">?</div>
     <div class="h-user">
       <div class="h-avatar">ZK</div>
@@ -669,28 +670,28 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div class="side-brand-sub">Invoice Intelligence</div>
   </div>
   <div class="sg"><div class="slabel">Workflow</div>
-    <a data-pg="dashboard" class="on"><span class="sico">📊</span>Dashboard</a>
-    <a data-pg="upload"><span class="sico">📤</span>Upload Invoices</a>
-    <a data-pg="approve"><span class="sico">✅</span>Price Approvals <span class="scnt scnt-red" id="ap-cnt">0</span></a>
-    <a data-pg="export"><span class="sico">📤</span>Export to POS</a>
+    <a data-pg="dashboard" class="on"><i class="sico ti ti-layout-dashboard"></i>Dashboard</a>
+    <a data-pg="upload"><i class="sico ti ti-upload"></i>Upload Invoices</a>
+    <a data-pg="approve"><i class="sico ti ti-check"></i>Price Approvals <span class="scnt scnt-red" id="ap-cnt">0</span></a>
+    <a data-pg="export"><i class="sico ti ti-file-export"></i>Export to POS</a>
   </div>
   <div class="sg"><div class="slabel">Intelligence</div>
-    <a data-pg="tracker"><span class="sico">📈</span>Price Tracker</a>
-    <a data-pg="vendors"><span class="sico">🏪</span>Vendor Insights</a>
-    <a data-pg="alerts"><span class="sico">🔔</span>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
-    <a data-pg="produce"><span class="sico">🥬</span>Produce Matcher <span class="scnt" id="pc-cnt">0</span></a>
+    <a data-pg="tracker"><i class="sico ti ti-trending-up"></i>Price Tracker</a>
+    <a data-pg="vendors"><i class="sico ti ti-building-store"></i>Vendor Insights</a>
+    <a data-pg="alerts"><i class="sico ti ti-bell"></i>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
+    <a data-pg="produce"><i class="sico ti ti-leaf"></i>Produce Matcher <span class="scnt" id="pc-cnt">0</span></a>
   </div>
   <div class="sg"><div class="slabel">History</div>
-    <a data-pg="history"><span class="sico">🗂</span>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
+    <a data-pg="history"><i class="sico ti ti-folder"></i>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
   </div>
   <div class="sg"><div class="slabel">Settings</div>
-    <a data-pg="api-settings" data-cloud-hide><span class="sico">🔑</span>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
-    <a data-pg="db-settings"><span class="sico">🗄</span>Database <span class="scnt scnt-red" id="db-warn" style="display:none">!</span></a>
-    <a data-pg="pricing"><span class="sico">⚙️</span>Pricing Rules</a>
-    <a data-pg="calc"><span class="sico">🧮</span>Margin Calculator</a>
+    <a data-pg="api-settings" data-cloud-hide><i class="sico ti ti-key"></i>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
+    <a data-pg="db-settings"><i class="sico ti ti-database"></i>Database <span class="scnt scnt-red" id="db-warn" style="display:none">!</span></a>
+    <a data-pg="pricing"><i class="sico ti ti-adjustments-horizontal"></i>Pricing Rules</a>
+    <a data-pg="calc"><i class="sico ti ti-calculator"></i>Margin Calculator</a>
   </div>
   <div id="cloud-auth" style="margin:6px 14px 4px;padding:8px 10px;background:rgba(255,255,255,.06);border-radius:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
-  <div class="side-collapse" onclick="document.querySelector('.side').classList.toggle('hide')"><span>«</span> Collapse menu</div>
+  <div class="side-collapse" onclick="document.querySelector('.side').classList.toggle('hide')"><i class="ti ti-chevron-left"></i> Collapse menu</div>
 </nav>
 <main class="main">
 
@@ -700,37 +701,37 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <!-- 1. SUMMARY BANNER -->
   <div class="banner">
     <div class="b-cell">
-      <div class="b-icon bi-blue">📄</div>
+      <div class="b-icon bi-blue"><i class="ti ti-file-text"></i></div>
       <div class="b-val mn" id="db-items">0</div>
       <div class="b-lbl">Items Found</div>
       <div class="b-sub" id="db-items-sub">Across 0 invoices</div>
     </div>
     <div class="b-cell">
-      <div class="b-icon bi-green">✓</div>
+      <div class="b-icon bi-green"><i class="ti ti-check"></i></div>
       <div class="b-val mn" id="db-safe" style="color:var(--green)">0</div>
       <div class="b-lbl">Safe to Approve</div>
       <div class="b-sub" id="db-safe-sub">0%</div>
     </div>
     <div class="b-cell">
-      <div class="b-icon bi-amber">🏷</div>
+      <div class="b-icon bi-amber"><i class="ti ti-tag"></i></div>
       <div class="b-val mn" id="db-changes" style="color:var(--amber)">0</div>
       <div class="b-lbl">Price Changes Needed</div>
       <div class="b-sub" id="db-changes-sub">0%</div>
     </div>
     <div class="b-cell">
-      <div class="b-icon bi-eye">👁</div>
+      <div class="b-icon bi-eye"><i class="ti ti-eye"></i></div>
       <div class="b-val mn" id="db-review" style="color:var(--purple)">0</div>
       <div class="b-lbl">Need Review</div>
       <div class="b-sub" id="db-review-sub">0%</div>
     </div>
     <div class="b-cell">
-      <div class="b-icon bi-red">📉</div>
+      <div class="b-icon bi-red"><i class="ti ti-trending-down"></i></div>
       <div class="b-val mn" id="db-loss" style="color:var(--red)">$0</div>
       <div class="b-lbl">Est. Margin Loss</div>
       <div class="b-sub">If no action taken</div>
     </div>
     <div class="b-cell">
-      <div class="b-icon bi-trend">📈</div>
+      <div class="b-icon bi-trend"><i class="ti ti-trending-up"></i></div>
       <div class="b-val mn" id="db-gain" style="color:var(--green)">$0</div>
       <div class="b-lbl">Projected Profit Gain</div>
       <div class="b-sub">After applying changes</div>
@@ -747,7 +748,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
         <div class="dz-mini dz-mini-h" id="dropzone">
           <div style="display:flex;align-items:center;gap:10px;justify-content:center">
-            <div class="dz-mini-icon" style="font-size:22px;margin:0">☁️</div>
+            <div class="dz-mini-icon" style="font-size:22px;margin:0"><i class="ti ti-cloud-upload"></i></div>
             <div style="text-align:left">
               <div class="dz-mini-title">Drag &amp; drop invoice files here</div>
               <div class="dz-mini-sub">PDF, JPG, PNG up to 20MB</div>
@@ -757,11 +758,11 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
       </div>
       <div class="dash-upload-actions">
-        <button class="bp" style="width:100%;justify-content:center" onclick="document.getElementById('file-in').click()">📁 Choose Files</button>
+        <button class="bp" style="width:100%;justify-content:center" onclick="document.getElementById('file-in').click()"><i class="ti ti-folder" style="margin-right:6px"></i>Choose Files</button>
         <div class="btn-grid-3" style="width:100%;margin-top:0">
-          <button onclick="processQueue()" style="justify-content:center">▶ Process</button>
-          <button onclick="loadDemo()" style="justify-content:center;display:none" data-demo-btn>▶ Demo</button>
-          <button onclick="clearQueue()" style="justify-content:center;color:var(--red)">🗑 Clear</button>
+          <button onclick="processQueue()" style="justify-content:center"><i class="ti ti-player-play" style="margin-right:6px"></i>Process</button>
+          <button onclick="loadDemo()" style="justify-content:center;display:none" data-demo-btn><i class="ti ti-player-play" style="margin-right:6px"></i>Demo</button>
+          <button onclick="clearQueue()" style="justify-content:center;color:var(--red)"><i class="ti ti-trash" style="margin-right:6px"></i>Clear</button>
         </div>
       </div>
     </div>
@@ -771,12 +772,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
       <div class="q-progress" style="display:none" id="db-q-progress">
         <span class="mn" id="db-q-counter">0 of 0 ready to process</span>
         <div class="q-progress-bar"><div class="q-progress-fill" id="db-q-fill" style="width:0%"></div></div>
-        <button class="bp" style="font-size:11px;padding:5px 12px" onclick="processQueue()">▶ Process All</button>
+        <button class="bp" style="font-size:11px;padding:5px 12px" onclick="processQueue()"><i class="ti ti-player-play" style="margin-right:6px"></i>Process All</button>
       </div>
     </div>
     <div id="db-extracting" class="up-prog" style="display:none">
       <div class="up-prog-file">
-        <div class="up-prog-file-ico">📄</div>
+        <div class="up-prog-file-ico"><i class="ti ti-file-text"></i></div>
         <div style="min-width:0;flex:1">
           <div class="up-prog-file-name" id="db-up-name">filename.pdf</div>
           <div class="up-prog-file-meta" id="db-up-meta">Processing...</div>
@@ -801,18 +802,18 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
         <div class="tbl-search">
           <div class="tbl-search-input"><input type="text" placeholder="Search items..." id="db-search" oninput="dbSearchDebounced()"></div>
-          <button class="tbl-btn">⚏ Filters</button>
-          <button class="tbl-btn">⬇ Export</button>
+          <button class="tbl-btn"><i class="ti ti-filter" style="margin-right:6px"></i>Filters</button>
+          <button class="tbl-btn"><i class="ti ti-download" style="margin-right:6px"></i>Export</button>
         </div>
       </div>
       <div class="db-bulk" id="db-bulk-bar" style="display:none">
         <div class="db-bulk-info"><b id="db-bulk-pending">0</b> pending · <b id="db-bulk-approved" style="color:var(--green)">0</b> approved · <b id="db-bulk-rejected" style="color:var(--red)">0</b> rejected</div>
         <div class="db-bulk-spacer"></div>
-        <button class="db-bulk-btn primary" onclick="dbApproveSafe()" title="Approve all items where Recommended Action is Do Nothing">✓ Safe</button>
-        <button class="db-bulk-btn primary" onclick="dbApproveAll()" title="Approve every item">✓✓ All</button>
-        <button class="db-bulk-btn warn" onclick="dbRejectAll()">✕ Reject All</button>
-        <button class="db-bulk-btn" onclick="dbLoadLastInvoice()" title="Re-load the most recently uploaded invoice">📄 Last Invoice</button>
-        <button class="db-bulk-btn" onclick="goTo('approve')" title="Open detailed approvals page">→ Details</button>
+        <button class="db-bulk-btn primary" onclick="dbApproveSafe()" title="Approve all items where Recommended Action is Do Nothing"><i class="ti ti-check" style="margin-right:6px"></i>Safe</button>
+        <button class="db-bulk-btn primary" onclick="dbApproveAll()" title="Approve every item"><i class="ti ti-checks" style="margin-right:6px"></i>All</button>
+        <button class="db-bulk-btn warn" onclick="dbRejectAll()"><i class="ti ti-x" style="margin-right:6px"></i>Reject All</button>
+        <button class="db-bulk-btn" onclick="dbLoadLastInvoice()" title="Re-load the most recently uploaded invoice"><i class="ti ti-file-text" style="margin-right:6px"></i>Last Invoice</button>
+        <button class="db-bulk-btn" onclick="goTo('approve')" title="Open detailed approvals page"><i class="ti ti-arrow-right" style="margin-right:6px"></i>Details</button>
       </div>
       <div class="tw">
         <table>
@@ -831,7 +832,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
           </tr></thead>
           <tbody id="db-approval-body">
             <tr><td colspan="11" style="text-align:center;padding:48px;color:var(--text3)">
-              <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
+              <div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-package"></i></div>
               <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
               <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
             </td></tr>
@@ -862,7 +863,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
       </div>
       <div class="alerts-grid">
         <div class="alert-c alert-red">
-          <div class="alert-ico" style="background:#fee2e2;color:#b91c1c">📉</div>
+          <div class="alert-ico" style="background:#fee2e2;color:#b91c1c"><i class="ti ti-trending-down"></i></div>
           <div class="alert-mid">
             <div class="alert-tit">Margin below target</div>
             <div class="alert-cnt" id="al-margin">0</div>
@@ -870,7 +871,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
           </div>
         </div>
         <div class="alert-c alert-amber">
-          <div class="alert-ico" style="background:#fef3c7;color:#92400e">🛒</div>
+          <div class="alert-ico" style="background:#fef3c7;color:#92400e"><i class="ti ti-shopping-cart"></i></div>
           <div class="alert-mid">
             <div class="alert-tit">Retail below cost</div>
             <div class="alert-cnt" id="al-belowcost">0</div>
@@ -878,7 +879,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
           </div>
         </div>
         <div class="alert-c alert-blue">
-          <div class="alert-ico" style="background:#dbeafe;color:#1d4ed8">📂</div>
+          <div class="alert-ico" style="background:#dbeafe;color:#1d4ed8"><i class="ti ti-folder"></i></div>
           <div class="alert-mid">
             <div class="alert-tit">Missing category</div>
             <div class="alert-cnt" id="al-cat">0</div>
@@ -886,7 +887,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
           </div>
         </div>
         <div class="alert-c alert-green">
-          <div class="alert-ico" style="background:#d1fae5;color:#047857">🔍</div>
+          <div class="alert-ico" style="background:#d1fae5;color:#047857"><i class="ti ti-search"></i></div>
           <div class="alert-mid">
             <div class="alert-tit">Low confidence match</div>
             <div class="alert-cnt" id="al-lowconf">0</div>
@@ -967,17 +968,17 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="steps"><div class="step active">1 · Upload</div><div class="step">2 · Verify</div><div class="step">3 · Approve</div><div class="step">4 · Export</div></div>
   <div id="dz-wrap">
     <div class="dz" id="dropzone">
-      <span class="dz-icon">📄</span>
+      <span class="dz-icon"><i class="ti ti-file-text"></i></span>
       <div class="dz-title">Drop your vendor invoice here</div>
       <div class="dz-sub">PDF or image · AI reads every line item · Detects price changes against history<br>Multiple files OK for batch processing</div>
       <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" onclick="event.stopPropagation()">
-        <button onclick="document.getElementById('file-in').click()">📁 Choose file(s)</button>
-        <button class="bp" onclick="loadDemo()">▶ Load demo invoice</button>
-        <button class="bgo" onclick="goTo('api-settings')" id="setup-key-btn" data-cloud-hide>🔑 Set up API key</button>
+        <button onclick="document.getElementById('file-in').click()"><i class="ti ti-folder" style="margin-right:6px"></i>Choose file(s)</button>
+        <button class="bp" onclick="loadDemo()"><i class="ti ti-player-play" style="margin-right:6px"></i>Load demo invoice</button>
+        <button class="bgo" onclick="goTo('api-settings')" id="setup-key-btn" data-cloud-hide><i class="ti ti-key" style="margin-right:6px"></i>Set up API key</button>
       </div>
       <div id="no-key-notice" data-cloud-hide style="display:none;margin-top:12px;padding:8px 14px;background:var(--amberl);border-radius:var(--r);font-size:12px;color:var(--amberd);font-weight:500">
-        ⚠ No API key saved — real PDFs will fall back to demo mode. <a onclick="goTo('api-settings')" style="cursor:pointer;text-decoration:underline;color:var(--c1d)">Set up your key →</a>
+        <i class="ti ti-alert-triangle" style="margin-right:6px"></i>No API key saved — real PDFs will fall back to demo mode. <a onclick="goTo('api-settings')" style="cursor:pointer;text-decoration:underline;color:var(--c1d)">Set up your key →</a>
       </div>
     </div>
     <div id="queue-wrap" style="display:none;margin-top:14px">
@@ -985,7 +986,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div class="ctit">Upload queue</div>
           <div style="display:flex;gap:8px">
-            <button class="bp" onclick="processQueue()">▶ Process all</button>
+            <button class="bp" onclick="processQueue()"><i class="ti ti-player-play" style="margin-right:6px"></i>Process all</button>
             <button onclick="clearQueue()">Clear</button>
           </div>
         </div>
@@ -1030,12 +1031,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="steps"><div class="step done">1 ✓</div><div class="step done">2 ✓</div><div class="step active">3 · Approve</div><div class="step">4 · Export</div></div>
   <div class="mets">
     <div class="met">
-      <div class="met-hdr"><div class="met-lbl">Pending Review</div><div class="met-ico" style="font-size:18px">⏳</div></div>
+      <div class="met-hdr"><div class="met-lbl">Pending Review</div><div class="met-ico" style="font-size:18px"><i class="ti ti-clock"></i></div></div>
       <div class="met-val mn" id="am-p" style="color:var(--amber)">0</div>
       <div class="met-foot"><span class="met-chip ta">awaiting</span><span class="met-comp">your action</span></div>
     </div>
     <div class="met">
-      <div class="met-hdr"><div class="met-lbl">Approved</div><div class="met-ico" style="font-size:18px">✅</div></div>
+      <div class="met-hdr"><div class="met-lbl">Approved</div><div class="met-ico" style="font-size:18px"><i class="ti ti-check"></i></div></div>
       <div class="met-val mn" id="am-a" style="color:var(--green)">0</div>
       <div class="met-foot"><span class="met-chip dn">ready</span><span class="met-comp">for export</span></div>
     </div>
@@ -1054,9 +1055,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
       <div><div class="ctit">Suggested prices</div><div class="csub" style="margin-bottom:0">Edit retail/unit directly then approve</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="bg" onclick="bulkApprove()">✓ Approve all</button>
+        <button class="bg" onclick="bulkApprove()"><i class="ti ti-check" style="margin-right:6px"></i>Approve all</button>
         <button onclick="approveSelected()">Approve selected</button>
-        <button class="br" onclick="rejectAll()">✗ Reject all</button>
+        <button class="br" onclick="rejectAll()"><i class="ti ti-x" style="margin-right:6px"></i>Reject all</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
@@ -1097,9 +1098,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <select id="exp-round"><option value="charm4" selected>Charm: .29 / .49 / .79 / .99 (up)</option><option value="charm2">Charm: .49 / .99 (up)</option><option value="none">Exact markup (no rounding)</option></select>
       </div>
       <div class="brow">
-        <button class="bp" onclick="downloadCSV()">⬇ Download CSV</button>
+        <button class="bp" onclick="downloadCSV()"><i class="ti ti-download" style="margin-right:6px"></i>Download CSV</button>
         <button class="bgo" onclick="previewCSV()">Preview</button>
-        <button class="bg" onclick="finalizeAndSave()">💾 Save to history</button>
+        <button class="bg" onclick="finalizeAndSave()"><i class="ti ti-device-floppy" style="margin-right:6px"></i>Save to history</button>
       </div>
     </div>
     <div class="card"><div class="ctit">Export summary</div><div id="exp-summary"><div style="color:var(--text3);font-size:12px">No invoice loaded</div></div></div>
@@ -1111,7 +1112,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <div class="pg" id="pg-tracker">
   <div class="pgh"><div class="pgt">Price Tracker</div><div class="pgs">Full price history — every product, every invoice</div></div>
   <div id="tr-empty" class="card" style="text-align:center;padding:40px">
-    <div style="font-size:40px;margin-bottom:12px">📈</div>
+    <div style="font-size:40px;margin-bottom:12px"><i class="ti ti-trending-up"></i></div>
     <div style="font-size:15px;font-weight:600;margin-bottom:6px">No price history yet</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Save invoices to start tracking changes</div>
     <button class="bp" onclick="goTo('upload')">Upload first invoice</button>
@@ -1190,7 +1191,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div>
     <div class="pills" id="tr-pills">
       <div class="pill on" data-tf="all">All</div><div class="pill" data-tf="up">Up ▲</div><div class="pill" data-tf="dn">Down ▼</div><div class="pill" data-tf="same">Same</div>
-      <div class="pill" data-tf="produce">🥬 Produce</div>
+      <div class="pill" data-tf="produce"><i class="ti ti-leaf" style="margin-right:6px"></i>Produce</div>
       <div class="pill" data-tf="snacks">Snacks</div><div class="pill" data-tf="candy">Candy/Jelly</div><div class="pill" data-tf="frozen">Frozen</div>
       <div class="pill" data-tf="bev">Beverages</div><div class="pill" data-tf="dry">Rice/Noodles</div><div class="pill" data-tf="other">Other</div>
     </div>
@@ -1210,7 +1211,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
       </tr></thead>
       <tbody id="tr-body"></tbody></table>
     </div>
-    <div class="brow"><button class="br" onclick="clearAllData()">🗑 Clear all data</button></div>
+    <div class="brow"><button class="br" onclick="clearAllData()"><i class="ti ti-trash" style="margin-right:6px"></i>Clear all data</button></div>
   </div>
 </div>
 
@@ -1232,7 +1233,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <div class="pg" id="pg-history">
   <div class="pgh"><div class="pgt">Invoice History</div><div class="pgs">All saved invoices — click any to reload</div></div>
   <div id="hi-empty" class="card" style="text-align:center;padding:40px">
-    <div style="font-size:40px;margin-bottom:12px">🗂</div>
+    <div style="font-size:40px;margin-bottom:12px"><i class="ti ti-folder"></i></div>
     <div style="font-size:15px;font-weight:600;margin-bottom:6px">No invoices saved</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Save invoices to build your price history database</div>
     <button class="bp" onclick="goTo('upload')">Upload first invoice</button>
@@ -1289,13 +1290,13 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <div class="pg" id="pg-api-settings">
   <div class="pgh"><div class="pgt">API Settings</div><div class="pgs">Connect your Anthropic API key to enable real PDF extraction from your invoices</div></div>
   <div data-cloud-show style="display:none;background:var(--c1l);border:1px solid var(--c1);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--c1d)">
-    <b>✓ AI is configured for you.</b> Your account uses a server-side key — you don't need to enter anything here. The fields below are inactive.
+    <b><i class="ti ti-check" style="margin-right:6px"></i>AI is configured for you.</b> Your account uses a server-side key — you don't need to enter anything here. The fields below are inactive.
   </div>
   <div id="api-status-banner" style="display:none;border-radius:var(--r);padding:11px 16px;margin-bottom:14px;font-size:13px;font-weight:500"></div>
   <div class="g2">
     <div>
       <div class="card">
-        <div class="ctit">🔑 Anthropic API Key</div>
+        <div class="ctit"><i class="ti ti-key" style="margin-right:6px"></i>Anthropic API Key</div>
         <div class="csub">Stored only in your browser — never in the app code, never on any server</div>
         <div class="ig">
           <label>Paste your API key here</label>
@@ -1307,14 +1308,14 @@ body.cloud-active [data-cloud-show]{display:block !important}
           <div id="key-hint" style="font-size:11px;margin-top:3px;min-height:16px"></div>
         </div>
         <div class="brow">
-          <button class="bp" onclick="saveApiKey()">💾 Save key</button>
-          <button onclick="testApiKey()" id="test-btn">🧪 Test connection</button>
-          <button class="br" onclick="clearApiKey()">🗑 Remove</button>
+          <button class="bp" onclick="saveApiKey()"><i class="ti ti-device-floppy" style="margin-right:6px"></i>Save key</button>
+          <button onclick="testApiKey()" id="test-btn"><i class="ti ti-flask" style="margin-right:6px"></i>Test connection</button>
+          <button class="br" onclick="clearApiKey()"><i class="ti ti-trash" style="margin-right:6px"></i>Remove</button>
         </div>
         <div id="test-result" style="margin-top:10px;font-size:12px;display:none;padding:8px 12px;border-radius:var(--r);background:var(--bg3)"></div>
       </div>
       <div class="card" style="border-left:4px solid var(--amber)">
-        <div class="ctit" style="color:var(--amberd)">⚠️ Keep your key safe</div>
+        <div class="ctit" style="color:var(--amberd)"><i class="ti ti-alert-triangle" style="margin-right:6px"></i>Keep your key safe</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.9;margin-top:6px">
           <div>• <b>Never share your key</b> in chat, email, or screenshots</div>
           <div>• If it was exposed, rotate it at <b>console.anthropic.com/settings/keys</b></div>
@@ -1326,7 +1327,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div>
     <div>
       <div class="card">
-        <div class="ctit">📊 Usage this month</div>
+        <div class="ctit"><i class="ti ti-chart-bar" style="margin-right:6px"></i>Usage this month</div>
         <div class="csub" id="usage-month-lbl">Estimated from extractions in this browser</div>
         <div class="cr"><span class="crl">Invoices extracted</span><span class="crv mn" id="u-invs">0</span></div>
         <div class="cr"><span class="crl">Est. tokens used</span><span class="crv mn" id="u-tokens">0</span></div>
@@ -1345,7 +1346,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div class="brow" style="margin-top:10px"><button onclick="resetUsage()" style="font-size:11px">Reset counter</button></div>
       </div>
       <div class="card">
-        <div class="ctit">💡 Cost estimate</div>
+        <div class="ctit"><i class="ti ti-bulb" style="margin-right:6px"></i>Cost estimate</div>
         <div style="font-size:12px;color:var(--text2);line-height:2">
           <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px"><span>1 invoice (3–4 pages)</span><span class="mn" style="color:var(--green);font-weight:600">~$0.03–0.05</span></div>
           <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px"><span>5 invoices</span><span class="mn" style="color:var(--green);font-weight:600">~$0.15–0.25</span></div>
@@ -1353,7 +1354,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
           <div style="display:flex;justify-content:space-between"><span>50 invoices/month</span><span class="mn" style="color:var(--green);font-weight:600">~$1.50–2.50</span></div>
         </div>
         <div style="margin-top:10px;padding:9px 12px;background:var(--greenl);border-radius:var(--r);font-size:11px;color:var(--greend);font-weight:500">
-          ✅ A $10/month hard cap at Anthropic covers ~200–300 invoices. More than enough for weekly store orders.
+          <i class="ti ti-check" style="margin-right:6px"></i>A $10/month hard cap at Anthropic covers ~200–300 invoices. More than enough for weekly store orders.
         </div>
       </div>
     </div>
@@ -1376,7 +1377,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="g2">
     <div>
       <div class="card">
-        <div class="ctit">🗄 Neon Database Connection</div>
+        <div class="ctit"><i class="ti ti-database" style="margin-right:6px"></i>Neon Database Connection</div>
         <div class="csub">Paste your connection string — stored only in this browser, never in code</div>
         <div class="ig">
           <label>Connection string</label>
@@ -1389,14 +1390,14 @@ body.cloud-active [data-cloud-show]{display:block !important}
           <div id="conn-hint" style="font-size:11px;margin-top:3px;min-height:16px"></div>
         </div>
         <div class="brow">
-          <button class="bp" onclick="saveDbConn()">💾 Save connection</button>
-          <button onclick="testDbConn()" id="db-test-btn">🧪 Test connection</button>
-          <button class="br" onclick="clearDbConn()">🗑 Remove</button>
+          <button class="bp" onclick="saveDbConn()"><i class="ti ti-device-floppy" style="margin-right:6px"></i>Save connection</button>
+          <button onclick="testDbConn()" id="db-test-btn"><i class="ti ti-flask" style="margin-right:6px"></i>Test connection</button>
+          <button class="br" onclick="clearDbConn()"><i class="ti ti-trash" style="margin-right:6px"></i>Remove</button>
         </div>
         <div id="db-test-result" style="margin-top:10px;font-size:12px;display:none;padding:8px 12px;border-radius:var(--r);background:var(--bg3)"></div>
       </div>
       <div class="card" style="border-left:4px solid var(--amber)">
-        <div class="ctit" style="color:var(--amberd)">⚠️ Keep your connection string safe</div>
+        <div class="ctit" style="color:var(--amberd)"><i class="ti ti-alert-triangle" style="margin-right:6px"></i>Keep your connection string safe</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.9;margin-top:6px">
           <div>• <b>Never share</b> your connection string in chat or screenshots</div>
           <div>• If exposed, reset password at <b>console.neon.tech → Settings</b></div>
@@ -1407,7 +1408,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div>
     <div>
       <div class="card">
-        <div class="ctit">📊 Database status</div>
+        <div class="ctit"><i class="ti ti-chart-bar" style="margin-right:6px"></i>Database status</div>
         <div id="db-status-display">
           <div class="cr"><span class="crl">Connection</span><span id="db-conn-status" class="crv" style="font-size:13px;color:var(--text3)">Not connected</span></div>
           <div class="cr"><span class="crl">Invoices saved</span><span class="crv mn" id="db-inv-count">—</span></div>
@@ -1415,8 +1416,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
           <div class="cr"><span class="crl">Last sync</span><span class="crv mn" style="font-size:11px;color:var(--text3)" id="db-last-sync">Never</span></div>
         </div>
         <div class="brow" style="margin-top:10px">
-          <button class="bp" onclick="syncToDb()" id="sync-btn">☁️ Sync all data to database</button>
-          <button onclick="loadFromDb()" id="load-btn">⬇️ Load from database</button>
+          <button class="bp" onclick="syncToDb()" id="sync-btn"><i class="ti ti-cloud-upload" style="margin-right:6px"></i>Sync all data to database</button>
+          <button onclick="loadFromDb()" id="load-btn"><i class="ti ti-download" style="margin-right:6px"></i>Load from database</button>
         </div>
         <div id="sync-progress" style="display:none;margin-top:10px">
           <div class="pb"><div class="pbf" id="sync-bar" style="width:0%"></div></div>
@@ -1424,16 +1425,16 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
       </div>
       <div class="card">
-        <div class="ctit">💡 What the database does</div>
+        <div class="ctit"><i class="ti ti-bulb" style="margin-right:6px"></i>What the database does</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.9">
-          <div>✅ Data survives browser refresh</div>
-          <div>✅ Access from any device</div>
-          <div>✅ Never lose invoice history</div>
-          <div>✅ Price history builds up over time</div>
-          <div>✅ Free — Neon free tier is more than enough</div>
+          <div><i class="ti ti-check" style="margin-right:6px"></i>Data survives browser refresh</div>
+          <div><i class="ti ti-check" style="margin-right:6px"></i>Access from any device</div>
+          <div><i class="ti ti-check" style="margin-right:6px"></i>Never lose invoice history</div>
+          <div><i class="ti ti-check" style="margin-right:6px"></i>Price history builds up over time</div>
+          <div><i class="ti ti-check" style="margin-right:6px"></i>Free — Neon free tier is more than enough</div>
         </div>
         <div style="margin-top:10px;padding:9px 12px;background:var(--bluel);border-radius:var(--r);font-size:11px;color:var(--blued);font-weight:500">
-          ℹ️ After connecting, click "Sync all data" to upload your existing invoices, then "Load from database" on any new device to get everything back.
+          <i class="ti ti-info-circle" style="margin-right:6px"></i>After connecting, click "Sync all data" to upload your existing invoices, then "Load from database" on any new device to get everything back.
         </div>
       </div>
     </div>
@@ -1448,10 +1449,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
 
   <div class="pc-tabs">
-    <div class="pc-tab on" data-pct="match" onclick="pcTab('match')">📋 Match Invoice</div>
-    <div class="pc-tab" data-pct="catalog" onclick="pcTab('catalog')">🥬 Catalog <span class="scnt" id="pc-cat-cnt">0</span></div>
-    <div class="pc-tab" data-pct="export" onclick="pcTab('export')">📄 Export PDF</div>
-    <div class="pc-tab" data-pct="history" onclick="pcTab('history')">📚 History <span class="scnt" id="pc-hist-cnt">0</span></div>
+    <div class="pc-tab on" data-pct="match" onclick="pcTab('match')"><i class="ti ti-clipboard-list" style="margin-right:6px"></i>Match Invoice</div>
+    <div class="pc-tab" data-pct="catalog" onclick="pcTab('catalog')"><i class="ti ti-leaf" style="margin-right:6px"></i>Catalog <span class="scnt" id="pc-cat-cnt">0</span></div>
+    <div class="pc-tab" data-pct="export" onclick="pcTab('export')"><i class="ti ti-file-text" style="margin-right:6px"></i>Export PDF</div>
+    <div class="pc-tab" data-pct="history" onclick="pcTab('history')"><i class="ti ti-books" style="margin-right:6px"></i>History <span class="scnt" id="pc-hist-cnt">0</span></div>
   </div>
 
   <!-- TAB: MATCH INVOICE -->
@@ -1459,19 +1460,19 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div class="card">
       <div class="card-hd"><div class="card-t"><span class="card-t-num">1</span><div class="ctit">Upload Produce Invoice(s)</div></div></div>
       <div class="dz-mini" id="pc-dropzone" style="margin-bottom:10px">
-        <div class="dz-mini-icon">🥕</div>
+        <div class="dz-mini-icon"><i class="ti ti-carrot"></i></div>
         <div class="dz-mini-title">Drag &amp; drop one or more produce invoices</div>
         <div class="dz-mini-sub">PDF, image, .xlsx or .csv · multiple vendors OK · all results accumulate below</div>
         <input type="file" id="pc-file-in" accept=".pdf,image/*,.xlsx,.xls,.csv" multiple style="display:none" onchange="pcHandleFile(event)">
       </div>
       <div class="brow" style="gap:8px;flex-wrap:wrap">
-        <button class="bp" onclick="document.getElementById('pc-file-in').click()">📁 Choose File(s)</button>
-        <button onclick="pcLoadDemo()" style="display:none" data-demo-btn>▶ Demo Invoice</button>
-        <button onclick="pcClearAllMatches()" style="color:var(--red);margin-left:auto" id="pc-clear-btn">🗑 Clear All Matches</button>
+        <button class="bp" onclick="document.getElementById('pc-file-in').click()"><i class="ti ti-folder" style="margin-right:6px"></i>Choose File(s)</button>
+        <button onclick="pcLoadDemo()" style="display:none" data-demo-btn><i class="ti ti-player-play" style="margin-right:6px"></i>Demo Invoice</button>
+        <button onclick="pcClearAllMatches()" style="color:var(--red);margin-left:auto" id="pc-clear-btn"><i class="ti ti-trash" style="margin-right:6px"></i>Clear All Matches</button>
       </div>
       <div id="pc-extracting" class="up-prog" style="display:none">
         <div class="up-prog-file">
-          <div class="up-prog-file-ico">🥬</div>
+          <div class="up-prog-file-ico"><i class="ti ti-leaf"></i></div>
           <div style="min-width:0;flex:1">
             <div class="up-prog-file-name" id="pc-up-name">filename.pdf</div>
             <div class="up-prog-file-meta" id="pc-up-meta">Processing...</div>
@@ -1488,8 +1489,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
       <div class="card-hd">
         <div class="card-t"><span class="card-t-num">2</span><div class="ctit">Review Matches</div><span class="act-pill" id="pc-results-summary">0 items</span></div>
         <div class="brow" style="gap:6px">
-          <button class="db-bulk-btn primary" onclick="pcAcceptAllHigh()">✓ Accept all High</button>
-          <button class="db-bulk-btn" onclick="pcResetMatches()">↺ Reset</button>
+          <button class="db-bulk-btn primary" onclick="pcAcceptAllHigh()"><i class="ti ti-check" style="margin-right:6px"></i>Accept all High</button>
+          <button class="db-bulk-btn" onclick="pcResetMatches()"><i class="ti ti-rotate" style="margin-right:6px"></i>Reset</button>
         </div>
       </div>
       <div id="pc-results-list" class="pc-results-list"></div>
@@ -1499,7 +1500,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <!-- TAB: CATALOG -->
   <div class="pc-tab-pane" id="pc-pane-catalog">
     <div class="card" id="pc-host-card">
-      <div class="card-hd"><div class="card-t"><div class="ctit">📷 Photo Host (Truong Catalog)</div></div></div>
+      <div class="card-hd"><div class="card-t"><div class="ctit"><i class="ti ti-camera" style="margin-right:6px"></i>Photo Host (Truong Catalog)</div></div></div>
       <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px">
         The Truong catalog ships with <b>297 produce items</b> ready to use. Photos load from the URL you set below.
         Use <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:11px">{slug}</code> as the placeholder for each item's filename.
@@ -1516,7 +1517,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div>
 
     <div class="card">
-      <div class="card-hd"><div class="card-t"><div class="ctit">🚚 Vendor Rules</div></div></div>
+      <div class="card-hd"><div class="card-t"><div class="ctit"><i class="ti ti-truck" style="margin-right:6px"></i>Vendor Rules</div></div></div>
       <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px">
         Add per-box shipping or handling cost for specific vendors. Match is case-insensitive and partial — typing "green day" matches "GREEN DAY PRODUCE LLC". Applied automatically when an invoice is uploaded.
       </div>
@@ -1536,7 +1537,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
       <div class="pc-add-grid">
         <div class="pc-add-img" id="pc-add-img-box" onclick="document.getElementById('pc-img-in').click()">
           <div id="pc-add-img-prev">
-            <div style="font-size:36px;opacity:.4">📷</div>
+            <div style="font-size:36px;opacity:.4"><i class="ti ti-camera"></i></div>
             <div style="font-size:11px;color:var(--text3);margin-top:6px">Click to upload photo</div>
           </div>
           <input type="file" id="pc-img-in" accept="image/*" style="display:none" onchange="pcOnImage(event)">
@@ -1571,7 +1572,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
       </div>
       <div id="pc-catalog-grid" class="pc-catalog-grid">
         <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
-          <div style="font-size:32px;opacity:.4;margin-bottom:8px">🥬</div>
+          <div style="font-size:32px;opacity:.4;margin-bottom:8px"><i class="ti ti-leaf"></i></div>
           <div style="font-weight:600;color:var(--text2)">No catalog items yet</div>
           <div style="font-size:11px">Add your first produce item using the form above</div>
         </div>
@@ -1613,8 +1614,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
       </div>
       <div class="brow" style="gap:8px">
-        <button class="bp" onclick="pcExportPDF()">📄 Generate PDF</button>
-        <button onclick="pcPdfPreview()">👁 Preview cards</button>
+        <button class="bp" onclick="pcExportPDF()"><i class="ti ti-file-text" style="margin-right:6px"></i>Generate PDF</button>
+        <button onclick="pcPdfPreview()"><i class="ti ti-eye" style="margin-right:6px"></i>Preview cards</button>
       </div>
       <div id="pc-pdf-preview" class="pc-pdf-preview" style="margin-top:16px"></div>
     </div>
@@ -1650,9 +1651,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <input type="checkbox" id="vnd-show-retail" onchange="vendorRerender()" style="cursor:pointer">
         Show retail
       </label>
-      <button onclick="vendorRecomputeSoldBy()" style="font-size:12px;padding:7px 12px" title="Re-run sold-by inference on every saved invoice for this vendor. Use after the sold-by rules change.">⟳ Recompute sold-by</button>
-      <button onclick="vendorExportCSV()" style="font-size:12px;padding:7px 12px">⬇ CSV</button>
-      <button onclick="vendorExportPDF()" style="font-size:12px;padding:7px 12px">⬇ PDF</button>
+      <button onclick="vendorRecomputeSoldBy()" style="font-size:12px;padding:7px 12px" title="Re-run sold-by inference on every saved invoice for this vendor. Use after the sold-by rules change."><i class="ti ti-refresh" style="margin-right:6px"></i>Recompute sold-by</button>
+      <button onclick="vendorExportCSV()" style="font-size:12px;padding:7px 12px"><i class="ti ti-download" style="margin-right:6px"></i>CSV</button>
+      <button onclick="vendorExportPDF()" style="font-size:12px;padding:7px 12px"><i class="ti ti-download" style="margin-right:6px"></i>PDF</button>
       <button onclick="vendorClose()" style="font-size:18px;padding:4px 10px;background:transparent;border:none;cursor:pointer;color:var(--text3)" title="Close">×</button>
     </div>
     <div id="vnd-modal-body" style="padding:18px 22px;max-height:70vh;overflow-y:auto"></div>
@@ -3005,7 +3006,7 @@ function renderApprovals(filter){
             <option value="kg" ${i._soldByOverride==='kg'?'selected':''}>Kg</option>
             <option value="oz" ${i._soldByOverride==='oz'?'selected':''}>Ounce</option>
           </select>
-          ${i._soldByDisagrees ? `<span title="AI suggested '${esc(i._aiSoldBy)}' but the size pattern looks like '${esc(i._inferredSoldBy)}' — please verify." style="font-size:13px;cursor:help;color:var(--amber)">⚠</span>` : ''}
+          ${i._soldByDisagrees ? `<span title="AI suggested '${esc(i._aiSoldBy)}' but the size pattern looks like '${esc(i._inferredSoldBy)}' — please verify." style="font-size:13px;cursor:help;color:var(--amber)"><i class="ti ti-alert-triangle"></i></span>` : ''}
           ${chTag}
         </div>
       </div>
@@ -3024,8 +3025,8 @@ function renderApprovals(filter){
           <div class="mn" style="font-size:14px;font-weight:700;color:${mc}">${marg.toFixed(1)}%</div>
         </div>
         <div style="display:flex;gap:6px">
-          <button onclick="setAp('${escJs(i.item)}','approved')" ${st==='approved'?'class="bg"':''}>✓</button>
-          <button onclick="setAp('${escJs(i.item)}','rejected')" ${st==='rejected'?'class="br"':''}>✗</button>
+          <button onclick="setAp('${escJs(i.item)}','approved')" ${st==='approved'?'class="bg"':''}><i class="ti ti-check"></i></button>
+          <button onclick="setAp('${escJs(i.item)}','rejected')" ${st==='rejected'?'class="br"':''}><i class="ti ti-x"></i></button>
         </div>
       </div>
     </div>`;
@@ -3404,11 +3405,11 @@ function renderTracker(filter){
       : p.trend==='up' ? 'style="background:#fff7f7"'
       : p.trend==='dn' ? 'style="background:#f0fdf4"' : '';
     const catTag = p.source==='produce'
-      ? '<span class="tag tg">🥬 Produce</span>'
+      ? '<span class="tag tg"><i class="ti ti-leaf" style="margin-right:4px"></i>Produce</span>'
       : `<span class="tag ${CCLS[p.cat]||'tgr'}">${esc(CLABEL[p.cat]||p.cat)}</span>`;
     const discBtn = p.discontinued
-      ? `<button class="db-bulk-btn" onclick="toggleProdDisc('${escJs(p.desc)}','${escJs(p.vendor)}')" title="Restore">↺</button>`
-      : `<button class="db-bulk-btn warn" onclick="toggleProdDisc('${escJs(p.desc)}','${escJs(p.vendor)}')" title="Mark discontinued">⊘</button>`;
+      ? `<button class="db-bulk-btn" onclick="toggleProdDisc('${escJs(p.desc)}','${escJs(p.vendor)}')" title="Restore"><i class="ti ti-rotate"></i></button>`
+      : `<button class="db-bulk-btn warn" onclick="toggleProdDisc('${escJs(p.desc)}','${escJs(p.vendor)}')" title="Mark discontinued"><i class="ti ti-ban"></i></button>`;
     return `<tr ${rc}>
       <td class="wd" style="padding:8px 14px"><b>${esc(p.desc)}</b>${p.discontinued?' <span class="tag tgr" style="font-size:9px">DISC</span>':''}</td>
       <td>${catTag}</td>
@@ -3983,7 +3984,7 @@ function renderHistory(){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-weight:700;font-size:14px">${esc(inv.vendor)} — #${esc(inv.invoiceNo)}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${esc(inv.date)} · ${inv.docType==='sales_order'?'⚠ Sales Order':'Invoice'} · ${purch.length} products</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${esc(inv.date)} · ${inv.docType==='sales_order'?'<i class="ti ti-alert-triangle" style="margin-right:4px"></i>Sales Order':'Invoice'} · ${purch.length} products</div>
         </div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <div style="text-align:center"><div class="mn" style="font-size:15px;font-weight:700">${fBig(inv.total||0)}</div><div style="font-size:10px;color:var(--text3)">total</div></div>
@@ -4191,7 +4192,7 @@ function toggleVis(){
 function checkKeyFmt(v){
   const h=document.getElementById('key-hint');if(!v){h.textContent='';return;}
   if(v.startsWith('sk-ant-api03-'))h.innerHTML='<span style="color:var(--green);font-weight:500">✓ Valid Anthropic key format</span>';
-  else h.innerHTML='<span style="color:var(--amber)">⚠ Expected format: sk-ant-api03-...</span>';
+  else h.innerHTML='<span style="color:var(--amber)"><i class="ti ti-alert-triangle" style="margin-right:4px"></i>Expected format: sk-ant-api03-...</span>';
 }
 
 async function testApiKey(){
@@ -4219,7 +4220,7 @@ async function testApiKey(){
     res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+esc(err.message)+'</span>';
     res.style.background='var(--redl)';
   }
-  btn.textContent='🧪 Test connection';btn.disabled=false;
+  btn.innerHTML='<i class="ti ti-flask" style="margin-right:6px"></i>Test connection';btn.disabled=false;
 }
 
 function showBanner(msg,bg,color){
@@ -4337,7 +4338,7 @@ function renderUsage(){
   if(el('budget-bar'))el('budget-bar').style.width=pct.toFixed(1)+'%';
   if(el('budget-bar'))el('budget-bar').style.background=pct>=90?'var(--red)':pct>=70?'var(--amber)':'var(--green)';
   if(el('budget-lbl')){
-    if(pct>=90)el('budget-lbl').innerHTML='<b style="color:var(--red)">⚠ '+pct.toFixed(0)+'% of monthly budget used — approaching limit</b>';
+    if(pct>=90)el('budget-lbl').innerHTML='<b style="color:var(--red)"><i class="ti ti-alert-triangle" style="margin-right:4px"></i>'+pct.toFixed(0)+'% of monthly budget used — approaching limit</b>';
     else el('budget-lbl').textContent=pct.toFixed(0)+'% of $'+budget+' monthly budget used';
   }
   if(el('usage-month-lbl'))el('usage-month-lbl').textContent='Month: '+u.month+' · estimates only';
@@ -4577,7 +4578,7 @@ function checkConnFmt(v){
   const h=document.getElementById('conn-hint');if(!v){h.textContent='';return;}
   if(v.startsWith('postgresql://')||v.startsWith('postgres://'))
     h.innerHTML='<span style="color:var(--green);font-weight:500">✓ Valid PostgreSQL connection string</span>';
-  else h.innerHTML='<span style="color:var(--amber)">⚠ Expected format: postgresql://...</span>';
+  else h.innerHTML='<span style="color:var(--amber)"><i class="ti ti-alert-triangle" style="margin-right:4px"></i>Expected format: postgresql://...</span>';
 }
 
 // Lazy-load Neon's official serverless driver from CDN
@@ -4624,7 +4625,7 @@ async function testDbConn(){
     res.innerHTML='<span style="color:var(--red);font-weight:600">❌ '+esc(err.message)+'</span>';
     res.style.background='var(--redl)';
   }
-  btn.textContent='🧪 Test connection';btn.disabled=false;
+  btn.innerHTML='<i class="ti ti-flask" style="margin-right:6px"></i>Test connection';btn.disabled=false;
 }
 
 // Create tables if they don't exist
@@ -4734,7 +4735,7 @@ async function syncToDb(){
     status.innerHTML='<span style="color:var(--red)">❌ Sync failed: '+esc(err.message)+'</span>';
     showDbBanner('❌ Sync failed: '+err.message,'var(--redl)','var(--redd)');
   }
-  syncBtn.disabled=false;syncBtn.textContent='☁️ Sync all data to database';
+  syncBtn.disabled=false;syncBtn.innerHTML='<i class="ti ti-cloud-upload" style="margin-right:6px"></i>Sync all data to database';
 }
 
 // Load all data FROM Neon into localStorage
@@ -4788,7 +4789,7 @@ async function loadFromDb(){
     showDbBanner('❌ Load failed: '+err.message,'var(--redl)','var(--redd)');
     alert('Load failed: '+err.message);
   }
-  btn.disabled=false;btn.textContent='⬇️ Load from database';
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-download" style="margin-right:6px"></i>Load from database';
 }
 
 // Auto-save to Neon when finalizeAndSave is called
@@ -4982,7 +4983,7 @@ function renderDashboardTable(){
   
   if(!INV){
     tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--text3)">
-      <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
+      <div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-package"></i></div>
       <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
       <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
     </td></tr>`;
@@ -5152,18 +5153,18 @@ function renderDashboardTable(){
     let actionCell = '';
     if(apStatus === 'approved'){
       actionCell = `<div class="db-act-cell">
-        <span class="db-act-status approved">✓ Approved</span>
+        <span class="db-act-status approved"><i class="ti ti-check" style="margin-right:4px"></i>Approved</span>
         <span class="db-act-undo" onclick="setAp('${escJs(item.item)}','pending')">Undo</span>
       </div>`;
     } else if(apStatus === 'rejected'){
       actionCell = `<div class="db-act-cell">
-        <span class="db-act-status rejected">✕ Rejected</span>
+        <span class="db-act-status rejected"><i class="ti ti-x" style="margin-right:4px"></i>Rejected</span>
         <span class="db-act-undo" onclick="setAp('${escJs(item.item)}','pending')">Undo</span>
       </div>`;
     } else {
       actionCell = `<div class="db-act-cell">
-        <button class="db-act-btn approve" onclick="setAp('${escJs(item.item)}','approved')">✓ Approve</button>
-        <button class="db-act-btn reject" onclick="setAp('${escJs(item.item)}','rejected')">✕ Reject</button>
+        <button class="db-act-btn approve" onclick="setAp('${escJs(item.item)}','approved')"><i class="ti ti-check" style="margin-right:4px"></i>Approve</button>
+        <button class="db-act-btn reject" onclick="setAp('${escJs(item.item)}','rejected')"><i class="ti ti-x" style="margin-right:4px"></i>Reject</button>
       </div>`;
     }
 
@@ -5194,7 +5195,7 @@ function renderDashboardTable(){
     
     // Units cell — flag if prior had a different number of units (parser drift)
     const unitsWarn = hasPrev && ch.prevUnits>0 && ch.prevUnits!==curUnits;
-    const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Units per case'}">${curUnits}${unitsWarn?` <span style="color:var(--amber)">⚠</span>`:''}<span class="u-sub">${esc(item.size||'')}${unitsWarn?`<br>was ${ch.prevUnits}`:''}</span></div>`;
+    const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Units per case'}">${curUnits}${unitsWarn?` <span style="color:var(--amber)"><i class="ti ti-alert-triangle"></i></span>`:''}<span class="u-sub">${esc(item.size||'')}${unitsWarn?`<br>was ${ch.prevUnits}`:''}</span></div>`;
     
     // Unit cost cell
     let unitCellHtml;
@@ -5471,7 +5472,7 @@ function renderDashboardQueue(){
     const stCls = ico[q.status] || 'pending';
     const sizeStr = q.file ? (q.file.size > 1024*1024 ? (q.file.size/1024/1024).toFixed(1)+' MB' : (q.file.size/1024).toFixed(0)+' KB') : '';
     return `<div class="q-item">
-      <div class="q-icon">📄</div>
+      <div class="q-icon"><i class="ti ti-file-text"></i></div>
       <div class="q-mid">
         <div class="q-name">${esc(q.name)}</div>
         <div class="q-meta">${sizeStr} · Added now</div>
@@ -5639,12 +5640,12 @@ function pcTestHost(){
   const v = (document.getElementById('pc-host-pattern').value||'').trim();
   const status = document.getElementById('pc-host-status');
   if(!v){ status.textContent = 'Enter a URL pattern first.'; return; }
-  if(!v.includes('{slug}')){ status.innerHTML = '<span style="color:var(--red)">⚠ Pattern must include {slug}</span>'; return; }
+  if(!v.includes('{slug}')){ status.innerHTML = '<span style="color:var(--red)"><i class="ti ti-alert-triangle" style="margin-right:4px"></i>Pattern must include {slug}</span>'; return; }
   const testUrl = v.replace('{slug}','a-choy');
   status.innerHTML = `Testing… <code style="font-size:10px">${esc(testUrl)}</code>`;
   const img = new Image();
   img.onload = ()=>{ status.innerHTML = `<span style="color:var(--green)">✅ Image loaded successfully (${img.naturalWidth}×${img.naturalHeight})</span>`; };
-  img.onerror = ()=>{ status.innerHTML = `<span style="color:var(--red)">⚠ Could not load test image. Check the URL is public and the file exists.</span>`; };
+  img.onerror = ()=>{ status.innerHTML = `<span style="color:var(--red)"><i class="ti ti-alert-triangle" style="margin-right:4px"></i>Could not load test image. Check the URL is public and the file exists.</span>`; };
   img.src = testUrl;
 }
 
@@ -5684,7 +5685,7 @@ function pcCatalogClearForm(){
   document.getElementById('pc-add-cost').value='';
   document.getElementById('pc-add-unit').value='lb';
   _PC_ADD_IMG=null;
-  document.getElementById('pc-add-img-prev').innerHTML=`<div style="font-size:36px;opacity:.4">📷</div><div style="font-size:11px;color:var(--text3);margin-top:6px">Click to upload photo</div>`;
+  document.getElementById('pc-add-img-prev').innerHTML=`<div style="font-size:36px;opacity:.4"><i class="ti ti-camera"></i></div><div style="font-size:11px;color:var(--text3);margin-top:6px">Click to upload photo</div>`;
   delete document.getElementById('pc-add-name').dataset.editId;
 }
 function pcCatalogAdd(){
@@ -5747,7 +5748,7 @@ function pcRenderCatalog(){
   }
   if(!filtered.length){
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">
-      <div style="font-size:32px;opacity:.4;margin-bottom:8px">🔍</div>
+      <div style="font-size:32px;opacity:.4;margin-bottom:8px"><i class="ti ti-search"></i></div>
       <div style="font-weight:600;color:var(--text2)">${search?'No matches for "'+esc(search)+'"':'No catalog items yet'}</div>
     </div>`;
     return;
@@ -5760,8 +5761,8 @@ function pcRenderCatalog(){
     const url = pcImgUrl(x);
     const safe = safeUrl(url);
     const imgHtml = safe
-      ? `<img src="${esc(safe)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-cat-img-empty&quot;>📷</div>'">`
-      : `<div class="pc-cat-img-empty">📦</div>`;
+      ? `<img src="${esc(safe)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-cat-img-empty&quot;><i class=&quot;ti ti-camera&quot;></i></div>'">`
+      : `<div class="pc-cat-img-empty"><i class="ti ti-package"></i></div>`;
     const aliasText = (x.aliases||[]).slice(0,3).join(', ');
     return `<div class="pc-cat-card">
       <div class="pc-cat-img">${imgHtml}</div>
@@ -6106,7 +6107,7 @@ function pcRenderRules(){
         <div><b>"${esc(r.match)}"</b> → +$${(r.shipPerCase||0).toFixed(2)} per box</div>
         ${r.note?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(r.note)}</div>`:''}
       </div>
-      <button class="db-bulk-btn warn" onclick="pcDeleteRule(${i})">🗑 Delete</button>
+      <button class="db-bulk-btn warn" onclick="pcDeleteRule(${i})"><i class="ti ti-trash" style="margin-right:6px"></i>Delete</button>
     </div>
   `).join('');
 }
@@ -6192,7 +6193,7 @@ function pcRenderHistory(){
   if(summary) summary.textContent = `${hist.length} invoice${hist.length!==1?'s':''}`;
   if(!hist.length){
     wrap.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3)">
-      <div style="font-size:32px;opacity:.5;margin-bottom:8px">📚</div>
+      <div style="font-size:32px;opacity:.5;margin-bottom:8px"><i class="ti ti-books"></i></div>
       <div style="font-weight:600;color:var(--text2)">No invoice history yet</div>
       <div style="font-size:11px;margin-top:4px">Upload a produce invoice on the Match tab and it'll appear here</div>
     </div>`;
@@ -6204,8 +6205,8 @@ function pcRenderHistory(){
         <div style="font-weight:600;color:var(--text);font-size:13px">${esc(h.vendor)} · #${esc(h.invoiceNo)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(h.date)} · ${h.lineCount} item${h.lineCount!==1?'s':''} · saved ${new Date(h.when).toLocaleDateString()}</div>
       </div>
-      <button class="db-bulk-btn" onclick="pcReloadHist(${i})">↻ Reload</button>
-      <button class="db-bulk-btn warn" onclick="pcDeleteHist(${i})">🗑 Delete</button>
+      <button class="db-bulk-btn" onclick="pcReloadHist(${i})"><i class="ti ti-refresh" style="margin-right:6px"></i>Reload</button>
+      <button class="db-bulk-btn warn" onclick="pcDeleteHist(${i})"><i class="ti ti-trash" style="margin-right:6px"></i>Delete</button>
     </div>
   `).join('');
 }
@@ -6415,7 +6416,7 @@ function pcRenderResults(){
     const summary = document.getElementById('pc-results-summary');
     if(summary) summary.textContent = '0 items';
     list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3)">
-      <div style="font-size:32px;opacity:.5;margin-bottom:8px">🔍</div>
+      <div style="font-size:32px;opacity:.5;margin-bottom:8px"><i class="ti ti-search"></i></div>
       <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No produce items found in this invoice</div>
       <div style="font-size:11px">Either the invoice didn't contain recognizable produce lines, or extraction failed. Try the demo invoice button to verify the matcher is working.</div>
     </div>`;
@@ -6446,8 +6447,8 @@ function pcRenderResults(){
     const url = matched ? pcImgUrl(matched) : '';
     const safe = safeUrl(url);
     const imgHtml = matched
-      ? (safe ? `<img src="${esc(safe)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-row-r-img-empty&quot;>📷</div>'">` : `<div class="pc-row-r-img-empty">📦</div>`)
-      : `<div class="pc-row-r-img-empty">❓</div>`;
+      ? (safe ? `<img src="${esc(safe)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-row-r-img-empty&quot;><i class=&quot;ti ti-camera&quot;></i></div>'">` : `<div class="pc-row-r-img-empty"><i class="ti ti-package"></i></div>`)
+      : `<div class="pc-row-r-img-empty"><i class="ti ti-help"></i></div>`;
     const autoRetail = pcRetailFor(line.cost);
     const retail = (line.retailOverride != null) ? line.retailOverride : autoRetail;
     const unitLbl = matched ? ({lb:'/ lb',bunch:'/ bunch',each:'each'}[matched.unit]||'') : '';
@@ -6470,7 +6471,7 @@ function pcRenderResults(){
     if(lineVendor){
       const dupCount = line.catalogId && dupVendors[line.catalogId] ? dupVendors[line.catalogId].size : 1;
       const isDup = dupCount > 1;
-      vendorPill = `<span class="pc-vpill${isDup?' dup':''}" title="${isDup?`Same item from ${dupCount} different vendors`:'Vendor'}">${isDup?'⚠ ':''}${esc(lineVendor)}${isDup?` · ${dupCount} vendors`:''}</span>`;
+      vendorPill = `<span class="pc-vpill${isDup?' dup':''}" title="${isDup?`Same item from ${dupCount} different vendors`:'Vendor'}">${isDup?'<i class="ti ti-alert-triangle" style="margin-right:4px"></i>':''}${esc(lineVendor)}${isDup?` · ${dupCount} vendors`:''}</span>`;
     }
     
     // Price change vs prior history (uses each line's own vendor)
@@ -6664,7 +6665,7 @@ function pcPdfPreview(){
     const retail = (it.retailOverride != null) ? it.retailOverride : pcRetailFor(it.cost);
     const unitLbl = {lb:'per lb',bunch:'per bunch',each:'each'}[it.unit] || '';
     const safeImg = safeUrl(it.image);
-    const imgHtml = safeImg ? `<img src="${esc(safeImg)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-pdf-card-img-empty&quot;>📷</div>'">` : `<div class="pc-pdf-card-img-empty">📦</div>`;
+    const imgHtml = safeImg ? `<img src="${esc(safeImg)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-pdf-card-img-empty&quot;><i class=&quot;ti ti-camera&quot;></i></div>'">` : `<div class="pc-pdf-card-img-empty"><i class="ti ti-package"></i></div>`;
     return `<div class="pc-pdf-card">${imgHtml}<div class="pc-pdf-card-name">${esc(it.name)}</div><div class="pc-pdf-card-price">$${retail.toFixed(2)}<div class="pc-pdf-card-unit">${esc(unitLbl)}</div></div></div>`;
   }).join('') + '</div>';
 }
