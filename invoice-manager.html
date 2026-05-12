@@ -553,6 +553,9 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 
 /* ─── TOAST ─────────────────────────────────────── */
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+
+/* ─── Login gate: covers the entire app until the user signs in ─── */
+/* Hides the underlying app so nothing leaks — the only visible thing is the sign-in form. */
 body.app-locked > .app-wrap{display:none !important}
 .login-gate{display:none;position:fixed;inset:0;background:#1e293b;z-index:10000;align-items:center;justify-content:center;padding:24px;flex-direction:column}
 body.app-locked .login-gate{display:flex}
@@ -577,7 +580,11 @@ body.pending-approval #login-sub,
 body.pending-approval #login-form,
 body.pending-approval #login-toggle,
 body.pending-approval #login-msg{display:none !important}
+
+/* When the app is in cloud mode, the local API-key UI is dead — users get
+   AI through the server-side proxy. Hide every element marked data-cloud-hide. */
 body.cloud-active [data-cloud-hide]{display:none !important}
+/* And show every element marked data-cloud-show. */
 body.cloud-active [data-cloud-show]{display:block !important}
 .toast{background:#fff;border:1px solid var(--border);border-radius:var(--rl);padding:12px 16px;box-shadow:var(--sh-lg);font-size:12px;display:flex;align-items:center;gap:10px;min-width:240px;max-width:380px;pointer-events:auto;animation:toast-in .3s ease-out;border-left:4px solid var(--c1)}
 .toast.success{border-left-color:var(--green)}
@@ -621,6 +628,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </style>
 </head>
 <body>
+<!-- Login gate: shown when CLOUD_ENABLED + not signed in. Body gets .app-locked class
+     to hide the app-wrap underneath. Sign in success removes the class. -->
 <div class="login-gate" id="login-gate">
   <div class="login-card">
     <div class="login-logo">📊</div>
@@ -640,6 +649,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div class="login-foot">Each account is private. Your data is not visible to other users.</div>
   </div>
 </div>
+
 <div class="app-wrap">
 <header>
   <div class="h-l">
@@ -1288,6 +1298,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <!-- API SETTINGS -->
 <div class="pg" id="pg-api-settings">
   <div class="pgh"><div class="pgt">API Settings</div><div class="pgs">Connect your Anthropic API key to enable real PDF extraction from your invoices</div></div>
+  <!-- Visible only in cloud mode: explains the local key UI below is vestigial. -->
   <div data-cloud-show style="display:none;background:var(--c1l);border:1px solid var(--c1);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--c1d)">
     <b>✓ AI is configured for you.</b> Your account uses a server-side key — you don't need to enter anything here. The fields below are inactive.
   </div>
@@ -1999,8 +2010,8 @@ function invalidateCache(){ _CACHE.hist = null; _CACHE.db = null; }
 // To enable: fill SUPABASE_URL and SUPABASE_ANON_KEY below with the values
 // from your Supabase project (Settings → API → "Project URL" and "anon public").
 // Then deploy schema.sql and the ai/ Edge Function (see SUPABASE_SETUP.md).
-const SUPABASE_URL      = 'https://fslrqqaplwfyqemdumfz.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
+const SUPABASE_URL      = '__YOUR_SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__YOUR_SUPABASE_ANON_KEY__';
 const CLOUD_ENABLED = SUPABASE_URL && !SUPABASE_URL.startsWith('__');
 
 let _supabase = null;
@@ -2043,6 +2054,8 @@ async function checkApprovalAndGate(){
 
 async function cloudInit(){
   if(!CLOUD_ENABLED) return;
+  // App is in cloud mode: hide the local API-key UI (it's not needed; AI runs via Edge Function)
+  // and start locked until we confirm a session.
   document.body.classList.add('cloud-active');
   document.body.classList.add('app-locked');
   try{
@@ -2054,12 +2067,13 @@ async function cloudInit(){
     _supabase.auth.onAuthStateChange(async (_evt, sess) => {
       const wasUser = _USER;
       _USER = sess?.user || null;
-      if(_USER) await checkApprovalAndGate();
-      else {
+      cloudUpdateAuthUI();
+      if(_USER){
+        await checkApprovalAndGate();
+      } else {
         document.body.classList.add('app-locked');
         document.body.classList.remove('pending-approval');
       }
-      cloudUpdateAuthUI();
       if(_USER && !wasUser){
         // Signed in. Pull cloud → local; if cloud is empty AND local has data, push it up first.
         await cloudPullAll();
@@ -2077,10 +2091,12 @@ async function cloudInit(){
     }
   }catch(e){
     console.warn('Cloud init failed (running in local-only mode):', e);
+    // Don't trap the user behind a login screen if cloud init itself failed.
     document.body.classList.remove('app-locked');
   }
 }
 
+// Login form handler — submitted from the login gate.
 let _LOGIN_MODE = 'signin'; // 'signin' | 'signup'
 
 function loginToggleMode(){
