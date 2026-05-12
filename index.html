@@ -212,6 +212,14 @@ tr:hover td{background:var(--bg3)}
 .margin-num{font-family:var(--font-mono);font-weight:600;font-size:13px}
 .retail-cell{font-family:var(--font-mono);font-weight:700;font-size:13px;letter-spacing:-.01em}
 .retail-was{font-size:10px;color:var(--text3);font-weight:500;margin-top:1px}
+.retail-edit-wrap{display:flex;align-items:center;gap:4px}
+.retail-edit-wrap .retail-prefix{font-family:var(--font-mono);font-size:12px;color:var(--text3);font-weight:600}
+.retail-edit{width:72px;font-weight:700;text-align:right}
+.retail-edit.edited{font-style:italic}
+.retail-src{font-size:11px;color:var(--text3);white-space:nowrap}
+.retail-edit.edited ~ .retail-src::before{content:'• ';color:var(--text3)}
+.retail-reset{font-size:12px;line-height:1;padding:2px 5px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer}
+.retail-reset:hover{background:var(--bg3);color:var(--text2)}
 
 .conf-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;font-size:10px;font-weight:600;border:1px solid}
 .conf-high{background:#d1fae5;color:#047857;border-color:#6ee7b7}
@@ -816,15 +824,13 @@ body.cloud-active [data-cloud-show]{display:block !important}
             <th>Price Change<br>Needed</th>
             <th>Recommended<br>Action</th>
             <th>Recommendation Reason</th>
-            <th>Do Nothing Risk</th>
             <th>Current<br>Margin</th>
             <th>Projected<br>Margin</th>
             <th>Suggested<br>Retail</th>
-            <th>Confidence /<br>Review Flag</th>
             <th style="text-align:center">Action</th>
           </tr></thead>
           <tbody id="db-approval-body">
-            <tr><td colspan="13" style="text-align:center;padding:48px;color:var(--text3)">
+            <tr><td colspan="11" style="text-align:center;padding:48px;color:var(--text3)">
               <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
               <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
               <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
@@ -1928,6 +1934,22 @@ function unitCost(item){
 function soldByLabel(item){ return ({lb:'lb', kg:'kg', oz:'oz', each:'each', package:'each'})[item._soldBy] || 'box'; }
 function soldByLabelPlural(item){ return ({lb:'lbs', kg:'kgs', oz:'oz', each:'each', package:'each'})[item._soldBy] || 'boxes'; }
 function retailUnit(item){return unitCost(item)*(1+getTgt(item.cat)/100);}
+
+// Session-only set of prodMetaKeys for which the ↺ button asked us to ignore
+// stored retail memory this load. Cleared on sign-out / page refresh — memory
+// in product_meta is left intact.
+const _RETAIL_OVERRIDE = new Set();
+function resolveSuggestedRetail(item, vendor){
+  const calc = charmRoundUp(retailUnit(item), [0.29, 0.49, 0.79, 0.99]);
+  const k = prodMetaKey(item.desc, vendor);
+  if(!_RETAIL_OVERRIDE.has(k)){
+    const m = (lsGet(SK.PROD_META) || {})[k];
+    if(m && Number.isFinite(m.last_retail) && m.last_retail > 0){
+      return { retail: m.last_retail, source: 'memory', at: m.last_retail_at, calc };
+    }
+  }
+  return { retail: calc, source: 'calculated', calc };
+}
 function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function normV(v){return (v||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20);}
@@ -2151,6 +2173,7 @@ async function cloudSignOut(){
   if(!_supabase) return;
   await _supabase.auth.signOut();
   _USER = null;
+  _RETAIL_OVERRIDE.clear();
   cloudUpdateAuthUI();
 }
 function cloudPromptSignIn(){
@@ -2294,6 +2317,8 @@ async function cloudReplaceProductMeta(){
   const rows = Object.entries(meta).map(([key, v]) => ({
     tenant_id: _USER.id, key, discontinued: !!v.discontinued, note: v.note || null,
     sold_by: v.sold_by || null,
+    last_retail: Number.isFinite(v.last_retail) ? v.last_retail : null,
+    last_retail_at: v.last_retail_at || null,
   }));
   await _supabase.from('product_meta').delete().eq('tenant_id', _USER.id);
   if(rows.length) await _supabase.from('product_meta').insert(rows);
@@ -2389,7 +2414,13 @@ async function cloudPullAll(){
     }
     if(metaR.data){
       const meta = {};
-      metaR.data.forEach(r => { meta[r.key] = { discontinued: !!r.discontinued, note: r.note, sold_by: r.sold_by || undefined }; });
+      metaR.data.forEach(r => {
+        meta[r.key] = {
+          discontinued: !!r.discontinued, note: r.note, sold_by: r.sold_by || undefined,
+          last_retail: r.last_retail != null ? Number(r.last_retail) : undefined,
+          last_retail_at: r.last_retail_at || undefined,
+        };
+      });
       lsSet(SK.PROD_META, meta);
     }
   } finally {
@@ -2897,7 +2928,7 @@ function loadInvoice(inv){
   APPROVALS={};
   inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{
     const ch=detectChange(i,vk,inv.invoiceNo,inv.date);
-    APPROVALS[i.item]={status:'pending',retailPrice:charmRoundUp(retailUnit(i),[0.29,0.49,0.79,0.99]),change:ch,
+    APPROVALS[i.item]={status:'pending',retailPrice:resolveSuggestedRetail(i,inv.vendor).retail,change:ch,
       desc:i.desc,cat:i.cat,size:i.size,qty:i.qty,caseCost:i.caseCost};
   });
   renderApprovals("all");
@@ -3006,6 +3037,53 @@ function renderApprovals(filter){
 }
 
 function updateRetail(k,v){if(APPROVALS[k])APPROVALS[k].retailPrice=v;const p=document.querySelector('#af-pills .pill.on');renderApprovals(p?p.dataset.af:'all');}
+// Dashboard-table retail editing. Keeps typing snappy by updating only the
+// row's projected-margin cell instead of re-rendering the whole table.
+function onRetailInput(itemKey, el){
+  if(!APPROVALS[itemKey]) return;
+  const v = parseFloat(el.value);
+  APPROVALS[itemKey].retailPrice = Number.isFinite(v) ? v : 0;
+  const orig = parseFloat(el.dataset.orig || '0');
+  el.classList.toggle('edited', Number.isFinite(v) && Math.abs(v - orig) > 0.0049);
+  recalcRowMargin(itemKey);
+}
+function onRetailCommit(itemKey, el){
+  if(!APPROVALS[itemKey]) return;
+  let v = parseFloat(el.value);
+  if(!Number.isFinite(v) || v < 0) v = 0;
+  APPROVALS[itemKey].retailPrice = v;
+  el.value = v.toFixed(2);
+  recalcRowMargin(itemKey);
+}
+function recalcRowMargin(itemKey){
+  const ap = APPROVALS[itemKey]; if(!ap || !INV) return;
+  const item = INV.items.find(x => x.item === itemKey); if(!item) return;
+  const unit = unitCost(item);
+  const proj = ap.retailPrice > 0 ? ((ap.retailPrice - unit) / ap.retailPrice * 100) : 0;
+  const color = proj >= 30 ? 'var(--green)' : proj >= 20 ? 'var(--amber)' : 'var(--red)';
+  const el = document.getElementById('db-pmar-' + cssEscapeId(itemKey));
+  if(el) el.innerHTML = `<span class="margin-num" style="color:${color}">${proj.toFixed(1)}%</span>`;
+}
+function resetRetail(itemKey){
+  if(!INV) return;
+  const item = INV.items.find(x => x.item === itemKey); if(!item) return;
+  _RETAIL_OVERRIDE.add(prodMetaKey(item.desc, INV.vendor));
+  const calc = charmRoundUp(retailUnit(item), [0.29, 0.49, 0.79, 0.99]);
+  if(APPROVALS[itemKey]) APPROVALS[itemKey].retailPrice = calc;
+  renderDashboardTable();
+}
+// Saves the user's approved retail to per-product memory. Called from setAp
+// when status flips to 'approved'. Mirrors setProdNote/setProdSoldBy.
+function setProdLastRetail(name, vendor, retail){
+  if(!Number.isFinite(retail) || retail <= 0) return;
+  const m = loadProdMeta(); const k = prodMetaKey(name, vendor);
+  m[k] = m[k] || {};
+  m[k].last_retail = retail;
+  m[k].last_retail_at = new Date().toISOString();
+  saveProdMeta(m);
+}
+// Build an attribute-safe id fragment from an item-no string.
+function cssEscapeId(s){ return String(s||'').replace(/[^a-zA-Z0-9_-]/g, '_'); }
 // setAp updates a single approval's status. The full table is expensive to re-render
 // (140-180ms with 60 items × full DOM rebuild), so for the common case (filter='all'
 // or the new status still matches the active filter) we mutate just the affected row's
@@ -3015,6 +3093,10 @@ function setAp(k,s){
   if(!APPROVALS[k]) return;
   const oldStatus = APPROVALS[k].status;
   APPROVALS[k].status = s;
+  if(s === 'approved' && oldStatus !== 'approved' && INV){
+    const ap = APPROVALS[k];
+    setProdLastRetail(ap.desc, INV.vendor, ap.retailPrice);
+  }
   updateApprovalCounts();
   updateExportSummary();
 
@@ -4898,7 +4980,7 @@ function renderDashboardTable(){
   const bulkBar = document.getElementById('db-bulk-bar');
   
   if(!INV){
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:48px;color:var(--text3)">
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:8px;opacity:.5">📦</div>
       <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
       <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
@@ -4931,7 +5013,9 @@ function renderDashboardTable(){
   let rows = purch.map(item=>{
     const ch = detectChange(item, vk, INV.invoiceNo, INV.date);
     const cu = unitCost(item);
-    const ru = retailUnit(item);
+    const resolved = resolveSuggestedRetail(item, INV.vendor);
+    const apRetail = APPROVALS[item.item] && APPROVALS[item.item].retailPrice;
+    const ru = Number.isFinite(apRetail) && apRetail > 0 ? apRetail : resolved.retail;
     const projMargin = ru>0 ? ((ru-cu)/ru)*100 : 0;
     
     // Current margin = if we had prior retail, calculate based on it. Otherwise use current.
@@ -4954,7 +5038,7 @@ function renderDashboardTable(){
   }
   
   if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text3)">No items match "${esc(search)}"</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text3)">No items match "${esc(search)}"</td></tr>`;
     return;
   }
   
@@ -5030,16 +5114,37 @@ function renderDashboardTable(){
     const projColor = projMargin >= 30 ? 'var(--green)' : projMargin >= 20 ? 'var(--amber)' : 'var(--red)';
     const curColor = curMargin >= 30 ? 'var(--green)' : curMargin >= 20 ? 'var(--amber)' : 'var(--red)';
     
-    // Suggested retail (with charm rounding for display — never down)
-    const ruRounded = charmRoundUp(ru, [0.29, 0.49, 0.79, 0.99]);
-    let retailHtml = `<div class="retail-cell">${f2(ruRounded)}</div>`;
+    // Suggested retail — editable input prefilled with the resolved value
+    // (memory if present, else charm-rounded cost × markup). Badge shows the
+    // source; ↺ flips back to calculated for this invoice only.
+    const edited = Math.abs(ru - resolved.retail) > 0.0049;
+    let srcBadge = '';
+    if(resolved.source === 'memory'){
+      const dt = resolved.at ? new Date(resolved.at).toLocaleDateString() : '';
+      srcBadge = `<span class="retail-src" title="Used your retail from ${esc(dt)}. Type to override.">↻ from last decision</span>`;
+    } else if(resolved.source === 'calculated'){
+      srcBadge = `<span class="retail-src" title="Calculated from cost × markup, no AI suggestion available">fx</span>`;
+    }
+    let wasLine = '';
     if(ch.status === 'increase' || ch.status === 'decrease'){
       const oldRetailRaw = ch.prev * (1 + getTgt(item.cat)/100);
       const oldRetail = charmRoundUp(oldRetailRaw, [0.29, 0.49, 0.79, 0.99]);
-      retailHtml = `<div class="retail-cell">${f2(ruRounded)}</div><div class="retail-was">(Was ${f2(oldRetail)})</div>`;
+      wasLine = `<div class="retail-was">(Was ${f2(oldRetail)})</div>`;
     } else {
-      retailHtml = `<div class="retail-cell">${f2(ruRounded)}</div><div class="retail-was">(No change)</div>`;
+      wasLine = `<div class="retail-was">(No change)</div>`;
     }
+    const retailHtml = `
+      <div class="retail-edit-wrap">
+        <span class="retail-prefix">$</span>
+        <input type="number" class="tinput retail-edit${edited?' edited':''}" step="0.01" min="0"
+               value="${ru.toFixed(2)}" data-orig="${resolved.retail.toFixed(2)}"
+               oninput="onRetailInput('${escJs(item.item)}', this)"
+               onchange="onRetailCommit('${escJs(item.item)}', this)">
+        ${srcBadge}
+        <button type="button" class="retail-reset" title="Revert to calculated cost × markup"
+                onclick="resetRetail('${escJs(item.item)}')">↺</button>
+      </div>
+      ${wasLine}`;
     
     // Approval action cell
     const apStatus = (APPROVALS[item.item] && APPROVALS[item.item].status) || 'pending';
@@ -5125,19 +5230,9 @@ function renderDashboardTable(){
       <td>${chgHtml}</td>
       <td>${actHtml}</td>
       <td><div class="reason-cell">${reasonHtml}</div></td>
-      <td>
-        <div class="risk-pill">
-          <span class="risk-tag ${riskClass}">${riskTag}</span>
-          <span class="risk-msg">${riskMsg}</span>
-        </div>
-      </td>
       <td><span class="margin-num" style="color:${curColor}">${curMargin.toFixed(1)}%</span></td>
-      <td><span class="margin-num" style="color:${projColor}">${projMargin.toFixed(1)}%</span></td>
+      <td id="db-pmar-${cssEscapeId(item.item)}"><span class="margin-num" style="color:${projColor}">${projMargin.toFixed(1)}%</span></td>
       <td>${retailHtml}</td>
-      <td>
-        <span class="conf-pill ${confClass}">${confLabel}</span>
-        <span class="conf-shield">${confShield}</span>
-      </td>
       <td style="vertical-align:middle">${actionCell}</td>
     </tr>`;
   }).join('');
