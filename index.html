@@ -618,38 +618,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .db-bulk-btn.warn{background:#fff;color:var(--red);border-color:var(--red)}
 .db-bulk-btn.warn:hover{background:var(--redbg)}
 .db-bulk-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
-
-/* ─── PHASE 1: METRIC STRIP / INBOX / MODAL / TAB STRIP ───────── */
-.metric-cell{display:flex;flex-direction:column;gap:2px;padding:6px 14px;border-right:1px solid var(--border);min-width:120px}
-.metric-cell:last-child{border-right:none}
-.metric-val{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.01em}
-.metric-lbl{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.01em}
-
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000}
-.modal-content{background:#fff;border-radius:12px;padding:24px;max-width:560px;width:90%;max-height:90vh;overflow:auto;box-shadow:var(--sh-lg)}
-
-.page-tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0;flex-wrap:wrap;align-items:center}
-.page-tab{font-size:12px;font-weight:600;padding:8px 14px;border:none;background:transparent;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;border-radius:0;transition:all .12s;margin-bottom:-1px}
-.page-tab:hover{color:var(--text)}
-.page-tab.on{color:var(--c1);border-bottom-color:var(--c1)}
-
-.inbox-lane{background:#fff;border:1px solid var(--border);border-radius:var(--rl);margin-bottom:12px;overflow:hidden}
-.inbox-lane-collapsible summary{cursor:pointer;list-style:none}
-.inbox-lane-collapsible summary::-webkit-details-marker{display:none}
-.inbox-lane-collapsible[open] summary::after{content:'▾';margin-left:auto;color:var(--text3);font-size:12px}
-.inbox-lane-collapsible summary::after{content:'▸';margin-left:auto;color:var(--text3);font-size:12px}
-.inbox-lane-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border)}
-.inbox-lane-title{font-size:13px;font-weight:600;color:var(--text)}
-.inbox-lane-count{font-size:11px;font-weight:700;color:#fff;padding:2px 9px;border-radius:10px;min-width:22px;text-align:center}
-.inbox-lane-empty{padding:16px;color:var(--text3);font-size:12px;text-align:center}
-.inbox-card{display:flex;flex-direction:column;gap:4px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;position:relative}
-.inbox-card:last-child{border-bottom:none}
-.inbox-card:hover{background:var(--bg3)}
-.inbox-card-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.inbox-card-vendor{font-size:13px;font-weight:600;color:var(--text)}
-.inbox-card-no{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
-.inbox-card-meta{font-size:11px;color:var(--text2)}
-.inbox-card-open{position:absolute;top:10px;right:14px;font-size:11px;padding:4px 10px}
 </style>
 </head>
 <body>
@@ -700,13 +668,26 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div class="side-brand">Thameelay</div>
     <div class="side-brand-sub">Invoice Intelligence</div>
   </div>
-  <div class="sg">
-    <a data-pg="dashboard" class="on"><span class="sico">📥</span>Inbox</a>
-    <a data-pg="tracker"><span class="sico">📈</span>Price history</a>
-    <a data-pg="vendors"><span class="sico">🏪</span>Vendors</a>
+  <div class="sg"><div class="slabel">Workflow</div>
+    <a data-pg="dashboard" class="on"><span class="sico">📊</span>Dashboard</a>
+    <a data-pg="upload"><span class="sico">📤</span>Upload Invoices</a>
+    <a data-pg="approve"><span class="sico">✅</span>Price Approvals <span class="scnt scnt-red" id="ap-cnt">0</span></a>
+    <a data-pg="export"><span class="sico">📤</span>Export to POS</a>
+  </div>
+  <div class="sg"><div class="slabel">Intelligence</div>
+    <a data-pg="tracker"><span class="sico">📈</span>Price Tracker</a>
+    <a data-pg="vendors"><span class="sico">🏪</span>Vendor Insights</a>
     <a data-pg="alerts"><span class="sico">🔔</span>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
-    <a data-pg="produce"><span class="sico">📚</span>Catalog</a>
-    <a data-pg="pricing"><span class="sico">⚙️</span>Settings</a>
+    <a data-pg="produce"><span class="sico">🥬</span>Produce Matcher <span class="scnt" id="pc-cnt">0</span></a>
+  </div>
+  <div class="sg"><div class="slabel">History</div>
+    <a data-pg="history"><span class="sico">🗂</span>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
+  </div>
+  <div class="sg"><div class="slabel">Settings</div>
+    <a data-pg="api-settings" data-cloud-hide><span class="sico">🔑</span>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
+    <a data-pg="db-settings"><span class="sico">🗄</span>Database <span class="scnt scnt-red" id="db-warn" style="display:none">!</span></a>
+    <a data-pg="pricing"><span class="sico">⚙️</span>Pricing Rules</a>
+    <a data-pg="calc"><span class="sico">🧮</span>Margin Calculator</a>
   </div>
   <div id="cloud-auth" style="margin:6px 14px 4px;padding:8px 10px;background:rgba(255,255,255,.06);border-radius:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
   <div class="side-collapse" onclick="document.querySelector('.side').classList.toggle('hide')"><span>«</span> Collapse menu</div>
@@ -716,34 +697,100 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- DASHBOARD (HOME) -->
 <div class="pg on" id="pg-dashboard">
-  <!-- 1. SUMMARY STRIP + ACTION BAR -->
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap">
-    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
-      <div class="metric-cell">
-        <div class="metric-val mn" id="db-metric-tracked">0</div>
-        <div class="metric-lbl">Items tracked</div>
-      </div>
-      <div class="metric-cell">
-        <div class="metric-val mn" id="db-metric-risk" style="color:var(--red)">$0</div>
-        <div class="metric-lbl">Margin at risk</div>
-      </div>
-      <div class="metric-cell">
-        <div class="metric-val mn" id="db-metric-gain" style="color:var(--green)">$0</div>
-        <div class="metric-lbl">Profit gain available</div>
-      </div>
+  <!-- 1. SUMMARY BANNER -->
+  <div class="banner">
+    <div class="b-cell">
+      <div class="b-icon bi-blue">📄</div>
+      <div class="b-val mn" id="db-items">0</div>
+      <div class="b-lbl">Items Found</div>
+      <div class="b-sub" id="db-items-sub">Across 0 invoices</div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <span class="act-pill" id="db-action-pill" style="display:none">0 Action Required</span>
-      <button class="bp" onclick="openUploadModal()">📁 Upload invoice</button>
+    <div class="b-cell">
+      <div class="b-icon bi-green">✓</div>
+      <div class="b-val mn" id="db-safe" style="color:var(--green)">0</div>
+      <div class="b-lbl">Safe to Approve</div>
+      <div class="b-sub" id="db-safe-sub">0%</div>
+    </div>
+    <div class="b-cell">
+      <div class="b-icon bi-amber">🏷</div>
+      <div class="b-val mn" id="db-changes" style="color:var(--amber)">0</div>
+      <div class="b-lbl">Price Changes Needed</div>
+      <div class="b-sub" id="db-changes-sub">0%</div>
+    </div>
+    <div class="b-cell">
+      <div class="b-icon bi-eye">👁</div>
+      <div class="b-val mn" id="db-review" style="color:var(--purple)">0</div>
+      <div class="b-lbl">Need Review</div>
+      <div class="b-sub" id="db-review-sub">0%</div>
+    </div>
+    <div class="b-cell">
+      <div class="b-icon bi-red">📉</div>
+      <div class="b-val mn" id="db-loss" style="color:var(--red)">$0</div>
+      <div class="b-lbl">Est. Margin Loss</div>
+      <div class="b-sub">If no action taken</div>
+    </div>
+    <div class="b-cell">
+      <div class="b-icon bi-trend">📈</div>
+      <div class="b-val mn" id="db-gain" style="color:var(--green)">$0</div>
+      <div class="b-lbl">Projected Profit Gain</div>
+      <div class="b-sub">After applying changes</div>
     </div>
   </div>
 
-  <!-- 2. INBOX VIEW (lanes) -->
-  <div id="db-inbox-view"></div>
+  <!-- 2. UPLOAD CARD (compact horizontal) -->
+  <div class="card dash-upload-row">
+    <div class="dash-upload-grid">
+      <div>
+        <div class="card-t" style="margin-bottom:8px">
+          <span class="card-t-num">1</span>
+          <div class="ctit">Upload Invoice</div>
+        </div>
+        <div class="dz-mini dz-mini-h" id="dropzone">
+          <div style="display:flex;align-items:center;gap:10px;justify-content:center">
+            <div class="dz-mini-icon" style="font-size:22px;margin:0">☁️</div>
+            <div style="text-align:left">
+              <div class="dz-mini-title">Drag &amp; drop invoice files here</div>
+              <div class="dz-mini-sub">PDF, JPG, PNG up to 20MB</div>
+            </div>
+          </div>
+          <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
+        </div>
+      </div>
+      <div class="dash-upload-actions">
+        <button class="bp" style="width:100%;justify-content:center" onclick="document.getElementById('file-in').click()">📁 Choose Files</button>
+        <div class="btn-grid-3" style="width:100%;margin-top:0">
+          <button onclick="processQueue()" style="justify-content:center">▶ Process</button>
+          <button onclick="loadDemo()" style="justify-content:center;display:none" data-demo-btn>▶ Demo</button>
+          <button onclick="clearQueue()" style="justify-content:center;color:var(--red)">🗑 Clear</button>
+        </div>
+      </div>
+    </div>
+    <div id="db-queue-wrap" style="display:none">
+      <div style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:14px;margin-bottom:6px" id="db-queue-title">Queue (0)</div>
+      <div id="db-queue-list" class="q-list"></div>
+      <div class="q-progress" style="display:none" id="db-q-progress">
+        <span class="mn" id="db-q-counter">0 of 0 ready to process</span>
+        <div class="q-progress-bar"><div class="q-progress-fill" id="db-q-fill" style="width:0%"></div></div>
+        <button class="bp" style="font-size:11px;padding:5px 12px" onclick="processQueue()">▶ Process All</button>
+      </div>
+    </div>
+    <div id="db-extracting" class="up-prog" style="display:none">
+      <div class="up-prog-file">
+        <div class="up-prog-file-ico">📄</div>
+        <div style="min-width:0;flex:1">
+          <div class="up-prog-file-name" id="db-up-name">filename.pdf</div>
+          <div class="up-prog-file-meta" id="db-up-meta">Processing...</div>
+        </div>
+      </div>
+      <div class="up-step" data-step="reading"><div class="up-step-ico"></div><div>Reading file</div></div>
+      <div class="up-step" data-step="extracting"><div class="up-step-ico"></div><div>AI extracting line items</div></div>
+      <div class="up-step" data-step="parsing"><div class="up-step-ico"></div><div>Parsing response</div></div>
+      <div class="up-step" data-step="classifying"><div class="up-step-ico"></div><div>Matching to price history</div></div>
+      <div class="up-prog-err" id="db-up-err" style="display:none"></div>
+    </div>
+  </div>
 
-  <!-- 3. OPEN-INVOICE VIEW (approvals table + alerts/vendor/chart) -->
-  <div id="db-open-view" style="display:none">
-  <div style="margin-bottom:10px"><button onclick="backToInbox()">← Back to Inbox</button></div>
+  <!-- 3. APPROVALS CARD (full width) -->
   <div class="dash-row-full">
     <div class="card">
       <div class="card-hd">
@@ -896,56 +943,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
       <div style="font-size:10px;color:var(--text4);text-align:right;margin-top:8px">vs prior period</div>
     </div>
   </div>
-  </div><!-- /#db-open-view -->
-
-  <!-- UPLOAD MODAL -->
-  <div id="upload-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeUploadModal()">
-    <div class="modal-content">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div class="ctit">Upload Invoice</div>
-        <button onclick="closeUploadModal()" style="font-size:14px;padding:4px 10px">✕</button>
-      </div>
-      <div class="dz-mini dz-mini-h" id="dropzone">
-        <div style="display:flex;align-items:center;gap:10px;justify-content:center">
-          <div class="dz-mini-icon" style="font-size:22px;margin:0">☁️</div>
-          <div style="text-align:left">
-            <div class="dz-mini-title">Drag &amp; drop invoice files here</div>
-            <div class="dz-mini-sub">PDF, JPG, PNG up to 20MB</div>
-          </div>
-        </div>
-        <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
-      </div>
-      <div class="brow" style="margin-top:10px;gap:8px;flex-wrap:wrap">
-        <button class="bp" onclick="document.getElementById('file-in').click()">📁 Choose Files</button>
-        <button onclick="processQueue()">▶ Process</button>
-        <button onclick="loadDemo()" style="display:none" data-demo-btn>▶ Demo</button>
-        <button onclick="clearQueue()" style="color:var(--red)">🗑 Clear</button>
-      </div>
-      <div id="db-queue-wrap" style="display:none">
-        <div style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:14px;margin-bottom:6px" id="db-queue-title">Queue (0)</div>
-        <div id="db-queue-list" class="q-list"></div>
-        <div class="q-progress" style="display:none" id="db-q-progress">
-          <span class="mn" id="db-q-counter">0 of 0 ready to process</span>
-          <div class="q-progress-bar"><div class="q-progress-fill" id="db-q-fill" style="width:0%"></div></div>
-          <button class="bp" style="font-size:11px;padding:5px 12px" onclick="processQueue()">▶ Process All</button>
-        </div>
-      </div>
-      <div id="db-extracting" class="up-prog" style="display:none">
-        <div class="up-prog-file">
-          <div class="up-prog-file-ico">📄</div>
-          <div style="min-width:0;flex:1">
-            <div class="up-prog-file-name" id="db-up-name">filename.pdf</div>
-            <div class="up-prog-file-meta" id="db-up-meta">Processing...</div>
-          </div>
-        </div>
-        <div class="up-step" data-step="reading"><div class="up-step-ico"></div><div>Reading file</div></div>
-        <div class="up-step" data-step="extracting"><div class="up-step-ico"></div><div>AI extracting line items</div></div>
-        <div class="up-step" data-step="parsing"><div class="up-step-ico"></div><div>Parsing response</div></div>
-        <div class="up-step" data-step="classifying"><div class="up-step-ico"></div><div>Matching to price history</div></div>
-        <div class="up-prog-err" id="db-up-err" style="display:none"></div>
-      </div>
-    </div>
-  </div>
 
   <div id="batch-progress" style="display:none">
     <div class="card">
@@ -969,13 +966,13 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="pgh"><div class="pgt">Upload Invoice</div><div class="pgs">Drop a vendor invoice PDF — AI extracts every line item automatically</div></div>
   <div class="steps"><div class="step active">1 · Upload</div><div class="step">2 · Verify</div><div class="step">3 · Approve</div><div class="step">4 · Export</div></div>
   <div id="dz-wrap">
-    <div class="dz" id="dropzone-legacy">
+    <div class="dz" id="dropzone">
       <span class="dz-icon">📄</span>
       <div class="dz-title">Drop your vendor invoice here</div>
       <div class="dz-sub">PDF or image · AI reads every line item · Detects price changes against history<br>Multiple files OK for batch processing</div>
-      <input type="file" id="file-in-legacy" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
+      <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" onclick="event.stopPropagation()">
-        <button onclick="document.getElementById('file-in-legacy').click()">📁 Choose file(s)</button>
+        <button onclick="document.getElementById('file-in').click()">📁 Choose file(s)</button>
         <button class="bp" onclick="loadDemo()">▶ Load demo invoice</button>
         <button class="bgo" onclick="goTo('api-settings')" id="setup-key-btn" data-cloud-hide>🔑 Set up API key</button>
       </div>
@@ -1245,12 +1242,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- PRICING RULES -->
 <div class="pg" id="pg-pricing">
-  <div class="page-tabs">
-    <button class="page-tab on" onclick="goTo('pricing')">Pricing Rules</button>
-    <button class="page-tab" onclick="goTo('calc')">Margin Calculator</button>
-    <button class="page-tab" onclick="goTo('api-settings')">API Settings</button>
-    <button class="page-tab" onclick="goTo('db-settings')">Database Sync</button>
-  </div>
   <div class="pgh"><div class="pgt">Pricing Rules</div><div class="pgs">Set markup % by category, or add your own categories — all calculations update instantly</div></div>
   <div class="g3" id="tgt-grid"></div>
   <div class="card"><div class="ctit">Quick reference</div>
@@ -1261,12 +1252,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- CALCULATOR -->
 <div class="pg" id="pg-calc">
-  <div class="page-tabs">
-    <button class="page-tab" onclick="goTo('pricing')">Pricing Rules</button>
-    <button class="page-tab on" onclick="goTo('calc')">Margin Calculator</button>
-    <button class="page-tab" onclick="goTo('api-settings')">API Settings</button>
-    <button class="page-tab" onclick="goTo('db-settings')">Database Sync</button>
-  </div>
   <div class="pgh"><div class="pgt">Margin Calculator</div><div class="pgs">Case cost ÷ units per case = unit cost · Apply markup → retail</div></div>
   <div class="g2">
     <div>
@@ -1302,12 +1287,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- API SETTINGS -->
 <div class="pg" id="pg-api-settings">
-  <div class="page-tabs">
-    <button class="page-tab" onclick="goTo('pricing')">Pricing Rules</button>
-    <button class="page-tab" onclick="goTo('calc')">Margin Calculator</button>
-    <button class="page-tab on" onclick="goTo('api-settings')">API Settings</button>
-    <button class="page-tab" onclick="goTo('db-settings')">Database Sync</button>
-  </div>
   <div class="pgh"><div class="pgt">API Settings</div><div class="pgs">Connect your Anthropic API key to enable real PDF extraction from your invoices</div></div>
   <div data-cloud-show style="display:none;background:var(--c1l);border:1px solid var(--c1);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--c1d)">
     <b>✓ AI is configured for you.</b> Your account uses a server-side key — you don't need to enter anything here. The fields below are inactive.
@@ -1392,15 +1371,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- DATABASE SETTINGS -->
 <div class="pg" id="pg-db-settings">
-  <div class="page-tabs">
-    <button class="page-tab" onclick="goTo('produce')">Catalog</button>
-    <button class="page-tab on">Database</button>
-    <span style="flex:1"></span>
-    <button class="page-tab" onclick="goTo('pricing')">Pricing Rules</button>
-    <button class="page-tab" onclick="goTo('calc')">Margin Calculator</button>
-    <button class="page-tab" onclick="goTo('api-settings')">API Settings</button>
-    <button class="page-tab on">Database Sync</button>
-  </div>
   <div class="pgh"><div class="pgt">Database Settings</div><div class="pgs">Connect Neon to save invoices permanently — survives refresh, works on any device</div></div>
   <div id="db-status-banner" style="display:none;border-radius:var(--r);padding:11px 16px;margin-bottom:14px;font-size:13px;font-weight:500"></div>
   <div class="g2">
@@ -1472,10 +1442,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- ═══════════ PRODUCE MATCHER ═══════════ -->
 <div class="pg" id="pg-produce">
-  <div class="page-tabs">
-    <button class="page-tab on" onclick="goTo('produce')">Catalog</button>
-    <button class="page-tab" onclick="goTo('db-settings')">Database</button>
-  </div>
   <div class="pgh">
     <div class="pgt">Produce Matcher</div>
     <div class="pgs">Match invoice items to your photo catalog · 50% markup → rounded to $.49 / $.99 · Export PDF price tag catalog</div>
@@ -2550,89 +2516,6 @@ function migrateDB(){
 
 // ═══════════ STATE ═══════════
 let INV=null, APPROVALS={}, FILE_QUEUE=[];
-let _INBOX_VIEW = 'lanes'; // 'lanes' | 'open'
-
-// ═══════════ PHASE 1 STATUS HELPERS ═══════════
-function getInvStatus(inv){
-  // Backfill: any invoice without _status is treated as 'done' for inbox grouping.
-  return inv._status || 'done';
-}
-function setInvStatus(inv, newStatus){
-  // Monotonic guard: only advance, never regress.
-  const order = { review: 0, ready: 1, done: 2 };
-  const cur = order[getInvStatus(inv)] ?? 2;
-  const next = order[newStatus] ?? 2;
-  if(next <= cur) return false;
-  inv._status = newStatus;
-  return true;
-}
-function persistInv(inv){
-  if(!inv) return;
-  const hist = loadHist();
-  const idx = hist.findIndex(h => h.vendor === inv.vendor && h.invoiceNo === inv.invoiceNo);
-  if(idx >= 0){ hist[idx] = inv; saveHist(hist); }
-}
-function isToday(iso){
-  if(!iso) return false;
-  const d = new Date(iso); const n = new Date();
-  return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
-}
-function countSafeItems(){
-  if(!INV || !Object.keys(APPROVALS).length) return 0;
-  const vk = normV(INV.vendor); let n = 0;
-  Object.keys(APPROVALS).forEach(k => {
-    const ap = APPROVALS[k]; if(!ap || ap.status !== 'pending') return;
-    const item = INV.items.find(i => i.item === k); if(!item) return;
-    const ch = detectChange(item, vk, INV.invoiceNo, INV.date);
-    const isSafe = (ch.status==='no_change' || ch.status==='no_history' || (Math.abs(ch.pct||0) <= 2)) && (item._conf||1) >= 0.7;
-    if(isSafe) n++;
-  });
-  return n;
-}
-function checkStatusReady(){
-  // If all APPROVALS items are decided (not pending) and INV exists, advance to 'ready'.
-  if(!INV || !Object.keys(APPROVALS).length) return;
-  const allDecided = Object.values(APPROVALS).every(v => v.status !== 'pending');
-  if(allDecided && setInvStatus(INV, 'ready')) persistInv(INV);
-}
-function isReviewInProgress(){
-  return !!(INV && Object.values(APPROVALS).some(v => v.status === 'pending'));
-}
-function openUploadModal(){
-  if(isReviewInProgress()){
-    const label = (INV && (INV._uploadedAs || (INV.vendor+' #'+INV.invoiceNo))) || 'the current invoice';
-    showToast('warn', `Finish reviewing ${label} before uploading another invoice. You can also continue from the Inbox.`);
-    return;
-  }
-  const m = document.getElementById('upload-modal');
-  if(m) m.style.display = 'flex';
-}
-function closeUploadModal(){
-  const m = document.getElementById('upload-modal');
-  if(m) m.style.display = 'none';
-}
-function openInvoiceCard(vendor, invoiceNo){
-  reloadInv(vendor, invoiceNo);
-  _INBOX_VIEW = 'open';
-  renderDashboard();
-}
-function backToInbox(){
-  _INBOX_VIEW = 'lanes';
-  renderDashboard();
-}
-// Best-effort relative-time formatter (timeAgo not previously defined).
-function timeAgo(iso){
-  if(!iso) return '';
-  const d = new Date(iso); const ms = Date.now() - d.getTime();
-  const min = Math.floor(ms/60000);
-  if(min < 1) return 'just now';
-  if(min < 60) return `${min}m ago`;
-  const hr = Math.floor(min/60);
-  if(hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr/24);
-  if(day < 7) return `${day}d ago`;
-  return d.toLocaleDateString();
-}
 
 // ═══════════ NAVIGATION ═══════════
 function goTo(id){
@@ -2657,11 +2540,6 @@ DZ.addEventListener('dragover',e=>{e.preventDefault();DZ.classList.add('over');}
 DZ.addEventListener('dragleave',()=>DZ.classList.remove('over'));
 DZ.addEventListener('drop',e=>{
   e.preventDefault();DZ.classList.remove('over');
-  if(isReviewInProgress()){
-    const label = (INV && (INV._uploadedAs || (INV.vendor+' #'+INV.invoiceNo))) || 'the current invoice';
-    showToast('warn', `Finish reviewing ${label} before uploading another invoice. You can also continue from the Inbox.`);
-    return;
-  }
   const files=Array.from(e.dataTransfer.files).filter(f=>f.type==='application/pdf'||f.type.startsWith('image/'));
   if(!files.length)return;
   routeFiles(files);
@@ -2727,11 +2605,6 @@ function routeFiles(files){
 
 function processFileList(files){
   if(!files.length) return;
-  if(isReviewInProgress()){
-    const label = (INV && (INV._uploadedAs || (INV.vendor+' #'+INV.invoiceNo))) || 'the current invoice';
-    showToast('warn', `Finish reviewing ${label} before uploading another invoice. You can also continue from the Inbox.`);
-    return;
-  }
   if(files.length===1) processSingleFile(files[0]); else addToQueue(files);
 }
 
@@ -2745,7 +2618,6 @@ async function processSingleFile(file){
     await new Promise(r=>setTimeout(r,200));
     finishUploadProgress(true);
     loadInvoice(inv);
-    closeUploadModal();
     saveCurrentInvoiceToHistory();
     const cnt = inv && inv.items ? inv.items.filter(i=>i._rt===0||i._rt===RT.PURCHASED).length : 0;
     showToast('success', `✅ Invoice loaded — ${cnt} items ready to review below`);
@@ -2804,11 +2676,6 @@ function clearQueue(){FILE_QUEUE=[];show('queue-wrap',false);renderDashboardQueu
 async function processQueue(){
   const waiting=FILE_QUEUE.filter(q=>q.status==='waiting');
   if(!waiting.length){alert('No files waiting.');return;}
-  if(isReviewInProgress()){
-    const label = (INV && (INV._uploadedAs || (INV.vendor+' #'+INV.invoiceNo))) || 'the current invoice';
-    showToast('warn', `Finish reviewing ${label} before uploading another invoice. You can also continue from the Inbox.`);
-    return;
-  }
   show('dz-wrap',false);show('queue-wrap',false);show('batch-progress',true);
   const total=FILE_QUEUE.length;
   const log=document.getElementById('bp-log');log.innerHTML='';
@@ -3052,14 +2919,10 @@ async function extractInvoice(file, onStep){
 }
 
 // ═══════════ LOAD INVOICE ═══════════
-// Phase 1 limitation: reopening a 'done' invoice shows items as pending in the table
-// but `_status` does not regress. Fix in a later phase by persisting APPROVALS per invoice.
 function loadInvoice(inv){
   if(!inv.docType)inv.docType='invoice';
   classifyInvoice(inv);
   INV=inv;
-  if(!inv._status) inv._status = 'review';
-  _INBOX_VIEW = 'open';
   const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=inv.vendor+' #'+inv.invoiceNo+' · '+inv.date;
   const vk=normV(inv.vendor);
   APPROVALS={};
@@ -3269,18 +3132,16 @@ function setAp(k,s){
         if(onc.includes("'rejected'") && s === 'rejected') b.classList.add('br');
       });
       if(dashboardVisible) renderDashboardTable();
-      checkStatusReady();persistInv(INV);
       return;
     }
   }
   // Fallback: full re-render (filter changes membership, or row isn't in the DOM).
   if(activePill) renderApprovals(filter);
   if(dashboardVisible) renderDashboardTable();
-  checkStatusReady();persistInv(INV);
 }
-function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();checkStatusReady();persistInv(INV);showToast('success', `✅ Approved ${Object.keys(APPROVALS).length} items`);}
-function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();checkStatusReady();persistInv(INV);showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
-function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();checkStatusReady();persistInv(INV);}
+function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('success', `✅ Approved ${Object.keys(APPROVALS).length} items`);}
+function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
+function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();}
 
 // Dashboard-only bulk actions
 function dbApproveAll(){
@@ -3312,7 +3173,6 @@ function dbApproveSafe(){
   updateApprovalCounts();renderDashboardTable();
   const p=document.querySelector('#af-pills .pill.on');if(p)renderApprovals(p.dataset.af);
   updateExportSummary();
-  checkStatusReady();persistInv(INV);
   showToast('success', n>0 ? `✅ Approved ${n} safe item${n!==1?'s':''}` : 'No safe items to auto-approve');
 }
 function toggleSelAll(v){document.querySelectorAll('.apchk').forEach(c=>c.checked=v);}
@@ -3369,7 +3229,6 @@ function downloadCSV(){
   if(!INV){alert('No invoice.');return;}const rows=getExportRows();if(!rows.length){alert('Nothing to export.');return;}
   const blob=new Blob([buildCSV(rows)],{type:'text/csv'});const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`${INV.vendor.replace(/\s+/g,'-')}-${INV.invoiceNo}.csv`;a.click();URL.revokeObjectURL(url);
-  if(INV && setInvStatus(INV, 'done')) persistInv(INV);
 }
 function finalizeAndSave(){
   if(!INV){alert('No invoice.');return;}
@@ -5031,129 +4890,83 @@ const DB_PAGE_SIZE = 8;
 
 function renderDashboard(){
   renderSummaryBanner();
-  const inboxEl = document.getElementById('db-inbox-view');
-  const openEl = document.getElementById('db-open-view');
-  if(_INBOX_VIEW === 'open' && INV){
-    if(inboxEl) inboxEl.style.display = 'none';
-    if(openEl) openEl.style.display = '';
-    renderDashboardTable();
-    renderDashboardAlerts();
-    renderDashboardVendors();
-    renderDashboardChart();
-    renderDashboardQueue();
-  } else {
-    if(inboxEl) inboxEl.style.display = '';
-    if(openEl) openEl.style.display = 'none';
-    renderInbox();
-  }
+  renderDashboardTable();
+  renderDashboardAlerts();
+  renderDashboardVendors();
+  renderDashboardChart();
+  renderDashboardQueue();
   updateNavCounts();
   updateDataFreshness();
 }
 
-// 1. SUMMARY STRIP (3 metrics)
+// 1. SUMMARY BANNER
 function renderSummaryBanner(){
-  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-  const db = loadDB();
-  const hist = loadHist();
-  const itemsTracked = Object.keys(db).length;
-
-  // Aggregate margin-at-risk and profit-gain across Review + Ready invoices.
-  let risk = 0, gain = 0;
-  hist.forEach(inv => {
-    const st = getInvStatus(inv);
-    if(st === 'done') return;
-    if(!inv.items) return;
-    const vk = normV(inv.vendor);
-    inv.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0).forEach(item => {
-      const ch = detectChange(item, vk, inv.invoiceNo, inv.date);
-      if(ch.status === 'increase' && Math.abs(ch.pct) > 2){
-        risk += Math.abs(ch.diff) * item.qty * (item._u||1);
-        gain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3;
-      } else if(ch.status === 'decrease' && Math.abs(ch.pct) > 2){
-        gain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3;
-      }
-    });
-  });
-
-  set('db-metric-tracked', itemsTracked);
-  set('db-metric-risk', f2(risk));
-  set('db-metric-gain', f2(gain));
-
-  const pill = document.getElementById('db-action-pill');
-  if(pill){
-    const pendingInv = hist.filter(inv => getInvStatus(inv) === 'review').length;
-    pill.textContent = pendingInv + ' Action Required';
-    pill.style.display = pendingInv > 0 ? '' : 'none';
-  }
-}
-
-// Inbox lanes view — used when _INBOX_VIEW === 'lanes'
-function renderInbox(){
-  const container = document.getElementById('db-inbox-view');
-  if(!container) return;
-  const hist = loadHist();
-
-  if(!hist.length){
-    container.innerHTML = `
-      <div class="card" style="text-align:center;padding:48px">
-        <div style="font-size:48px;margin-bottom:12px;opacity:.6">📥</div>
-        <div style="font-weight:600;font-size:16px;margin-bottom:6px">No invoices yet</div>
-        <div style="color:var(--text2);font-size:13px;margin-bottom:20px">Upload your first invoice to start tracking prices and margins.</div>
-        <button class="bp" onclick="openUploadModal()">📁 Upload an invoice</button>
-      </div>`;
+  const set = (id, val, color) => {
+    const el = document.getElementById(id);
+    if(el){ el.textContent = val; if(color) el.style.color = color; }
+  };
+  
+  if(!INV){
+    // No invoice loaded → show aggregate stats from history
+    const hist = loadHist();
+    const db = loadDB();
+    const totalItems = Object.keys(db).length;
+    set('db-items', totalItems);
+    set('db-items-sub', `Across ${hist.length} invoice${hist.length!==1?'s':''}`);
+    set('db-safe', '—');
+    set('db-safe-sub', 'Upload an invoice');
+    set('db-changes', '0');
+    set('db-changes-sub', '—');
+    set('db-review', '0');
+    set('db-review-sub', '—');
+    set('db-loss', '$0');
+    set('db-gain', '$0');
+    document.getElementById('db-action-pill').textContent = '0 Action Required';
     return;
   }
-
-  const review = [], ready = [], doneToday = [];
-  hist.forEach(inv => {
-    const st = getInvStatus(inv);
-    if(st === 'review') review.push(inv);
-    else if(st === 'ready') ready.push(inv);
-    else if(st === 'done' && isToday(inv.savedAt)) doneToday.push(inv);
+  
+  const purch = INV.items.filter(i=>i._rt===RT.PURCHASED && i.qty>0);
+  const vk = normV(INV.vendor);
+  
+  // Classify each into: safe, change_needed, review_needed
+  let safe=0, changes=0, review=0;
+  let estLoss=0, projGain=0;
+  
+  purch.forEach(item=>{
+    const ch = detectChange(item, vk, INV.invoiceNo, INV.date);
+    const cu = unitCost(item);
+    const ru = retailUnit(item);
+    const margin = ru>0 ? ((ru-cu)/ru)*100 : 0;
+    
+    if(item._conf < 0.7){ review++; }
+    else if(ch.status === 'increase' && Math.abs(ch.pct)>2){ 
+      changes++;
+      // estimated loss = pct change * volume * cost
+      estLoss += Math.abs(ch.diff) * item.qty * (item._u||1);
+      projGain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3; // markup adjustment
+    }
+    else if(ch.status === 'decrease' && Math.abs(ch.pct)>2){
+      changes++;
+      projGain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3;
+    }
+    else { safe++; }
   });
-
-  const card = (inv) => {
-    const purch = inv.items ? inv.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0) : [];
-    const vk = normV(inv.vendor);
-    const changes = purch.filter(item => {
-      const ch = detectChange(item, vk, inv.invoiceNo, inv.date);
-      return (ch.status === 'increase' || ch.status === 'decrease') && Math.abs(ch.pct||0) > 2;
-    }).length;
-    const ago = inv.savedAt ? timeAgo(inv.savedAt) : (inv.date || 'unknown');
-    return `<div class="inbox-card" onclick="openInvoiceCard('${escJs(inv.vendor)}','${escJs(inv.invoiceNo)}')">
-      <div class="inbox-card-hd">
-        <div class="inbox-card-vendor">${esc(inv.vendor)}</div>
-        <div class="inbox-card-no">#${esc(inv.invoiceNo)}</div>
-      </div>
-      <div class="inbox-card-meta">${purch.length} items · ${changes} price change${changes!==1?'s':''} · ${esc(ago)}</div>
-      <button class="bp inbox-card-open" onclick="event.stopPropagation();openInvoiceCard('${escJs(inv.vendor)}','${escJs(inv.invoiceNo)}')">Open →</button>
-    </div>`;
-  };
-
-  const lane = (title, items, badgeColor, collapsible) => {
-    if(!items.length && !collapsible){
-      return `<div class="inbox-lane">
-        <div class="inbox-lane-hd"><span class="inbox-lane-title">${title}</span><span class="inbox-lane-count" style="background:${badgeColor}">0</span></div>
-        <div class="inbox-lane-empty">No invoices</div>
-      </div>`;
-    }
-    const body = items.length ? items.map(card).join('') : `<div class="inbox-lane-empty">No invoices</div>`;
-    if(collapsible){
-      return `<details class="inbox-lane inbox-lane-collapsible"${items.length>0?' open':''}>
-        <summary class="inbox-lane-hd"><span class="inbox-lane-title">${title}</span><span class="inbox-lane-count" style="background:${badgeColor}">${items.length}</span></summary>
-        ${body}
-      </details>`;
-    }
-    return `<div class="inbox-lane">
-      <div class="inbox-lane-hd"><span class="inbox-lane-title">${title}</span><span class="inbox-lane-count" style="background:${badgeColor}">${items.length}</span></div>
-      ${body}
-    </div>`;
-  };
-
-  container.innerHTML = `
-    ${lane('Review needed', review, 'var(--amber)', false)}
-    ${lane('Ready to export', ready, 'var(--green)', false)}
-    ${lane('Done today', doneToday, 'var(--text3)', true)}`;
+  
+  const total = purch.length;
+  const pct = (n) => total>0 ? ((n/total)*100).toFixed(1)+'%' : '0%';
+  
+  set('db-items', total);
+  set('db-items-sub', `Across ${loadHist().length} invoice${loadHist().length!==1?'s':''}`);
+  set('db-safe', safe);
+  set('db-safe-sub', pct(safe));
+  set('db-changes', changes);
+  set('db-changes-sub', pct(changes));
+  set('db-review', review);
+  set('db-review-sub', pct(review));
+  set('db-loss', f2(estLoss).replace('$','$').replace('.00',''));
+  set('db-gain', f2(projGain).replace('$','$').replace('.00',''));
+  
+  document.getElementById('db-action-pill').textContent = `${changes+review} Action Required`;
 }
 
 // 2. PRICE APPROVALS TABLE (the hero)
@@ -5196,13 +5009,6 @@ function renderDashboardTable(){
     document.getElementById('db-bulk-rejected').textContent = rCnt;
     const pill = document.getElementById('db-action-pill');
     if(pill) pill.textContent = pCnt + ' Pending';
-    // Dynamic "Approve all N safe items" label on bulk bar
-    const safeCount = countSafeItems();
-    const safeBtn = document.querySelector('button[onclick="dbApproveSafe()"]');
-    if(safeBtn){
-      safeBtn.style.display = safeCount > 0 ? '' : 'none';
-      safeBtn.innerHTML = `✓ Approve all ${safeCount} safe item${safeCount!==1?'s':''}`;
-    }
   }
   
   let rows = purch.map(item=>{
