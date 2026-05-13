@@ -221,7 +221,10 @@ tr:hover td{background:var(--bg3)}
 .retail-src .ti{font-size:12px}
 .retail-src-mem{background:rgba(16,185,129,0.12);color:#047857}
 .retail-src-fx{background:rgba(100,116,139,0.12);color:#475569}
-.retail-edit.edited ~ .retail-src::before{content:'• ';color:var(--text3)}
+.retail-src-cust{background:rgba(245,158,11,0.10);color:#b45309;display:none}
+.retail-edit.edited ~ .retail-src-mem,
+.retail-edit.edited ~ .retail-src-fx{display:none}
+.retail-edit.edited ~ .retail-src-cust{display:inline-flex}
 .retail-reset{font-size:12px;line-height:1;padding:2px 5px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer}
 .retail-reset:hover{background:var(--bg3);color:var(--text2)}
 
@@ -5133,7 +5136,10 @@ function renderDashboardTable(){
     
     // Suggested retail — editable input prefilled with the resolved value
     // (memory if present, else charm-rounded cost × markup). Badge shows the
-    // source; ↺ flips back to calculated for this invoice only.
+    // source; ↺ flips back to calculated for this invoice only. The Custom
+    // pill is rendered alongside Memory/Formula and swapped in via CSS when
+    // the input carries the .edited class (added/removed by onRetailInput
+    // and resetRetail). No JS re-render needed for the swap.
     const edited = Math.abs(ru - resolved.retail) > 0.0049;
     let srcBadge = '';
     if(resolved.source === 'memory'){
@@ -5143,6 +5149,7 @@ function renderDashboardTable(){
     } else if(resolved.source === 'calculated'){
       srcBadge = `<span class="retail-src retail-src-fx" title="Calculated from cost × markup, no AI suggestion available"><i class="ti ti-math-function"></i>Formula</span>`;
     }
+    const custBadge = `<span class="retail-src retail-src-cust" title="Your manual override"><i class="ti ti-pencil"></i>Custom</span>`;
     let wasLine = '';
     if(ch.status === 'increase' || ch.status === 'decrease'){
       const oldRetailRaw = ch.prev * (1 + getTgt(item.cat)/100);
@@ -5158,7 +5165,7 @@ function renderDashboardTable(){
                value="${ru.toFixed(2)}" data-orig="${resolved.retail.toFixed(2)}"
                oninput="onRetailInput('${escJs(item.item)}', this)"
                onchange="onRetailCommit('${escJs(item.item)}', this)">
-        ${srcBadge}
+        ${srcBadge}${custBadge}
         <button type="button" class="retail-reset" title="Revert to calculated cost × markup"
                 onclick="resetRetail('${escJs(item.item)}')">↺</button>
       </div>
