@@ -587,13 +587,19 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .toast.success{border-left-color:var(--green)}
 .toast.error{border-left-color:var(--red)}
 .toast.warn{border-left-color:var(--amber)}
-.toast-ico{font-size:18px;flex-shrink:0}
+.toast-ico{font-size:18px;flex-shrink:0;display:inline-flex;align-items:center}
+.toast.success .toast-ico{color:var(--green)}
+.toast.error .toast-ico{color:var(--red)}
+.toast.warn .toast-ico{color:var(--amber)}
+.toast.info .toast-ico{color:var(--c1)}
 .toast-body{flex:1;color:var(--text);font-weight:500;line-height:1.4}
 .toast-x{cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:2px 4px;border-radius:4px}
 .toast-x:hover{background:var(--bg3);color:var(--text)}
 .toast.fade{animation:toast-out .3s ease-out forwards}
 @keyframes toast-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes toast-out{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(20px)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.ti-spin{display:inline-block;animation:spin 1s linear infinite}
 
 /* ─── DASHBOARD APPROVE BUTTONS ─────────────────── */
 .db-act-cell{display:flex;flex-direction:column;gap:4px;align-items:stretch;min-width:90px}
@@ -2624,7 +2630,7 @@ async function processSingleFile(file){
     loadInvoice(inv);
     saveCurrentInvoiceToHistory();
     const cnt = inv && inv.items ? inv.items.filter(i=>i._rt===0||i._rt===RT.PURCHASED).length : 0;
-    showToast('success', `✅ Invoice loaded — ${cnt} items ready to review below`);
+    showToast('success', `Invoice loaded — ${cnt} items ready to review below`);
   }
   catch(err){
     if(err.message==='no_api_key'){ finishUploadProgress(false); show('dz-wrap',true); return; }
@@ -2652,7 +2658,7 @@ function loadDemo(){
   setTimeout(()=>{
     show('extracting',false);
     loadInvoice(JSON.parse(JSON.stringify(DEMO)));
-    showToast('success','✅ Demo invoice loaded — review prices below');
+    showToast('success','Demo invoice loaded — review prices below');
   },1100);
 }
 
@@ -2663,10 +2669,15 @@ function addToQueue(files){
 }
 
 function renderQueue(){
-  const ico={waiting:'⏳',processing:'⟳',done:'✅',error:'❌'};
+  const ico={
+    waiting:'<i class="ti ti-clock" aria-hidden="true"></i>',
+    processing:'<i class="ti ti-loader-2 ti-spin" aria-hidden="true"></i>',
+    done:'<i class="ti ti-circle-check" style="color:var(--green)" aria-hidden="true"></i>',
+    error:'<i class="ti ti-circle-x" style="color:var(--red)" aria-hidden="true"></i>'
+  };
   document.getElementById('queue-list').innerHTML=FILE_QUEUE.map((q,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
-      <span>${ico[q.status]||'⏳'}</span>
+      <span>${ico[q.status]||ico.waiting}</span>
       <span style="flex:1;font-size:12px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.name)}</span>
       <span style="font-size:11px;color:var(--text3)">${q.status==='done'&&q.result?esc(q.result.vendor+' #'+q.result.invoiceNo):esc(q.status)}</span>
       ${q.status==='waiting'?`<button style="font-size:11px;padding:3px 8px" onclick="FILE_QUEUE.splice(${i},1);renderQueue()">×</button>`:''}
@@ -3143,7 +3154,7 @@ function setAp(k,s){
   if(activePill) renderApprovals(filter);
   if(dashboardVisible) renderDashboardTable();
 }
-function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('success', `✅ Approved ${Object.keys(APPROVALS).length} items`);}
+function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('success', `Approved ${Object.keys(APPROVALS).length} items`);}
 function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
 function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();}
 
@@ -3177,7 +3188,7 @@ function dbApproveSafe(){
   updateApprovalCounts();renderDashboardTable();
   const p=document.querySelector('#af-pills .pill.on');if(p)renderApprovals(p.dataset.af);
   updateExportSummary();
-  showToast('success', n>0 ? `✅ Approved ${n} safe item${n!==1?'s':''}` : 'No safe items to auto-approve');
+  showToast('success', n>0 ? `Approved ${n} safe item${n!==1?'s':''}` : 'No safe items to auto-approve');
 }
 function toggleSelAll(v){document.querySelectorAll('.apchk').forEach(c=>c.checked=v);}
 function updateApprovalCounts(){
@@ -3656,7 +3667,7 @@ async function vendorRecomputeSoldBy(){
   saveHist(hist);
   for(const inv of matches){ try { saveInvoiceToDB(inv); } catch(e){ console.warn('DB save failed for', inv.invoiceNo, e); } }
   vendorRerender();
-  showToast('success', `✅ Recomputed sold-by for ${matches.length} invoice${matches.length===1?'':'s'}`);
+  showToast('success', `Recomputed sold-by for ${matches.length} invoice${matches.length===1?'':'s'}`);
 }
 function vendorRenderTable(vendorName){
   let items = vendorBuildItems(vendorName);
@@ -4238,7 +4249,8 @@ function showBanner(msg,bg,color){
 function showToast(kind, msg, dur){
   const wrap = document.getElementById('toast-wrap');
   if(!wrap) return;
-  const ico = {success:'✅', error:'⚠️', warn:'⚡', info:'ℹ️'}[kind] || 'ℹ️';
+  const icoCls = {success:'ti-circle-check', error:'ti-alert-triangle', warn:'ti-bolt', info:'ti-info-circle'}[kind] || 'ti-info-circle';
+  const ico = `<i class="ti ${icoCls}" aria-hidden="true"></i>`;
   const t = document.createElement('div');
   t.className = 'toast ' + (kind||'info');
   t.innerHTML = `<div class="toast-ico">${ico}</div><div class="toast-body">${esc(msg)}</div><div class="toast-x">×</div>`;
@@ -5636,7 +5648,7 @@ function pcSaveHost(){
     return;
   }
   pcSaveHostUrl(v);
-  showToast('success', v ? '✅ Photo host saved' : 'Photo host cleared');
+  showToast('success', v ? 'Photo host saved' : 'Photo host cleared');
   pcRenderCatalog();
   if(PC_LAST_MATCHED) pcRenderResults();
 }
@@ -5705,12 +5717,12 @@ function pcCatalogAdd(){
     if(idx>=0){
       cat[idx] = {...cat[idx], name, aliases, unit, cost, ...(_PC_ADD_IMG?{image:_PC_ADD_IMG}:{}) };
       pcSaveCatalog(cat);
-      showToast('success', `✅ Updated "${name}"`);
+      showToast('success', `Updated "${name}"`);
     }
   } else {
     cat.push({ id: pcId(), name, aliases, unit, cost, image:_PC_ADD_IMG||null, source:'custom', addedAt:new Date().toISOString() });
     pcSaveCatalog(cat);
-    showToast('success', `✅ Added "${name}"`);
+    showToast('success', `Added "${name}"`);
   }
   pcCatalogClearForm();
   pcRenderCatalog();
@@ -6011,7 +6023,7 @@ async function pcProcessFiles(files){
       
       // If we extracted way more than we kept, surface the gap
       if(extractedCount > newLines.length + 2){
-        showToast('warn', `⚠ Extracted ${extractedCount} items but only ${newLines.length} matched. Check console for details.`, 8000);
+        showToast('warn', `Extracted ${extractedCount} items but only ${newLines.length} matched. Check console for details.`, 8000);
       }
       // Tag each line with the vendor + invoice it came from
       const vendor = (inv.vendor||'Unknown').trim();
@@ -6041,7 +6053,7 @@ async function pcProcessFiles(files){
   }, 200);
   pcRenderResults();
   
-  if(okCount && !failCount) showToast('success', `✅ Processed ${okCount} invoice${okCount!==1?'s':''} · ${totalNew} new items`);
+  if(okCount && !failCount) showToast('success', `Processed ${okCount} invoice${okCount!==1?'s':''} · ${totalNew} new items`);
   else if(okCount && failCount) showToast('warn', `Processed ${okCount} OK, ${failCount} failed · ${totalNew} new items added`);
   else showToast('error', `All ${failCount} invoice${failCount!==1?'s':''} failed`, 8000);
 }
@@ -6792,9 +6804,9 @@ async function pcExportPDF(){
   doc.save(filename);
   const failed = dataUrls.filter(d=>!d).length;
   if(failed > 0){
-    showToast('warn', `⚠ PDF saved but ${failed}/${items.length} image${failed!==1?'s':''} couldn't load. Check the host URL or browser console.`, 8000);
+    showToast('warn', `PDF saved but ${failed}/${items.length} image${failed!==1?'s':''} couldn't load. Check the host URL or browser console.`, 8000);
   } else {
-    showToast('success', `✅ Saved ${filename}`);
+    showToast('success', `Saved ${filename}`);
   }
 }
 
