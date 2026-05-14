@@ -5399,19 +5399,23 @@ function renderSummaryBanner(){
   
   const purch = INV.items.filter(i=>i._rt===RT.PURCHASED && i.qty>0);
   const vk = normV(INV.vendor);
-  
-  // Classify each into: safe, change_needed, review_needed
-  let safe=0, changes=0, review=0;
+
+  // "Safe" matches the bulk-approve button's filter (and renderNewEditShell's
+  // safeCount) — high-confidence purchased items. The previous stricter
+  // definition (conf>=0.7 AND no significant change) made the stats card and
+  // the "Approve all safe (N)" button disagree, which confused users.
+  const safe = purch.filter(i => (i._conf || 1) >= 0.7).length;
+  let changes=0, review=0;
   let estLoss=0, projGain=0;
-  
+
   purch.forEach(item=>{
     const ch = detectChange(item, vk, INV.invoiceNo, INV.date);
     const cu = unitCost(item);
     const ru = retailUnit(item);
     const margin = ru>0 ? ((ru-cu)/ru)*100 : 0;
-    
+
     if(item._conf < 0.7){ review++; }
-    else if(ch.status === 'increase' && Math.abs(ch.pct)>2){ 
+    else if(ch.status === 'increase' && Math.abs(ch.pct)>2){
       changes++;
       // estimated loss = pct change * volume * cost
       estLoss += Math.abs(ch.diff) * item.qty * (item._u||1);
@@ -5421,7 +5425,6 @@ function renderSummaryBanner(){
       changes++;
       projGain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3;
     }
-    else { safe++; }
   });
   
   const total = purch.length;
