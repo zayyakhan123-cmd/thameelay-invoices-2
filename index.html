@@ -241,6 +241,23 @@ tr:hover td{background:var(--bg3)}
 .new-edit-pill.safe.pill-active{background:var(--green);color:#fff}
 .new-edit-pill.review.pill-active{background:#f59e0b;color:#fff}
 .new-edit-pill .pill-cnt{opacity:0.8;font-weight:600}
+/* Phase A commit 8 — click-to-expand row detail */
+.new-edit-row{cursor:pointer}
+.new-edit-row-wrap.expanded{background:var(--bg3);border:1px solid var(--c1);border-radius:6px;margin:4px 0}
+.new-edit-row-wrap.expanded > .new-edit-row{border-bottom:0.5px solid var(--border);background:transparent}
+.new-edit-row-wrap.expanded > .new-edit-row:hover{background:transparent}
+.new-edit-detail{padding:12px;display:flex;flex-direction:column;gap:10px}
+.new-edit-detail-hd{font-size:13px;color:var(--text)}
+.new-edit-detail-tags{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+.new-edit-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.new-edit-detail-cell{display:flex;flex-direction:column;gap:3px;min-width:0}
+.new-edit-detail-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em}
+.new-edit-detail-input{font-size:13px;font-weight:600;padding:4px 8px;border:0.5px solid var(--border);border-radius:4px;background:#fff;width:100%;box-sizing:border-box;font-family:var(--font-mono)}
+.new-edit-detail-input:disabled{color:var(--text2);cursor:not-allowed;background:var(--bg3)}
+.new-edit-detail-note{font-size:10px;color:var(--text3);min-height:12px}
+.new-edit-detail-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px;border-top:0.5px solid var(--border)}
+.new-edit-detail-reason{flex:1;font-size:11px;color:var(--text2);font-style:italic;display:flex;align-items:center;gap:6px}
+.new-edit-detail-btns{display:flex;gap:6px;flex-shrink:0}
 .retail-reset{font-size:12px;line-height:1;padding:2px 5px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer}
 .retail-reset:hover{background:var(--bg3);color:var(--text2)}
 
@@ -2050,6 +2067,17 @@ let _newEditFilter = 'all';
 let _newEditPrevInv = null;
 function _newEditSetFilter(f){
   _newEditFilter = f;
+  // Clear expansion when changing filter — expanded row may not be in the
+  // new subset, so collapsing avoids the "expanded row is hidden" state.
+  _newEditExpandedItemKey = null;
+  if(typeof renderNewEditShell === 'function') renderNewEditShell();
+}
+
+// Phase A commit 8 — click-to-expand row state. One row expanded at a time;
+// click toggles. Cleared on INV identity change and on filter change.
+let _newEditExpandedItemKey = null;
+function _newEditToggleRow(key){
+  _newEditExpandedItemKey = (_newEditExpandedItemKey === key) ? null : key;
   if(typeof renderNewEditShell === 'function') renderNewEditShell();
 }
 
@@ -5128,10 +5156,14 @@ function renderNewEditShell(){
   // the log even if #db-extracting is still visible at this instant.
   const renderingLog = !populatedInv && isExtracting;
 
-  // Filter state reset on INV identity change (new invoice loaded, swap
-  // from history, fresh upload). Reference equality is enough because
-  // loadInvoice always assigns a fresh inv object.
-  if(INV !== _newEditPrevInv){ _newEditFilter = 'all'; _newEditPrevInv = INV; }
+  // Filter + expansion state reset on INV identity change (new invoice
+  // loaded, swap from history, fresh upload). Reference equality is enough
+  // because loadInvoice always assigns a fresh inv object.
+  if(INV !== _newEditPrevInv){
+    _newEditFilter = 'all';
+    _newEditExpandedItemKey = null;
+    _newEditPrevInv = INV;
+  }
 
   let itemsHtml = '';
   if(populatedInv){
@@ -5148,6 +5180,7 @@ function renderNewEditShell(){
         <button type="button" class="new-edit-pill safe${_newEditFilter==='safe'?' pill-active':''}" onclick="_newEditSetFilter('safe')">Safe <span class="pill-cnt">${safeCnt}</span></button>
         <button type="button" class="new-edit-pill review${_newEditFilter==='review'?' pill-active':''}" onclick="_newEditSetFilter('review')">Review <span class="pill-cnt">${reviewCnt}</span></button>
       </div>`;
+    const vk = normV(INV.vendor);
     const rows = filtered.map(item => {
       const conf = item._conf || 1;
       const dotColor = conf >= 0.7 ? '#10b981' : '#f59e0b';
@@ -5161,12 +5194,103 @@ function renderNewEditShell(){
         pillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px"><i class="ti ti-math-function"></i>Formula</span>`;
       }
       const qtyCost = `${item.qty} · $${(item.caseCost || 0).toFixed(2)}`;
-      return `<div class="new-edit-row">
+      const key = item.item || '';
+      const expanded = _newEditExpandedItemKey && key && _newEditExpandedItemKey === key;
+      const compactInner = `
           <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>
           <span class="new-edit-name">${esc(item.desc || '')}</span>
           <span class="new-edit-data">${esc(qtyCost)}</span>
           ${pillHtml}
-          <span class="new-edit-retail">$${retailVal.toFixed(2)}</span>
+          <span class="new-edit-retail">$${retailVal.toFixed(2)}</span>`;
+
+      if(!expanded){
+        return `<div class="new-edit-row" onclick="_newEditToggleRow('${escJs(key)}')">${compactInner}</div>`;
+      }
+
+      // Detail panel — read-only in this commit. Inputs are disabled,
+      // buttons render with the existing approve/reject styling but
+      // commit 9 wires the click handlers.
+      const ch = (typeof detectChange === 'function') ? detectChange(item, vk, INV.invoiceNo, INV.date) : {status:'no_history'};
+      const cu = unitCost(item);
+      const projMargin = retailVal > 0 ? ((retailVal - cu) / retailVal) * 100 : 0;
+      let curMargin = projMargin;
+      if(ch.status === 'increase' && ch.prev > 0){
+        const oldRetail = ch.prev * (1 + getTgt(item.cat)/100);
+        curMargin = oldRetail > 0 ? ((oldRetail - cu) / oldRetail) * 100 : 0;
+      }
+      let reason = 'Pricing optimal; margin within target range';
+      if(ch.status === 'increase' && Math.abs(ch.pct||0) > 2){
+        reason = `Cost increased ${(ch.pct||0).toFixed(1)}% from vendor; margin below target`;
+      } else if(ch.status === 'decrease' && Math.abs(ch.pct||0) > 2){
+        reason = `Cost decreased ${Math.abs(ch.pct||0).toFixed(1)}%; pass on benefit`;
+      } else if((item._conf || 1) < 0.7){
+        reason = 'Match confidence low; verify item details';
+      }
+      let caseAnno = '';
+      if(ch.prevCase && Math.abs(ch.prevCase - (item.caseCost||0)) > 0.005){
+        const arrow = (item.caseCost||0) > ch.prevCase ? '↑' : '↓';
+        caseAnno = `${arrow} from $${ch.prevCase.toFixed(2)}`;
+      }
+      const unitsPerCase = item._u || (typeof parseUnitsRobust === 'function' ? (parseUnitsRobust(item.size).u || 1) : 1);
+      const tagsParts = [];
+      if(item.item) tagsParts.push('Barcode ' + item.item);
+      if(item.cat) tagsParts.push((typeof CLABEL !== 'undefined' && CLABEL[item.cat]) ? CLABEL[item.cat] : item.cat);
+      const tagsHtml = tagsParts.length ? `<div class="new-edit-detail-tags">${esc(tagsParts.join(' · '))}</div>` : '';
+      let detailPillHtml = '';
+      if(resolved.source === 'memory'){
+        detailPillHtml = `<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 6px;align-self:flex-start"><i class="ti ti-refresh"></i>Memory</span>`;
+      } else if(resolved.source === 'calculated'){
+        detailPillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px;align-self:flex-start"><i class="ti ti-math-function"></i>Formula</span>`;
+      }
+
+      const detailHtml = `
+        <div class="new-edit-detail">
+          <div class="new-edit-detail-hd">${esc(item.desc || '')}</div>
+          ${tagsHtml}
+          <div class="new-edit-detail-grid">
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Qty</div>
+              <input class="new-edit-detail-input" type="number" value="${item.qty || 0}" disabled>
+              <div class="new-edit-detail-note"></div>
+            </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Units / case</div>
+              <input class="new-edit-detail-input" type="number" value="${unitsPerCase}" disabled>
+              <div class="new-edit-detail-note">${esc(item.size || '')}</div>
+            </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Case cost</div>
+              <input class="new-edit-detail-input" type="number" step="0.01" value="${(item.caseCost || 0).toFixed(2)}" disabled>
+              <div class="new-edit-detail-note">${esc(caseAnno)}</div>
+            </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Unit cost</div>
+              <input class="new-edit-detail-input" type="number" step="0.01" value="${cu.toFixed(2)}" disabled>
+              <div class="new-edit-detail-note"></div>
+            </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Suggested retail</div>
+              <input class="new-edit-detail-input" type="number" step="0.01" value="${retailVal.toFixed(2)}" disabled>
+              ${detailPillHtml || '<div class="new-edit-detail-note"></div>'}
+            </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Margin</div>
+              <input class="new-edit-detail-input" type="text" value="${curMargin.toFixed(1)}%" disabled>
+              <div class="new-edit-detail-note">→ ${projMargin.toFixed(1)}% projected</div>
+            </div>
+          </div>
+          <div class="new-edit-detail-foot">
+            <div class="new-edit-detail-reason"><i class="ti ti-info-circle" aria-hidden="true"></i>${esc(reason)}</div>
+            <div class="new-edit-detail-btns">
+              <button type="button" class="db-act-btn reject" disabled><i class="ti ti-x" aria-hidden="true"></i>Reject</button>
+              <button type="button" class="db-act-btn approve" disabled><i class="ti ti-check" aria-hidden="true"></i>Approve</button>
+            </div>
+          </div>
+        </div>`;
+
+      return `<div class="new-edit-row-wrap expanded">
+          <div class="new-edit-row expanded" onclick="_newEditToggleRow('${escJs(key)}')">${compactInner}</div>
+          ${detailHtml}
         </div>`;
     }).join('');
     const emptyMsg = `<div style="padding:32px 10px;text-align:center;color:var(--text3);font-size:13px">No items match this filter.</div>`;
