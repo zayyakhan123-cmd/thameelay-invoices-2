@@ -82,7 +82,7 @@ header{background:#fff;border-bottom:1px solid var(--border);height:64px;display
 
 /* ─── LAYOUT ───────────────────────────────────── */
 .layout{display:flex;min-height:calc(100vh - 64px)}
-.side{width:200px;flex-shrink:0;background:var(--sb);border-right:1px solid var(--sb2);padding:18px 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;display:flex;flex-direction:column}
+.side{width:240px;flex-shrink:0;background:var(--sb);border-right:1px solid var(--sb2);padding:18px 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;display:flex;flex-direction:column}
 .side::-webkit-scrollbar{width:4px}.side::-webkit-scrollbar-thumb{background:var(--sb3);border-radius:2px}
 .side-head{padding:0 22px 16px;border-bottom:1px solid var(--sb3);margin-bottom:14px}
 .side-brand{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.1}
@@ -225,6 +225,13 @@ tr:hover td{background:var(--bg3)}
 .retail-edit.edited ~ .retail-src-mem,
 .retail-edit.edited ~ .retail-src-fx{display:none}
 .retail-edit.edited ~ .retail-src-cust{display:inline-flex}
+/* Phase A commit 6 — compact line-item rows in the new editor's right pane */
+.new-edit-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:0.5px solid var(--border)}
+.new-edit-row:last-child{border-bottom:none}
+.new-edit-row:hover{background:var(--bg3)}
+.new-edit-name{flex:1;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.new-edit-data{font-size:11px;font-family:var(--font-mono);color:var(--text3);white-space:nowrap}
+.new-edit-retail{font-size:13px;font-weight:600;font-family:var(--font-mono);color:var(--text);min-width:60px;text-align:right}
 /* Phase A commit 7 — filter pills above the line-item list */
 .new-edit-pills{display:flex;gap:6px;padding:0 10px;margin-bottom:8px;flex-wrap:wrap}
 .new-edit-pill{border:none;border-radius:999px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:4px}
@@ -241,28 +248,10 @@ body.new-edit-fullpage #pg-dashboard .dash-upload-row,
 body.new-edit-fullpage #pg-dashboard .dash-bottom,
 body.new-edit-fullpage #pg-dashboard #batch-progress,
 body.new-edit-fullpage #pg-dashboard #batch-done{display:none !important}
-/* Phase A commit 9b — Involytics-style horizontal row layout. One item =
-   one tight strip with all fields inline, plus a thin reason line below. */
-.ne-item{padding:10px 8px;border-bottom:0.5px solid var(--border)}
-.ne-item:last-child{border-bottom:none}
-.ne-item:hover{background:var(--bg3)}
-.ne-row{display:flex;align-items:center;gap:14px}
-.ne-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.ne-name-col{flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px;overflow:hidden}
-.ne-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ne-tags{font-size:11px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ne-field{display:flex;flex-direction:column;gap:3px;flex-shrink:0;width:80px}
-.ne-field.retail{width:120px;align-items:stretch}
-.ne-field-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
-.ne-field input{font-family:var(--font-mono);font-size:12px;font-weight:600;text-align:right;padding:4px 7px;border:0.5px solid var(--border);border-radius:4px;background:#fff;width:100%;box-sizing:border-box}
-.ne-field input:disabled{color:var(--text2);cursor:not-allowed;background:var(--bg3)}
-.ne-field.retail > .retail-src{align-self:flex-end;margin-top:2px}
-.ne-margin{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:var(--font-mono)}
-.ne-margin-cur{font-size:13px;font-weight:600;color:var(--text)}
-.ne-margin-proj{font-size:10px;color:var(--text3)}
-.ne-btns{display:flex;gap:6px;flex-shrink:0;align-self:flex-end;padding-bottom:1px}
-.ne-reason{padding:6px 0 0 22px;font-size:11px;color:var(--text2);font-style:italic;display:flex;align-items:center;gap:6px}
-.ne-reason .ti{font-size:13px}
+/* Phase A commit 9 — every item card always-expanded; no click-to-expand. */
+.new-edit-row-wrap{background:#fff;border:0.5px solid var(--border);border-radius:8px;margin:6px 0;overflow:hidden}
+.new-edit-row-wrap > .new-edit-row{cursor:default;border-bottom:0.5px solid var(--border);background:transparent}
+.new-edit-row-wrap > .new-edit-row:hover{background:var(--bg3)}
 .new-edit-detail{padding:12px;display:flex;flex-direction:column;gap:10px}
 .new-edit-detail-hd{font-size:13px;color:var(--text)}
 .new-edit-detail-tags{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
@@ -5202,6 +5191,23 @@ function renderNewEditShell(){
       const resolved = resolveSuggestedRetail(item, INV.vendor);
       const apRetail = APPROVALS[item.item] && APPROVALS[item.item].retailPrice;
       const retailVal = (Number.isFinite(apRetail) && apRetail > 0) ? apRetail : (resolved.retail || 0);
+      let pillHtml = '';
+      if(resolved.source === 'memory'){
+        pillHtml = `<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 6px"><i class="ti ti-refresh"></i>Memory</span>`;
+      } else if(resolved.source === 'calculated'){
+        pillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px"><i class="ti ti-math-function"></i>Formula</span>`;
+      }
+      const qtyCost = `${item.qty} · $${(item.caseCost || 0).toFixed(2)}`;
+      const compactInner = `
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>
+          <span class="new-edit-name">${esc(item.desc || '')}</span>
+          <span class="new-edit-data">${esc(qtyCost)}</span>
+          ${pillHtml}
+          <span class="new-edit-retail">$${retailVal.toFixed(2)}</span>`;
+
+      // Phase A commit 9 — always render the detail panel (no
+      // click-to-expand). Inputs/buttons remain disabled; commit 10
+      // wires them.
       const ch = (typeof detectChange === 'function') ? detectChange(item, vk, INV.invoiceNo, INV.date) : {status:'no_history'};
       const cu = unitCost(item);
       const projMargin = retailVal > 0 ? ((retailVal - cu) / retailVal) * 100 : 0;
@@ -5218,66 +5224,73 @@ function renderNewEditShell(){
       } else if((item._conf || 1) < 0.7){
         reason = 'Match confidence low; verify item details';
       }
+      let caseAnno = '';
+      if(ch.prevCase && Math.abs(ch.prevCase - (item.caseCost||0)) > 0.005){
+        const arrow = (item.caseCost||0) > ch.prevCase ? '↑' : '↓';
+        caseAnno = `${arrow} from $${ch.prevCase.toFixed(2)}`;
+      }
       const unitsPerCase = item._u || (typeof parseUnitsRobust === 'function' ? (parseUnitsRobust(item.size).u || 1) : 1);
       const tagsParts = [];
       if(item.item) tagsParts.push('Barcode ' + item.item);
       if(item.cat) tagsParts.push((typeof CLABEL !== 'undefined' && CLABEL[item.cat]) ? CLABEL[item.cat] : item.cat);
-      const tagsHtml = tagsParts.length ? `<div class="ne-tags">${esc(tagsParts.join(' · '))}</div>` : '';
-
-      // Retail pills: render one source pill (Memory OR Formula) based on
-      // resolved.source, plus the Custom pill which is hidden by default
-      // via the existing CSS rule .retail-src-cust{display:none}. When
-      // commit 10 wires editing, .retail-edit gets the `.edited` class
-      // and the sibling combinator (.retail-edit.edited ~ .retail-src-X)
-      // hides mem/fx and shows cust. Pills MUST be DOM siblings of the
-      // .retail-edit input — critical for that combinator to work.
-      let srcPill = '';
+      const tagsHtml = tagsParts.length ? `<div class="new-edit-detail-tags">${esc(tagsParts.join(' · '))}</div>` : '';
+      let detailPillHtml = '';
       if(resolved.source === 'memory'){
-        srcPill = `<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 6px"><i class="ti ti-refresh"></i>Memory</span>`;
+        detailPillHtml = `<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 6px;align-self:flex-start"><i class="ti ti-refresh"></i>Memory</span>`;
       } else if(resolved.source === 'calculated'){
-        srcPill = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px"><i class="ti ti-math-function"></i>Formula</span>`;
+        detailPillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px;align-self:flex-start"><i class="ti ti-math-function"></i>Formula</span>`;
       }
-      const custPill = `<span class="retail-src retail-src-cust" style="font-size:10px;padding:1px 6px"><i class="ti ti-pencil"></i>Custom</span>`;
 
-      const reasonHtml = reason
-        ? `<div class="ne-reason"><i class="ti ti-info-circle" aria-hidden="true"></i>${esc(reason)}</div>`
-        : '';
-
-      const projHtml = Math.abs(curMargin - projMargin) > 0.05
-        ? `<span class="ne-margin-proj">→ ${projMargin.toFixed(1)}%</span>`
-        : '';
-
-      return `<div class="ne-item">
-          <div class="ne-row">
-            <span class="ne-dot" style="background:${dotColor}"></span>
-            <div class="ne-name-col">
-              <div class="ne-name">${esc(item.desc || '')}</div>
-              ${tagsHtml}
+      // Detail header sub-row omitted by design — the matched name is
+      // already shown in the compact summary directly above; restating it
+      // would be redundant. Detail starts with tags (Barcode · category).
+      const detailHtml = `
+        <div class="new-edit-detail">
+          ${tagsHtml}
+          <div class="new-edit-detail-grid">
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Qty</div>
+              <input class="new-edit-detail-input" type="number" value="${item.qty || 0}" disabled>
+              <div class="new-edit-detail-note"></div>
             </div>
-            <div class="ne-field"><div class="ne-field-lbl">Qty</div>
-              <input type="number" value="${item.qty || 0}" disabled></div>
-            <div class="ne-field"><div class="ne-field-lbl">U / Case</div>
-              <input type="number" value="${unitsPerCase}" disabled></div>
-            <div class="ne-field"><div class="ne-field-lbl">Case $</div>
-              <input type="number" step="0.01" value="${(item.caseCost || 0).toFixed(2)}" disabled></div>
-            <div class="ne-field"><div class="ne-field-lbl">Unit $</div>
-              <input type="number" step="0.01" value="${cu.toFixed(2)}" disabled></div>
-            <div class="ne-field retail"><div class="ne-field-lbl">Retail</div>
-              <input class="retail-edit" type="number" step="0.01" value="${retailVal.toFixed(2)}" disabled>
-              ${srcPill}${custPill}
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Units / case</div>
+              <input class="new-edit-detail-input" type="number" value="${unitsPerCase}" disabled>
+              <div class="new-edit-detail-note">${esc(item.size || '')}</div>
             </div>
-            <div class="ne-field" style="width:auto;align-items:flex-end"><div class="ne-field-lbl">Margin</div>
-              <div class="ne-margin">
-                <span class="ne-margin-cur">${curMargin.toFixed(1)}%</span>
-                ${projHtml}
-              </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Case cost</div>
+              <input class="new-edit-detail-input" type="number" step="0.01" value="${(item.caseCost || 0).toFixed(2)}" disabled>
+              <div class="new-edit-detail-note">${esc(caseAnno)}</div>
             </div>
-            <div class="ne-btns">
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Unit cost</div>
+              <input class="new-edit-detail-input" type="number" step="0.01" value="${cu.toFixed(2)}" disabled>
+              <div class="new-edit-detail-note"></div>
+            </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Suggested retail</div>
+              <input class="new-edit-detail-input" type="number" step="0.01" value="${retailVal.toFixed(2)}" disabled>
+              ${detailPillHtml || '<div class="new-edit-detail-note"></div>'}
+            </div>
+            <div class="new-edit-detail-cell">
+              <div class="new-edit-detail-lbl">Margin</div>
+              <input class="new-edit-detail-input" type="text" value="${curMargin.toFixed(1)}%" disabled>
+              <div class="new-edit-detail-note">→ ${projMargin.toFixed(1)}% projected</div>
+            </div>
+          </div>
+          <div class="new-edit-detail-foot">
+            <div class="new-edit-detail-reason"><i class="ti ti-info-circle" aria-hidden="true"></i>${esc(reason)}</div>
+            <div class="new-edit-detail-btns">
               <button type="button" class="db-act-btn reject" disabled><i class="ti ti-x" aria-hidden="true"></i>Reject</button>
               <button type="button" class="db-act-btn approve" disabled><i class="ti ti-check" aria-hidden="true"></i>Approve</button>
             </div>
           </div>
-          ${reasonHtml}
+        </div>`;
+
+      return `<div class="new-edit-row-wrap">
+          <div class="new-edit-row">${compactInner}</div>
+          ${detailHtml}
         </div>`;
     }).join('');
     const emptyMsg = `<div style="padding:32px 10px;text-align:center;color:var(--text3);font-size:13px">No items match this filter.</div>`;
