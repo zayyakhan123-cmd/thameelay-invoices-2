@@ -2022,6 +2022,12 @@ const CLOUD_ENABLED = SUPABASE_URL && !SUPABASE_URL.startsWith('__');
 // the existing approval table. URL-only; not persisted.
 const NEW_EDIT_FLAG = new URLSearchParams(location.search).get('newedit') === '1';
 
+// Phase A commit 5 — extraction log state. MutationObserver watches the
+// existing `.up-step` class transitions inside #db-extracting and appends
+// log entries. Cleared between extractions to avoid stale duplicates.
+let _newEditObserver = null;
+let _newEditLoggedSteps = new Set();
+
 let _supabase = null;
 let _USER = null;
 let _CLOUD_READY = false;       // true once init has completed
@@ -4964,18 +4970,106 @@ function renderDashboard(){
 // dbSearchDebounced, paging) hit the existing `if(!tbody) return;` guard
 // and become no-ops. No call-site rewrites needed; renderDashboardTable
 // itself is untouched.
+// Phase A commit 5 helpers — passive readers of the existing #db-extracting
+// progress UI. They never modify .up-step elements; only subscribe.
+function _newEditExtractionRunning(){
+  const box = document.getElementById('db-extracting');
+  if(!box) return false;
+  const disp = box.style.display || (window.getComputedStyle ? getComputedStyle(box).display : '');
+  return !!disp && disp !== 'none';
+}
+function _newEditStepLabel(step){
+  return ({reading:'Reading file', extracting:'AI extracting line items',
+    parsing:'Parsing response', classifying:'Matching to price history'})[step] || step;
+}
+function _newEditAppendLog(line){
+  const pane = document.getElementById('newedit-log');
+  if(!pane) return;
+  const t = new Date().toTimeString().slice(0,8);
+  const row = document.createElement('div');
+  row.innerHTML = `<span style="color:#22C55E">$</span> <span style="color:#94A3B8">${t}</span> → ${esc(line)}`;
+  pane.appendChild(row);
+  pane.scrollTop = pane.scrollHeight;
+  // Update the thin progress bar from current .done count (out of 4 steps).
+  const bar = document.getElementById('newedit-progress');
+  if(bar){
+    const done = document.querySelectorAll('#db-extracting .up-step.done').length;
+    bar.style.width = ((done / 4) * 100) + '%';
+  }
+}
+function _newEditCatchUpLog(){
+  // Replay any active/done .up-step transitions that already happened before
+  // the observer attached (e.g. user navigated to the editor mid-extraction).
+  document.querySelectorAll('#db-extracting .up-step').forEach(step => {
+    const s = step.getAttribute('data-step'); if(!s) return;
+    if(step.classList.contains('active') && !_newEditLoggedSteps.has(s+':active')){
+      _newEditLoggedSteps.add(s+':active');
+      _newEditAppendLog('Starting: ' + _newEditStepLabel(s));
+    }
+    if(step.classList.contains('done') && !_newEditLoggedSteps.has(s+':done')){
+      _newEditLoggedSteps.add(s+':done');
+      _newEditAppendLog('Completed: ' + _newEditStepLabel(s));
+    }
+  });
+}
+function _newEditStartObserver(){
+  if(_newEditObserver) return;
+  const box = document.getElementById('db-extracting');
+  if(!box) return;
+  _newEditObserver = new MutationObserver(muts => {
+    let classifyingDone = false;
+    for(const m of muts){
+      const t = m.target;
+      if(!(t instanceof Element) || !t.classList || !t.classList.contains('up-step')) continue;
+      const s = t.getAttribute('data-step'); if(!s) continue;
+      if(t.classList.contains('active') && !_newEditLoggedSteps.has(s+':active')){
+        _newEditLoggedSteps.add(s+':active');
+        _newEditAppendLog('Starting: ' + _newEditStepLabel(s));
+      }
+      if(t.classList.contains('done') && !_newEditLoggedSteps.has(s+':done')){
+        _newEditLoggedSteps.add(s+':done');
+        _newEditAppendLog('Completed: ' + _newEditStepLabel(s));
+        if(s === 'classifying') classifyingDone = true;
+      }
+    }
+    if(classifyingDone){
+      // INV.items should have populated by now via loadInvoice. Re-render to
+      // swap log → placeholder. Belt-and-suspenders: loadInvoice's own
+      // renderDashboard call usually beats us here, in which case this
+      // is a harmless idempotent re-render.
+      setTimeout(() => { if(typeof renderNewEditShell === 'function') renderNewEditShell(); }, 600);
+    }
+  });
+  _newEditObserver.observe(box, {subtree:true, attributes:true, attributeFilter:['class']});
+}
+function _newEditStopObserver(){
+  if(_newEditObserver){ _newEditObserver.disconnect(); _newEditObserver = null; }
+  _newEditLoggedSteps = new Set();
+}
+
 function renderNewEditShell(){
   const tw = document.querySelector('.dash-row-full .card .tw');
   if(!tw) return;
 
   const hasInv = !!(INV && INV.items);
+  const populatedInv = hasInv && INV.items.length > 0;
+  // DOM-derived extraction state. Note: the original commit-5 spec said
+  // "INV truthy AND items empty" — that condition never fires in practice
+  // because INV is null until loadInvoice runs AFTER extraction. Reading
+  // #db-extracting visibility instead matches the actual extraction
+  // lifecycle and the smoke test's described behavior.
+  const isExtracting = _newEditExtractionRunning();
+  const shouldRender = hasInv || isExtracting;
+
   const safeCount = hasInv
     ? INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0 && (i._conf || 1) >= 0.7).length
     : 0;
 
   const leftHtml = hasInv
     ? `<span style="font-weight:500;color:var(--text)">${esc(INV.vendor || '')}</span><span style="color:var(--text3)">·</span><span style="color:var(--text2)">${esc(INV.date || '')}</span>`
-    : `<span style="color:var(--text3)">No invoice loaded</span>`;
+    : (isExtracting
+        ? `<span style="color:var(--text2)">Extracting invoice…</span>`
+        : `<span style="color:var(--text3)">No invoice loaded</span>`);
 
   const rightHtml = hasInv
     ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button><button type="button" class="db-bulk-btn primary"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button>`
@@ -4990,24 +5084,37 @@ function renderNewEditShell(){
           <embed src="${pdfUrl}" type="application/pdf" style="width:100%;height:500px;display:block;border:0">
         </div>`
     : (() => {
-        const label = isImage ? 'Image preview coming later' : 'PDF preview not available';
-        const sub = isImage ? '' : `<div style="font-size:12px;color:var(--text3)">Source PDF wasn't retained for this invoice.</div>`;
-        return `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:400px">
+        const label = isImage ? 'Image preview coming later'
+          : (hasInv ? 'PDF preview not available' : 'PDF will appear after extraction');
+        const sub = (isImage || !hasInv) ? ''
+          : `<div style="font-size:12px;color:var(--text3)">Source PDF wasn't retained for this invoice.</div>`;
+        return `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:500px">
           <i class="ti ti-file-text" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
           <div style="font-weight:500;color:var(--text);font-size:13px">${label}</div>
           ${sub}
         </div>`;
       })();
 
-  const panesHtml = hasInv ? `
-      <div style="height:1px;background:var(--border);margin:12px 0"></div>
-      <div style="display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2fr);gap:12px;min-height:400px">
-        ${leftPaneHtml}
-        <div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px">
-          <i class="ti ti-list" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
-          <div style="font-weight:500;color:var(--text);font-size:13px">Line items</div>
-          <div style="font-size:12px;color:var(--text3)">Coming in commits 5–7</div>
+  const rightPaneHtml = isExtracting
+    ? `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;min-height:500px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-weight:500;color:var(--text);font-size:13px">Processing invoice</div>
+        <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(document.getElementById('db-up-name')?.textContent || '')}</div>
+        <div style="height:2px;background:var(--bg3);border-radius:1px;overflow:hidden">
+          <div id="newedit-progress" style="height:100%;width:0%;background:var(--green);transition:width .3s ease"></div>
         </div>
+        <pre id="newedit-log" style="margin:8px 0 0;flex:1;background:#0F172A;color:#E2E8F0;font-family:var(--font-mono);font-size:11px;padding:12px;border-radius:6px;min-height:320px;overflow-y:auto;white-space:pre-wrap"></pre>
+      </div>`
+    : `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:500px">
+        <i class="ti ti-list" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
+        <div style="font-weight:500;color:var(--text);font-size:13px">Line items</div>
+        <div style="font-size:12px;color:var(--text3)">Coming in commits 6–8</div>
+      </div>`;
+
+  const panesHtml = shouldRender ? `
+      <div style="height:1px;background:var(--border);margin:12px 0"></div>
+      <div style="display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2fr);gap:12px;min-height:500px">
+        ${leftPaneHtml}
+        ${rightPaneHtml}
       </div>` : '';
 
   tw.innerHTML = `
@@ -5017,6 +5124,16 @@ function renderNewEditShell(){
         <div style="display:flex;gap:6px">${rightHtml}</div>
       </div>${panesHtml}
     </div>`;
+
+  // Observer lifecycle is driven by render state: start when the log pane
+  // is on screen, stop when it isn't. catch-up replays already-transitioned
+  // steps if the user navigated to the editor mid-extraction.
+  if(isExtracting){
+    _newEditStartObserver();
+    _newEditCatchUpLog();
+  } else {
+    _newEditStopObserver();
+  }
 }
 
 // 1. SUMMARY BANNER
