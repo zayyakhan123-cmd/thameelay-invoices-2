@@ -4915,7 +4915,7 @@ const DB_PAGE_SIZE = 8;
 
 function renderDashboard(){
   renderSummaryBanner();
-  if(NEW_EDIT_FLAG) renderNewEditTopBar();
+  if(NEW_EDIT_FLAG) renderNewEditShell();
   else renderDashboardTable();
   renderDashboardAlerts();
   renderDashboardVendors();
@@ -4925,15 +4925,20 @@ function renderDashboard(){
   updateDataFreshness();
 }
 
-// Phase A scaffold — top bar inside the .tw (table wrapper) of the Price
-// Approvals card. Vendor + date on the left, "Add item" + "Approve all
-// safe (N)" buttons on the right. Buttons are static in this commit;
-// click wiring lands in a later commit. Replacing .tw contents also
-// removes the #db-approval-body tbody from the DOM, so other callers of
-// renderDashboardTable (setAp, bulkApprove, dbSearchDebounced, paging)
-// hit the existing `if(!tbody) return;` guard and become no-ops. No
-// call-site rewrites needed; renderDashboardTable itself is untouched.
-function renderNewEditTopBar(){
+// Phase A scaffold — outer shell inside the .tw (table wrapper) of the
+// Price Approvals card. Top bar (vendor + date + buttons) with a divider
+// and a two-pane grid below for the eventual PDF preview (left) and line
+// items (right). Both panes are placeholders in this commit; content
+// renderers land in subsequent commits. When no invoice is loaded, only
+// the "No invoice loaded" hint renders — no divider, no panes, no
+// buttons.
+//
+// Replacing .tw contents also removes the #db-approval-body tbody from
+// the DOM, so other callers of renderDashboardTable (setAp, bulkApprove,
+// dbSearchDebounced, paging) hit the existing `if(!tbody) return;` guard
+// and become no-ops. No call-site rewrites needed; renderDashboardTable
+// itself is untouched.
+function renderNewEditShell(){
   const tw = document.querySelector('.dash-row-full .card .tw');
   if(!tw) return;
 
@@ -4950,10 +4955,27 @@ function renderNewEditTopBar(){
     ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button><button type="button" class="db-bulk-btn primary"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button>`
     : '';
 
+  const panesHtml = hasInv ? `
+      <div style="height:1px;background:var(--border);margin:12px 0"></div>
+      <div style="display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2fr);gap:12px;min-height:400px">
+        <div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px">
+          <i class="ti ti-file-text" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
+          <div style="font-weight:500;color:var(--text);font-size:13px">PDF preview</div>
+          <div style="font-size:12px;color:var(--text3)">Coming in commit 4</div>
+        </div>
+        <div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px">
+          <i class="ti ti-list" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
+          <div style="font-weight:500;color:var(--text);font-size:13px">Line items</div>
+          <div style="font-size:12px;color:var(--text3)">Coming in commits 5–7</div>
+        </div>
+      </div>` : '';
+
   tw.innerHTML = `
-    <div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
-      <div style="display:flex;align-items:center;gap:8px;font-size:13px">${leftHtml}</div>
-      <div style="display:flex;gap:6px">${rightHtml}</div>
+    <div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:12px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px">${leftHtml}</div>
+        <div style="display:flex;gap:6px">${rightHtml}</div>
+      </div>${panesHtml}
     </div>`;
 }
 
