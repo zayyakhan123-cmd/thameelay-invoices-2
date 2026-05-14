@@ -2016,6 +2016,12 @@ const SUPABASE_URL      = 'https://fslrqqaplwfyqemdumfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
 const CLOUD_ENABLED = SUPABASE_URL && !SUPABASE_URL.startsWith('__');
 
+// ═══════════ FEATURE FLAGS ═══════════
+// ?newedit=1 — Phase A side-by-side invoice editor scaffold. When on, the
+// Price Approvals card on the dashboard renders a placeholder instead of
+// the existing approval table. URL-only; not persisted.
+const NEW_EDIT_FLAG = new URLSearchParams(location.search).get('newedit') === '1';
+
 let _supabase = null;
 let _USER = null;
 let _CLOUD_READY = false;       // true once init has completed
@@ -4909,13 +4915,30 @@ const DB_PAGE_SIZE = 8;
 
 function renderDashboard(){
   renderSummaryBanner();
-  renderDashboardTable();
+  if(NEW_EDIT_FLAG) renderNewEditPlaceholder();
+  else renderDashboardTable();
   renderDashboardAlerts();
   renderDashboardVendors();
   renderDashboardChart();
   renderDashboardQueue();
   updateNavCounts();
   updateDataFreshness();
+}
+
+// Phase A scaffold — replaces the .tw (table wrapper) inner contents with
+// a placeholder card. After this runs, the #db-approval-body tbody is no
+// longer in the DOM, so subsequent calls to renderDashboardTable from
+// elsewhere (setAp, bulkApprove, dbSearchDebounced, paging) hit its
+// `if(!tbody) return;` guard and are silent no-ops. No call-site rewrites
+// needed. renderDashboardTable itself is untouched.
+function renderNewEditPlaceholder(){
+  const tw = document.querySelector('.dash-row-full .card .tw');
+  if(!tw) return;
+  tw.innerHTML = `
+    <div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:2rem;text-align:center;max-width:560px;margin:32px auto">
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">New invoice editor — Phase A scaffold</div>
+      <div style="font-size:13px;color:var(--text2)">Remove <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:12px;font-family:var(--font-mono)">?newedit=1</code> from the URL to use the current editor.</div>
+    </div>`;
 }
 
 // 1. SUMMARY BANNER
