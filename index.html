@@ -232,6 +232,15 @@ tr:hover td{background:var(--bg3)}
 .new-edit-name{flex:1;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .new-edit-data{font-size:11px;font-family:var(--font-mono);color:var(--text3);white-space:nowrap}
 .new-edit-retail{font-size:13px;font-weight:600;font-family:var(--font-mono);color:var(--text);min-width:60px;text-align:right}
+/* Phase A commit 7 — filter pills above the line-item list */
+.new-edit-pills{display:flex;gap:6px;padding:0 10px;margin-bottom:8px;flex-wrap:wrap}
+.new-edit-pill{border:none;border-radius:999px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:4px}
+.new-edit-pill.safe{background:rgba(16,185,129,0.12);color:#047857}
+.new-edit-pill.review{background:rgba(245,158,11,0.12);color:#b45309}
+.new-edit-pill.pill-active{background:var(--text);color:#fff}
+.new-edit-pill.safe.pill-active{background:var(--green);color:#fff}
+.new-edit-pill.review.pill-active{background:#f59e0b;color:#fff}
+.new-edit-pill .pill-cnt{opacity:0.8;font-weight:600}
 .retail-reset{font-size:12px;line-height:1;padding:2px 5px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer}
 .retail-reset:hover{background:var(--bg3);color:var(--text2)}
 
@@ -2034,6 +2043,15 @@ const NEW_EDIT_FLAG = new URLSearchParams(location.search).get('newedit') === '1
 // log entries. Cleared between extractions to avoid stale duplicates.
 let _newEditObserver = null;
 let _newEditLoggedSteps = new Set();
+
+// Phase A commit 7 — line-items filter pill state. Reset to 'all' when INV
+// identity changes (new invoice loaded). Single-select, in-memory only.
+let _newEditFilter = 'all';
+let _newEditPrevInv = null;
+function _newEditSetFilter(f){
+  _newEditFilter = f;
+  if(typeof renderNewEditShell === 'function') renderNewEditShell();
+}
 
 let _supabase = null;
 let _USER = null;
@@ -5110,10 +5128,27 @@ function renderNewEditShell(){
   // the log even if #db-extracting is still visible at this instant.
   const renderingLog = !populatedInv && isExtracting;
 
+  // Filter state reset on INV identity change (new invoice loaded, swap
+  // from history, fresh upload). Reference equality is enough because
+  // loadInvoice always assigns a fresh inv object.
+  if(INV !== _newEditPrevInv){ _newEditFilter = 'all'; _newEditPrevInv = INV; }
+
   let itemsHtml = '';
   if(populatedInv){
     const purch = INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0);
-    const rows = purch.map(item => {
+    const safeCnt = purch.filter(i => (i._conf || 1) >= 0.7).length;
+    const reviewCnt = purch.length - safeCnt;
+    const filtered = _newEditFilter === 'safe'
+      ? purch.filter(i => (i._conf || 1) >= 0.7)
+      : _newEditFilter === 'review'
+        ? purch.filter(i => (i._conf || 1) < 0.7)
+        : purch;
+    const pillsHtml = `<div class="new-edit-pills">
+        <button type="button" class="new-edit-pill${_newEditFilter==='all'?' pill-active':''}" onclick="_newEditSetFilter('all')">All <span class="pill-cnt">${purch.length}</span></button>
+        <button type="button" class="new-edit-pill safe${_newEditFilter==='safe'?' pill-active':''}" onclick="_newEditSetFilter('safe')">Safe <span class="pill-cnt">${safeCnt}</span></button>
+        <button type="button" class="new-edit-pill review${_newEditFilter==='review'?' pill-active':''}" onclick="_newEditSetFilter('review')">Review <span class="pill-cnt">${reviewCnt}</span></button>
+      </div>`;
+    const rows = filtered.map(item => {
       const conf = item._conf || 1;
       const dotColor = conf >= 0.7 ? '#10b981' : '#f59e0b';
       const resolved = resolveSuggestedRetail(item, INV.vendor);
@@ -5134,9 +5169,10 @@ function renderNewEditShell(){
           <span class="new-edit-retail">$${retailVal.toFixed(2)}</span>
         </div>`;
     }).join('');
+    const emptyMsg = `<div style="padding:32px 10px;text-align:center;color:var(--text3);font-size:13px">No items match this filter.</div>`;
     itemsHtml = `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:12px;min-height:500px;max-height:500px;overflow-y:auto">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;padding:0 10px">Items (${purch.length})</div>
-        ${rows}
+        ${pillsHtml}
+        ${filtered.length ? rows : emptyMsg}
       </div>`;
   }
 
