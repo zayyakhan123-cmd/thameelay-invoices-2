@@ -2056,10 +2056,21 @@ const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
 const CLOUD_ENABLED = SUPABASE_URL && !SUPABASE_URL.startsWith('__');
 
 // ═══════════ FEATURE FLAGS ═══════════
-// ?newedit=1 — Phase A side-by-side invoice editor scaffold. When on, the
-// Price Approvals card on the dashboard renders a placeholder instead of
-// the existing approval table. URL-only; not persisted.
-const NEW_EDIT_FLAG = new URLSearchParams(location.search).get('newedit') === '1';
+// Phase A side-by-side invoice editor.
+//   ?newedit=1 forces on, ?newedit=0 forces off (escape hatch — always wins
+//   over UUID default, so Zay can pop back to the old table if anything
+//   misbehaves). Otherwise defaults to on for Zay's UUID, off for everyone
+//   else. `_USER` is null until cloudInit resolves; isNewEditActive returns
+//   false during that window, which is the safe fallback — renderDashboard
+//   runs again after auth completes (cloudInit + onAuthStateChange) and the
+//   helper then picks up the UUID match.
+const ZAY_UUID = '88b1cebf-d594-46b0-875d-4ea3f50daafc';
+function isNewEditActive(){
+  const p = new URLSearchParams(location.search).get('newedit');
+  if(p === '0') return false;
+  if(p === '1') return true;
+  return _USER?.id === ZAY_UUID;
+}
 
 // Phase A commit 5 — extraction log state. MutationObserver watches the
 // existing `.up-step` class transitions inside #db-extracting and appends
@@ -4998,7 +5009,7 @@ const DB_PAGE_SIZE = 8;
 
 function renderDashboard(){
   renderSummaryBanner();
-  if(NEW_EDIT_FLAG) renderNewEditShell();
+  if(isNewEditActive()) renderNewEditShell();
   else renderDashboardTable();
   renderDashboardAlerts();
   renderDashboardVendors();
@@ -5166,7 +5177,7 @@ function renderNewEditShell(){
   // flag is on AND an invoice with items is loaded. Anything else (flag
   // off, no INV, INV with empty items) leaves the Dashboard normal.
   const _populated = !!(INV && INV.items && INV.items.length > 0);
-  if(NEW_EDIT_FLAG && _populated) document.body.classList.add('new-edit-fullpage');
+  if(isNewEditActive() && _populated) document.body.classList.add('new-edit-fullpage');
   else document.body.classList.remove('new-edit-fullpage');
 
   let itemsHtml = '';
