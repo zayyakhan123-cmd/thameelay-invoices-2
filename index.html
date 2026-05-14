@@ -4915,7 +4915,7 @@ const DB_PAGE_SIZE = 8;
 
 function renderDashboard(){
   renderSummaryBanner();
-  if(NEW_EDIT_FLAG) renderNewEditPlaceholder();
+  if(NEW_EDIT_FLAG) renderNewEditTopBar();
   else renderDashboardTable();
   renderDashboardAlerts();
   renderDashboardVendors();
@@ -4925,19 +4925,35 @@ function renderDashboard(){
   updateDataFreshness();
 }
 
-// Phase A scaffold — replaces the .tw (table wrapper) inner contents with
-// a placeholder card. After this runs, the #db-approval-body tbody is no
-// longer in the DOM, so subsequent calls to renderDashboardTable from
-// elsewhere (setAp, bulkApprove, dbSearchDebounced, paging) hit its
-// `if(!tbody) return;` guard and are silent no-ops. No call-site rewrites
-// needed. renderDashboardTable itself is untouched.
-function renderNewEditPlaceholder(){
+// Phase A scaffold — top bar inside the .tw (table wrapper) of the Price
+// Approvals card. Vendor + date on the left, "Add item" + "Approve all
+// safe (N)" buttons on the right. Buttons are static in this commit;
+// click wiring lands in a later commit. Replacing .tw contents also
+// removes the #db-approval-body tbody from the DOM, so other callers of
+// renderDashboardTable (setAp, bulkApprove, dbSearchDebounced, paging)
+// hit the existing `if(!tbody) return;` guard and become no-ops. No
+// call-site rewrites needed; renderDashboardTable itself is untouched.
+function renderNewEditTopBar(){
   const tw = document.querySelector('.dash-row-full .card .tw');
   if(!tw) return;
+
+  const hasInv = !!(INV && INV.items);
+  const safeCount = hasInv
+    ? INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0 && (i._conf || 1) >= 0.7).length
+    : 0;
+
+  const leftHtml = hasInv
+    ? `<span style="font-weight:500;color:var(--text)">${esc(INV.vendor || '')}</span><span style="color:var(--text3)">·</span><span style="color:var(--text2)">${esc(INV.date || '')}</span>`
+    : `<span style="color:var(--text3)">No invoice loaded</span>`;
+
+  const rightHtml = hasInv
+    ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button><button type="button" class="db-bulk-btn primary"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button>`
+    : '';
+
   tw.innerHTML = `
-    <div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:2rem;text-align:center;max-width:560px;margin:32px auto">
-      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">New invoice editor — Phase A scaffold</div>
-      <div style="font-size:13px;color:var(--text2)">Remove <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:12px;font-family:var(--font-mono)">?newedit=1</code> from the URL to use the current editor.</div>
+    <div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px">${leftHtml}</div>
+      <div style="display:flex;gap:6px">${rightHtml}</div>
     </div>`;
 }
 
