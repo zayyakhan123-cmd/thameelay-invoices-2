@@ -2627,12 +2627,36 @@ function processFileList(files){
   if(files.length===1) processSingleFile(files[0]); else addToQueue(files);
 }
 
+// Phase A — read the uploaded file as a data URL for the new-editor PDF
+// preview pane. Returns null on error (caller treats missing as fallback).
+function readFileAsDataUrl(file){
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = () => resolve(typeof r.result === 'string' ? r.result : null);
+    r.onerror = () => resolve(null);
+    r.readAsDataURL(file);
+  });
+}
+
+// Attach the data URL as a NON-ENUMERABLE property. The field survives on
+// the live inv object (renderNewEditShell reads it), but JSON.stringify and
+// `{...inv}` spreads in save paths (history, cloud sync) silently skip it.
+// That keeps multi-MB base64 strings out of localStorage and Supabase
+// without touching every save call site. Per-session only by design.
+function attachPdfDataUrl(inv, dataUrl){
+  if(!inv || !dataUrl) return;
+  Object.defineProperty(inv, 'pdfDataUrl', {
+    value: dataUrl, enumerable: false, writable: true, configurable: true
+  });
+}
+
 async function processSingleFile(file){
   show('dz-wrap',false);
   startUploadProgress(file);
+  const pdfPromise = readFileAsDataUrl(file); // run in parallel with extraction
   try{
     const inv=await extractInvoice(file, setUploadStep);
-    if(inv) inv._uploadedAs = file.name;
+    if(inv){ inv._uploadedAs = file.name; attachPdfDataUrl(inv, await pdfPromise); }
     setUploadStep('classifying');
     await new Promise(r=>setTimeout(r,200));
     finishUploadProgress(true);
@@ -2714,8 +2738,10 @@ async function processQueue(){
     document.getElementById('bp-status').textContent=FILE_QUEUE[i].name;
     addLog(`[${i+1}/${total}] Extracting ${FILE_QUEUE[i].name}...`);
     try{
+      const pdfPromise = readFileAsDataUrl(FILE_QUEUE[i].file);
       const inv=await extractInvoice(FILE_QUEUE[i].file);
       inv._uploadedAs = FILE_QUEUE[i].name;
+      attachPdfDataUrl(inv, await pdfPromise);
       classifyInvoice(inv);
       FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=inv;
       const {saved,skipped}=saveInvoiceToDB(inv);
@@ -4955,14 +4981,28 @@ function renderNewEditShell(){
     ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button><button type="button" class="db-bulk-btn primary"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button>`
     : '';
 
+  const pdfUrl = (hasInv && INV.pdfDataUrl) ? INV.pdfDataUrl : '';
+  const isPdf = pdfUrl.startsWith('data:application/pdf');
+  const isImage = pdfUrl.startsWith('data:image/');
+
+  const leftPaneHtml = isPdf
+    ? `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;overflow:hidden;min-height:500px">
+          <embed src="${pdfUrl}" type="application/pdf" style="width:100%;height:500px;display:block;border:0">
+        </div>`
+    : (() => {
+        const label = isImage ? 'Image preview coming later' : 'PDF preview not available';
+        const sub = isImage ? '' : `<div style="font-size:12px;color:var(--text3)">Source PDF wasn't retained for this invoice.</div>`;
+        return `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:400px">
+          <i class="ti ti-file-text" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
+          <div style="font-weight:500;color:var(--text);font-size:13px">${label}</div>
+          ${sub}
+        </div>`;
+      })();
+
   const panesHtml = hasInv ? `
       <div style="height:1px;background:var(--border);margin:12px 0"></div>
       <div style="display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2fr);gap:12px;min-height:400px">
-        <div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px">
-          <i class="ti ti-file-text" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
-          <div style="font-weight:500;color:var(--text);font-size:13px">PDF preview</div>
-          <div style="font-size:12px;color:var(--text3)">Coming in commit 4</div>
-        </div>
+        ${leftPaneHtml}
         <div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px">
           <i class="ti ti-list" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
           <div style="font-weight:500;color:var(--text);font-size:13px">Line items</div>
