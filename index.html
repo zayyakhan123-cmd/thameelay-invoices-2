@@ -241,11 +241,17 @@ tr:hover td{background:var(--bg3)}
 .new-edit-pill.safe.pill-active{background:var(--green);color:#fff}
 .new-edit-pill.review.pill-active{background:#f59e0b;color:#fff}
 .new-edit-pill .pill-cnt{opacity:0.8;font-weight:600}
-/* Phase A commit 8 — click-to-expand row detail */
-.new-edit-row{cursor:pointer}
-.new-edit-row-wrap.expanded{background:var(--bg3);border:1px solid var(--c1);border-radius:6px;margin:4px 0}
-.new-edit-row-wrap.expanded > .new-edit-row{border-bottom:0.5px solid var(--border);background:transparent}
-.new-edit-row-wrap.expanded > .new-edit-row:hover{background:transparent}
+/* Phase A commit 9 — full-page mode. Hides everything on the Dashboard
+   except the Price Approvals card while the editor is active. */
+body.new-edit-fullpage #pg-dashboard .banner,
+body.new-edit-fullpage #pg-dashboard .dash-upload-row,
+body.new-edit-fullpage #pg-dashboard .dash-bottom,
+body.new-edit-fullpage #pg-dashboard #batch-progress,
+body.new-edit-fullpage #pg-dashboard #batch-done{display:none !important}
+/* Phase A commit 9 — every item card always-expanded; no click-to-expand. */
+.new-edit-row-wrap{background:#fff;border:0.5px solid var(--border);border-radius:8px;margin:6px 0;overflow:hidden}
+.new-edit-row-wrap > .new-edit-row{cursor:default;border-bottom:0.5px solid var(--border);background:transparent}
+.new-edit-row-wrap > .new-edit-row:hover{background:var(--bg3)}
 .new-edit-detail{padding:12px;display:flex;flex-direction:column;gap:10px}
 .new-edit-detail-hd{font-size:13px;color:var(--text)}
 .new-edit-detail-tags{font-size:11px;color:var(--text3);font-family:var(--font-mono)}
@@ -2067,19 +2073,11 @@ let _newEditFilter = 'all';
 let _newEditPrevInv = null;
 function _newEditSetFilter(f){
   _newEditFilter = f;
-  // Clear expansion when changing filter — expanded row may not be in the
-  // new subset, so collapsing avoids the "expanded row is hidden" state.
-  _newEditExpandedItemKey = null;
   if(typeof renderNewEditShell === 'function') renderNewEditShell();
 }
-
-// Phase A commit 8 — click-to-expand row state. One row expanded at a time;
-// click toggles. Cleared on INV identity change and on filter change.
-let _newEditExpandedItemKey = null;
-function _newEditToggleRow(key){
-  _newEditExpandedItemKey = (_newEditExpandedItemKey === key) ? null : key;
-  if(typeof renderNewEditShell === 'function') renderNewEditShell();
-}
+// Phase A commit 9 — click-to-expand removed; every item renders its
+// detail panel always. The `_newEditExpandedItemKey` state from commit 8
+// is gone, as is the `_newEditToggleRow` handler.
 
 let _supabase = null;
 let _USER = null;
@@ -5156,14 +5154,20 @@ function renderNewEditShell(){
   // the log even if #db-extracting is still visible at this instant.
   const renderingLog = !populatedInv && isExtracting;
 
-  // Filter + expansion state reset on INV identity change (new invoice
-  // loaded, swap from history, fresh upload). Reference equality is enough
-  // because loadInvoice always assigns a fresh inv object.
+  // Filter state reset on INV identity change (new invoice loaded, swap
+  // from history, fresh upload). Reference equality is enough because
+  // loadInvoice always assigns a fresh inv object.
   if(INV !== _newEditPrevInv){
     _newEditFilter = 'all';
-    _newEditExpandedItemKey = null;
     _newEditPrevInv = INV;
   }
+
+  // Phase A commit 9 — full-page mode toggle. Activates only when the
+  // flag is on AND an invoice with items is loaded. Anything else (flag
+  // off, no INV, INV with empty items) leaves the Dashboard normal.
+  const _populated = !!(INV && INV.items && INV.items.length > 0);
+  if(NEW_EDIT_FLAG && _populated) document.body.classList.add('new-edit-fullpage');
+  else document.body.classList.remove('new-edit-fullpage');
 
   let itemsHtml = '';
   if(populatedInv){
@@ -5194,8 +5198,6 @@ function renderNewEditShell(){
         pillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px"><i class="ti ti-math-function"></i>Formula</span>`;
       }
       const qtyCost = `${item.qty} · $${(item.caseCost || 0).toFixed(2)}`;
-      const key = item.item || '';
-      const expanded = _newEditExpandedItemKey && key && _newEditExpandedItemKey === key;
       const compactInner = `
           <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>
           <span class="new-edit-name">${esc(item.desc || '')}</span>
@@ -5203,13 +5205,9 @@ function renderNewEditShell(){
           ${pillHtml}
           <span class="new-edit-retail">$${retailVal.toFixed(2)}</span>`;
 
-      if(!expanded){
-        return `<div class="new-edit-row" onclick="_newEditToggleRow('${escJs(key)}')">${compactInner}</div>`;
-      }
-
-      // Detail panel — read-only in this commit. Inputs are disabled,
-      // buttons render with the existing approve/reject styling but
-      // commit 9 wires the click handlers.
+      // Phase A commit 9 — always render the detail panel (no
+      // click-to-expand). Inputs/buttons remain disabled; commit 10
+      // wires them.
       const ch = (typeof detectChange === 'function') ? detectChange(item, vk, INV.invoiceNo, INV.date) : {status:'no_history'};
       const cu = unitCost(item);
       const projMargin = retailVal > 0 ? ((retailVal - cu) / retailVal) * 100 : 0;
@@ -5243,9 +5241,11 @@ function renderNewEditShell(){
         detailPillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px;align-self:flex-start"><i class="ti ti-math-function"></i>Formula</span>`;
       }
 
+      // Detail header sub-row omitted by design — the matched name is
+      // already shown in the compact summary directly above; restating it
+      // would be redundant. Detail starts with tags (Barcode · category).
       const detailHtml = `
         <div class="new-edit-detail">
-          <div class="new-edit-detail-hd">${esc(item.desc || '')}</div>
           ${tagsHtml}
           <div class="new-edit-detail-grid">
             <div class="new-edit-detail-cell">
@@ -5288,13 +5288,13 @@ function renderNewEditShell(){
           </div>
         </div>`;
 
-      return `<div class="new-edit-row-wrap expanded">
-          <div class="new-edit-row expanded" onclick="_newEditToggleRow('${escJs(key)}')">${compactInner}</div>
+      return `<div class="new-edit-row-wrap">
+          <div class="new-edit-row">${compactInner}</div>
           ${detailHtml}
         </div>`;
     }).join('');
     const emptyMsg = `<div style="padding:32px 10px;text-align:center;color:var(--text3);font-size:13px">No items match this filter.</div>`;
-    itemsHtml = `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:12px;min-height:500px;max-height:500px;overflow-y:auto">
+    itemsHtml = `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:12px;min-height:500px;max-height:calc(100vh - 200px);overflow-y:auto">
         ${pillsHtml}
         ${filtered.length ? rows : emptyMsg}
       </div>`;
