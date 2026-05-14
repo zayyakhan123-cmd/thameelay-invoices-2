@@ -225,6 +225,13 @@ tr:hover td{background:var(--bg3)}
 .retail-edit.edited ~ .retail-src-mem,
 .retail-edit.edited ~ .retail-src-fx{display:none}
 .retail-edit.edited ~ .retail-src-cust{display:inline-flex}
+/* Phase A commit 6 — compact line-item rows in the new editor's right pane */
+.new-edit-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:0.5px solid var(--border)}
+.new-edit-row:last-child{border-bottom:none}
+.new-edit-row:hover{background:var(--bg3)}
+.new-edit-name{flex:1;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.new-edit-data{font-size:11px;font-family:var(--font-mono);color:var(--text3);white-space:nowrap}
+.new-edit-retail{font-size:13px;font-weight:600;font-family:var(--font-mono);color:var(--text);min-width:60px;text-align:right}
 .retail-reset{font-size:12px;line-height:1;padding:2px 5px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer}
 .retail-reset:hover{background:var(--bg3);color:var(--text2)}
 
@@ -5096,29 +5103,61 @@ function renderNewEditShell(){
       })();
 
   // Right pane state precedence (top wins):
-  //   1. populatedInv          → placeholder (we're done; ignore #db-extracting visibility)
-  //   2. isExtracting & !pop'd → live log (the only state that attaches the observer)
+  //   1. populatedInv          → line item list (commit 6, read-only)
+  //   2. isExtracting & !pop'd → live log (commit 5)
   //   3. else (fallback)       → placeholder
-  // The earlier version branched on isExtracting first, which left the log
-  // visible if #db-extracting stayed display:block after extraction completed
-  // (the queue area persists with a completed-state UI). Items being populated
-  // is the authoritative "done" signal — bypass the DOM check entirely.
+  // populatedInv is the authoritative "done" signal — never falls back to
+  // the log even if #db-extracting is still visible at this instant.
+  const renderingLog = !populatedInv && isExtracting;
+
+  let itemsHtml = '';
+  if(populatedInv){
+    const purch = INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0);
+    const rows = purch.map(item => {
+      const conf = item._conf || 1;
+      const dotColor = conf >= 0.7 ? '#10b981' : '#f59e0b';
+      const resolved = resolveSuggestedRetail(item, INV.vendor);
+      const apRetail = APPROVALS[item.item] && APPROVALS[item.item].retailPrice;
+      const retailVal = (Number.isFinite(apRetail) && apRetail > 0) ? apRetail : (resolved.retail || 0);
+      let pillHtml = '';
+      if(resolved.source === 'memory'){
+        pillHtml = `<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 6px"><i class="ti ti-refresh"></i>Memory</span>`;
+      } else if(resolved.source === 'calculated'){
+        pillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px"><i class="ti ti-math-function"></i>Formula</span>`;
+      }
+      const qtyCost = `${item.qty} · $${(item.caseCost || 0).toFixed(2)}`;
+      return `<div class="new-edit-row">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>
+          <span class="new-edit-name">${esc(item.desc || '')}</span>
+          <span class="new-edit-data">${esc(qtyCost)}</span>
+          ${pillHtml}
+          <span class="new-edit-retail">$${retailVal.toFixed(2)}</span>
+        </div>`;
+    }).join('');
+    itemsHtml = `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:12px;min-height:500px;max-height:500px;overflow-y:auto">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;padding:0 10px">Items (${purch.length})</div>
+        ${rows}
+      </div>`;
+  }
+
   const placeholderRightHtml = `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:500px">
         <i class="ti ti-list" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
         <div style="font-weight:500;color:var(--text);font-size:13px">Line items</div>
         <div style="font-size:12px;color:var(--text3)">Coming in commits 6–8</div>
       </div>`;
-  const renderingLog = !populatedInv && isExtracting;
-  const rightPaneHtml = renderingLog
-    ? `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;min-height:500px;display:flex;flex-direction:column;gap:8px">
-        <div style="font-weight:500;color:var(--text);font-size:13px">Processing invoice</div>
-        <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(document.getElementById('db-up-name')?.textContent || '')}</div>
-        <div style="height:2px;background:var(--bg3);border-radius:1px;overflow:hidden">
-          <div id="newedit-progress" style="height:100%;width:0%;background:var(--green);transition:width .3s ease"></div>
-        </div>
-        <pre id="newedit-log" style="margin:8px 0 0;flex:1;background:#0F172A;color:#E2E8F0;font-family:var(--font-mono);font-size:11px;padding:12px;border-radius:6px;min-height:320px;overflow-y:auto;white-space:pre-wrap"></pre>
-      </div>`
-    : placeholderRightHtml;
+
+  const rightPaneHtml = populatedInv
+    ? itemsHtml
+    : (renderingLog
+        ? `<div style="background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:16px;min-height:500px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-weight:500;color:var(--text);font-size:13px">Processing invoice</div>
+            <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(document.getElementById('db-up-name')?.textContent || '')}</div>
+            <div style="height:2px;background:var(--bg3);border-radius:1px;overflow:hidden">
+              <div id="newedit-progress" style="height:100%;width:0%;background:var(--green);transition:width .3s ease"></div>
+            </div>
+            <pre id="newedit-log" style="margin:8px 0 0;flex:1;background:#0F172A;color:#E2E8F0;font-family:var(--font-mono);font-size:11px;padding:12px;border-radius:6px;min-height:320px;overflow-y:auto;white-space:pre-wrap"></pre>
+          </div>`
+        : placeholderRightHtml);
 
   const panesHtml = shouldRender ? `
       <div style="height:1px;background:var(--border);margin:12px 0"></div>
