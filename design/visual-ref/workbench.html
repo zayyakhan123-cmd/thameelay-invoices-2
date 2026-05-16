@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workbench — Thameelay Invoices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #08090f;
+    --bg-elev: #11141d;
+    --surface: #161a24;
+    --surface-2: #1c2030;
+    --surface-hover: #1f2433;
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #e7e9f0;
+    --text-muted: #8a90a0;
+    --text-soft: #5e6474;
+    --accent: #22d3ee;
+    --accent-hover: #67e8f9;
+    --accent-soft: rgba(34,211,238,0.12);
+    --accent-border: rgba(34,211,238,0.36);
+    --green: #10b981;
+    --green-soft: rgba(16,185,129,0.12);
+    --green-border: rgba(16,185,129,0.30);
+    --red: #f43f5e;
+    --red-soft: rgba(244,63,94,0.12);
+    --red-border: rgba(244,63,94,0.28);
+    --amber: #f59e0b;
+    --amber-soft: rgba(245,158,11,0.12);
+    --amber-border: rgba(245,158,11,0.28);
+    --blue: #60a5fa;
+    --blue-soft: rgba(96,165,250,0.12);
+    --blue-border: rgba(96,165,250,0.28);
+    --gray-soft: rgba(148,163,184,0.08);
+    --gray-border: rgba(148,163,184,0.20);
+
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { min-width: 1280px; }
+  body {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  ::selection { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 10px 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .back-btn:hover { background: var(--surface-hover); }
+  .back-btn svg { width: 14px; height: 14px; }
+
+  .invoice-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .vendor-name {
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+  }
+  .invoice-id {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  .sep { color: var(--text-soft); }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 8px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    border: 1px solid var(--amber-border);
+    color: var(--amber);
+    background: var(--amber-soft);
+    box-shadow: inset 0 0 8px rgba(245,158,11,0.10);
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 6px rgba(245,158,11,0.7); }
+
+  .stats {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-left: auto;
+    margin-right: 6px;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+  .stat-num {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--mono);
+  }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-soft);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+  }
+  .stat-num.warn { color: var(--amber); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 8px 13px;
+    border-radius: 6px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--surface-hover); border-color: var(--accent-border); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-primary {
+    background: var(--accent);
+    color: #04161c;
+    border-color: var(--accent);
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(34,211,238,0.40), 0 8px 24px -6px rgba(34,211,238,0.55);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 0 0 1px rgba(103,232,249,0.50), 0 10px 28px -6px rgba(34,211,238,0.65);
+  }
+  .btn-split {
+    display: inline-flex;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .btn-split > button {
+    border: none;
+    background: transparent;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 8px 13px;
+    color: var(--text);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-split > button:hover { background: var(--surface-hover); }
+  .btn-split > button + button { border-left: 1px solid var(--border-strong); padding: 8px 9px; }
+  .btn-split svg { width: 12px; height: 12px; color: var(--text-muted); }
+
+  /* ---------- Filter strip ---------- */
+  .filter-strip {
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+  .chip.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 1px rgba(34,211,238,0.18), inset 0 0 12px rgba(34,211,238,0.10);
+  }
+  .chip .count {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .chip.active .count { color: var(--accent); }
+  .chip-spacer { flex: 1; }
+
+  .toolbar-search {
+    position: relative;
+    width: 240px;
+  }
+  .toolbar-search input {
+    width: 100%;
+    padding: 5px 10px 5px 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 12.5px;
+    color: var(--text);
+    outline: none;
+  }
+  .toolbar-search input::placeholder { color: var(--text-soft); }
+  .toolbar-search input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .toolbar-search svg {
+    position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 12px; color: var(--text-muted);
+  }
+
+  /* ---------- Layout ---------- */
+  .body {
+    height: calc(100vh - 60px - 49px);
+    display: grid;
+    grid-template-columns: minmax(440px, 38%) 1fr;
+    min-height: 720px;
+  }
+
+  /* PDF pane */
+  .pdf-pane {
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    overflow: hidden;
+  }
+  .pdf-thumbs {
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+  .thumb {
+    aspect-ratio: 0.77;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .thumb-faux {
+    position: absolute;
+    inset: 6px 5px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .thumb-faux span {
+    display: block;
+    height: 2px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 1px;
+  }
+  .thumb-faux span:nth-child(1) { width: 50%; background: rgba(255,255,255,0.18); }
+  .thumb-faux span:nth-child(2) { width: 30%; background: rgba(255,255,255,0.18); margin-bottom: 4px; }
+  .thumb-faux span:nth-child(odd) { width: 90%; }
+  .thumb-faux span:nth-child(even) { width: 70%; }
+  .thumb-num {
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+  .thumb.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+
+  .pdf-stage {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .pdf-toolbar {
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .zoom-level {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    padding: 0 6px;
+    min-width: 46px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .page-indicator {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+  }
+
+  .pdf-scroll {
+    overflow: auto;
+    padding: 22px;
+    flex: 1;
+  }
+  /* The PDF itself is rendered as a white "paper" — it's an actual document */
+  .pdf-page {
+    background: #fafaf9;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -8px rgba(0,0,0,0.5);
+    padding: 36px 40px;
+    border-radius: 2px;
+    color: #1a1a1a;
+    font-size: 11.5px;
+    line-height: 1.55;
+    border: 1px solid rgba(0,0,0,0.2);
+  }
+  /* AI extraction highlights — calm cyan tint over rows bound to catalog items */
+  .pdf-line-table tbody tr.hl td {
+    background: rgba(34,211,238,0.10);
+    box-shadow: inset 2px 0 0 #22d3ee;
+  }
+  .pdf-page h2 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #18181b;
+  }
+  .pdf-page .pdf-sub {
+    color: #555;
+    font-size: 10.5px;
+    margin-bottom: 18px;
+  }
+  .pdf-twocol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+    font-size: 10.5px;
+  }
+  .pdf-twocol .label {
+    color: #6b6b70;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 9px;
+    margin-bottom: 2px;
+  }
+  .pdf-twocol .value { font-weight: 500; color: #18181b; }
+  .pdf-line-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5px;
+    margin-top: 8px;
+  }
+  .pdf-line-table th {
+    text-align: left;
+    border-bottom: 1px solid #d4d4d2;
+    padding: 6px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b6b70;
+  }
+  .pdf-line-table td {
+    padding: 6px 4px;
+    border-bottom: 1px solid #eee;
+    font-variant-numeric: tabular-nums;
+    color: #18181b;
+  }
+  .pdf-line-table td.right, .pdf-line-table th.right { text-align: right; }
+  /* (highlights defined above) */
+  .pdf-page .total-row td {
+    border-bottom: none;
+    font-weight: 700;
+    padding-top: 10px;
+  }
+  .pdf-page .footer-note {
+    margin-top: 22px;
+    color: #6b6b70;
+    font-size: 10px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+  }
+
+  /* ---------- Table pane ---------- */
+  .table-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .table-scroll {
+    flex: 1;
+    overflow: auto;
+    padding: 16px 20px 0;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .data-table thead th {
+    text-align: left;
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    padding: 9px 12px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--text-soft);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .data-table thead th.right { text-align: right; }
+  .data-table tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .data-table tbody td.right { text-align: right; }
+  .data-table tbody td.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+  }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr:hover td { background: rgba(255,255,255,0.025); }
+
+  .item-name { font-weight: 600; color: var(--text); }
+  .item-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; font-family: var(--mono); letter-spacing: 0.02em; }
+
+  .delta { font-weight: 500; font-size: 12.5px; font-family: var(--mono); }
+  .delta.up { color: var(--red); }
+  .delta.down { color: var(--green); }
+  .delta.flat { color: var(--text-soft); }
+  .delta.new { color: var(--accent); font-weight: 600; letter-spacing: 0.02em; }
+
+  .arrow-flow {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .arrow-flow .old {
+    color: var(--text-soft);
+    text-decoration: line-through;
+    font-size: 11.5px;
+  }
+  .arrow-flow .new {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .arrow-flow .arrow {
+    color: var(--text-soft);
+    font-size: 10px;
+  }
+
+  .margin-flow {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: var(--mono);
+  }
+  .margin-flow .from { color: var(--text-soft); font-size: 11.5px; }
+  .margin-flow .arrow { color: var(--text-soft); font-size: 10px; }
+  .margin-flow .to { font-weight: 600; color: var(--text); }
+  .margin-flow .to.gain { color: var(--green); }
+  .margin-flow .to.loss { color: var(--red); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .badge-exact { color: var(--green); background: var(--green-soft); border-color: var(--green-border); }
+  .badge-fuzzy { color: var(--amber); background: var(--amber-soft); border-color: var(--amber-border); }
+  .badge-new { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
+  .badge-unmatched { color: var(--red); background: var(--red-soft); border-color: var(--red-border); }
+
+  .row-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .row-status .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .row-status.safe { color: var(--green); }
+  .row-status.safe .dot { background: var(--green); box-shadow: 0 0 5px rgba(16,185,129,0.7); }
+  .row-status.review { color: var(--amber); }
+  .row-status.review .dot { background: var(--amber); box-shadow: 0 0 5px rgba(245,158,11,0.7); }
+  .row-status.approved { color: var(--text-muted); }
+  .row-status.approved .dot { background: var(--text-muted); }
+  .row-status.new { color: var(--accent); }
+  .row-status.new .dot { background: var(--accent); box-shadow: 0 0 5px rgba(34,211,238,0.7); }
+
+  .row-action {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .row-action:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+  .row-action svg { width: 14px; height: 14px; }
+
+  .check-cell { width: 32px; padding-left: 16px !important; padding-right: 0 !important; }
+  .check {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1.4px solid var(--border-strong);
+    cursor: pointer;
+    display: inline-block;
+    vertical-align: middle;
+    background: transparent;
+  }
+  thead .check { border-color: var(--text-muted); }
+
+  /* ---------- Summary cards ---------- */
+  .summary {
+    padding: 14px 20px 18px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .card .k {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    font-weight: 500;
+  }
+  .card .v {
+    font-size: 24px;
+    font-weight: 600;
+    margin-top: 4px;
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--mono);
+    color: var(--text);
+  }
+  .card .help {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .card.accent .v { color: var(--green); }
+  .card.alert .v { color: var(--amber); }
+  .card.gain .v { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <a class="back-btn" href="inbox.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Inbox
+  </a>
+  <div class="invoice-meta">
+    <span class="vendor-name">ABC Distributors</span>
+    <span class="sep">·</span>
+    <span class="invoice-id">INV-2026-0847</span>
+    <span class="sep">·</span>
+    <span class="invoice-id">Received Today, 9:14 AM</span>
+  </div>
+  <span class="status-pill"><span class="dot"></span>Ready for review</span>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-num">42</span>
+      <span class="stat-label">Items</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">18</span>
+      <span class="stat-label">Price changes</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num warn">6</span>
+      <span class="stat-label">Need review</span>
+    </div>
+  </div>
+
+  <button class="btn btn-primary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+    Approve 24 safe items
+  </button>
+  <div class="btn-split">
+    <button>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <button>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Filter strip -->
+<div class="filter-strip">
+  <button class="chip active">All <span class="count">42</span></button>
+  <button class="chip">Needs review <span class="count">6</span></button>
+  <button class="chip">Cost up <span class="count">11</span></button>
+  <button class="chip">Cost down <span class="count">7</span></button>
+  <button class="chip">New items <span class="count">3</span></button>
+  <button class="chip">Low margin <span class="count">4</span></button>
+  <div class="chip-spacer"></div>
+  <div class="toolbar-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" placeholder="Search items in this invoice…" />
+  </div>
+</div>
+
+<!-- Body -->
+<div class="body">
+  <!-- PDF pane -->
+  <div class="pdf-pane">
+    <div class="pdf-thumbs">
+      <div class="thumb active">
+        <div class="thumb-faux"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <span class="thumb-num">1</span>
+      </div>
+      <div class="thumb">
+        <div class="thumb-faux"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <span class="thumb-num">2</span>
+      </div>
+      <div class="thumb">
+        <div class="thumb-faux"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <span class="thumb-num">3</span>
+      </div>
+    </div>
+    <div class="pdf-stage">
+      <div class="pdf-toolbar">
+        <button class="icon-btn" title="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <span class="zoom-level">100%</span>
+        <button class="icon-btn" title="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <button class="icon-btn" title="Fit width">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+        <button class="icon-btn" title="Download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <span class="page-indicator">Page 1 / 3</span>
+      </div>
+      <div class="pdf-scroll">
+        <div class="pdf-page">
+          <h2>ABC Distributors, Inc.</h2>
+          <div class="pdf-sub">2400 Industrial Pkwy · Edison, NJ 08817 · (732) 555-0140</div>
+
+          <div class="pdf-twocol">
+            <div>
+              <div class="label">Bill to</div>
+              <div class="value">Patel Bros — Edison<br/>1287 Oak Tree Rd, Iselin NJ 08830</div>
+            </div>
+            <div>
+              <div class="label">Invoice</div>
+              <div class="value">INV-2026-0847</div>
+              <div class="label" style="margin-top:8px;">Date</div>
+              <div class="value">May 15, 2026</div>
+              <div class="label" style="margin-top:8px;">Terms</div>
+              <div class="value">Net 30</div>
+            </div>
+          </div>
+
+          <table class="pdf-line-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Pack</th>
+                <th class="right">Qty</th>
+                <th class="right">Unit</th>
+                <th class="right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hl">
+                <td>Red Apple, Bag</td>
+                <td>12 × 3 lb</td>
+                <td class="right">8</td>
+                <td class="right">28.40</td>
+                <td class="right">227.20</td>
+              </tr>
+              <tr>
+                <td>Banana, Cavendish</td>
+                <td>40 lb box</td>
+                <td class="right">4</td>
+                <td class="right">22.00</td>
+                <td class="right">88.00</td>
+              </tr>
+              <tr>
+                <td>Gongura Leaves</td>
+                <td>Bunch</td>
+                <td class="right">24</td>
+                <td class="right">1.20</td>
+                <td class="right">28.80</td>
+              </tr>
+              <tr class="hl">
+                <td>Basmati Rice, Royal</td>
+                <td>20 lb bag</td>
+                <td class="right">12</td>
+                <td class="right">32.50</td>
+                <td class="right">390.00</td>
+              </tr>
+              <tr>
+                <td>Toor Dal</td>
+                <td>4 lb bag</td>
+                <td class="right">18</td>
+                <td class="right">9.80</td>
+                <td class="right">176.40</td>
+              </tr>
+              <tr>
+                <td>Coconut Oil, Parachute</td>
+                <td>1 L</td>
+                <td class="right">6</td>
+                <td class="right">7.40</td>
+                <td class="right">44.40</td>
+              </tr>
+              <tr class="hl">
+                <td>Atta Whole Wheat, Aashirvaad</td>
+                <td>20 lb</td>
+                <td class="right">10</td>
+                <td class="right">24.95</td>
+                <td class="right">249.50</td>
+              </tr>
+              <tr>
+                <td>Turmeric Powder</td>
+                <td>14 oz</td>
+                <td class="right">24</td>
+                <td class="right">3.20</td>
+                <td class="right">76.80</td>
+              </tr>
+              <tr>
+                <td>Onions, Yellow</td>
+                <td>50 lb bag</td>
+                <td class="right">5</td>
+                <td class="right">18.50</td>
+                <td class="right">92.50</td>
+              </tr>
+              <tr>
+                <td>Mango, Alphonso</td>
+                <td>12 ct case</td>
+                <td class="right">6</td>
+                <td class="right">38.00</td>
+                <td class="right">228.00</td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="4" class="right">Subtotal (page 1)</td>
+                <td class="right">1,601.60</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="footer-note">Continued on page 2 · 32 more line items · Please remit within terms.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table pane -->
+  <div class="table-pane">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="check-cell"><span class="check"></span></th>
+            <th>Item</th>
+            <th>Pack / size</th>
+            <th class="right">Qty</th>
+            <th class="right">New cost / case</th>
+            <th class="right">Old cost / case</th>
+            <th class="right">Δ</th>
+            <th class="right">Current retail</th>
+            <th class="right">Suggested retail</th>
+            <th>Margin %</th>
+            <th>Match</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Red Apple (Bag)</div>
+              <div class="item-sub">SKU 100482</div>
+            </td>
+            <td>12 × 3 lb</td>
+            <td class="right num">8</td>
+            <td class="right num">$28.40</td>
+            <td class="right num">$26.80</td>
+            <td class="right"><span class="delta up">+6.0%</span></td>
+            <td class="right num">$4.99</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$5.29</span></span></td>
+            <td><span class="margin-flow"><span class="from">28%</span><span class="arrow">→</span><span class="to gain">29%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status review"><span class="dot"></span>Needs review</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Banana Cavendish</div>
+              <div class="item-sub">SKU 100127</div>
+            </td>
+            <td>40 lb box</td>
+            <td class="right num">4</td>
+            <td class="right num">$22.00</td>
+            <td class="right num">$24.50</td>
+            <td class="right"><span class="delta down">−10.2%</span></td>
+            <td class="right num">$0.69/lb</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$0.69</span><span class="arrow">→</span><span class="new">$0.65</span></span></td>
+            <td><span class="margin-flow"><span class="from">41%</span><span class="arrow">→</span><span class="to gain">44%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status safe"><span class="dot"></span>Safe</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Gongura Leaves</div>
+              <div class="item-sub">SKU 100918</div>
+            </td>
+            <td>1 bunch</td>
+            <td class="right num">24</td>
+            <td class="right num">$1.20</td>
+            <td class="right num">$1.20</td>
+            <td class="right"><span class="delta flat">—</span></td>
+            <td class="right num">$2.49</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$2.49</span></span></td>
+            <td><span class="margin-flow"><span class="to">52%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status safe"><span class="dot"></span>Safe</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Basmati Rice (Royal)</div>
+              <div class="item-sub">SKU 100302</div>
+            </td>
+            <td>20 lb bag</td>
+            <td class="right num">12</td>
+            <td class="right num">$32.50</td>
+            <td class="right num">$30.00</td>
+            <td class="right"><span class="delta up">+8.3%</span></td>
+            <td class="right num">$44.99</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$44.99</span><span class="arrow">→</span><span class="new">$48.99</span></span></td>
+            <td><span class="margin-flow"><span class="from">33%</span><span class="arrow">→</span><span class="to gain">34%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status review"><span class="dot"></span>Needs review</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Toor Dal</div>
+              <div class="item-sub">SKU 100456</div>
+            </td>
+            <td>4 lb bag</td>
+            <td class="right num">18</td>
+            <td class="right num">$9.80</td>
+            <td class="right num">$9.20</td>
+            <td class="right"><span class="delta up">+6.5%</span></td>
+            <td class="right num">$14.99</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$14.99</span><span class="arrow">→</span><span class="new">$15.99</span></span></td>
+            <td><span class="margin-flow"><span class="from">39%</span><span class="arrow">→</span><span class="to">39%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status safe"><span class="dot"></span>Safe</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Coconut Oil (Parachute)</div>
+              <div class="item-sub">SKU 100711</div>
+            </td>
+            <td>1 L</td>
+            <td class="right num">6</td>
+            <td class="right num">$7.40</td>
+            <td class="right num">$7.40</td>
+            <td class="right"><span class="delta flat">—</span></td>
+            <td class="right num">$11.99</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$11.99</span></span></td>
+            <td><span class="margin-flow"><span class="to">38%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status approved"><span class="dot"></span>Approved</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Atta Whole Wheat (Aashirvaad)</div>
+              <div class="item-sub">SKU 100229</div>
+            </td>
+            <td>20 lb</td>
+            <td class="right num">10</td>
+            <td class="right num">$24.95</td>
+            <td class="right num">$22.95</td>
+            <td class="right"><span class="delta up">+8.7%</span></td>
+            <td class="right num">$32.99</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$32.99</span><span class="arrow">→</span><span class="new">$35.99</span></span></td>
+            <td><span class="margin-flow"><span class="from">30%</span><span class="arrow">→</span><span class="to gain">31%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status review"><span class="dot"></span>Needs review</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Turmeric Powder</div>
+              <div class="item-sub">SKU 100503</div>
+            </td>
+            <td>14 oz</td>
+            <td class="right num">24</td>
+            <td class="right num">$3.20</td>
+            <td class="right num">$3.20</td>
+            <td class="right"><span class="delta flat">—</span></td>
+            <td class="right num">$5.49</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$5.49</span></span></td>
+            <td><span class="margin-flow"><span class="to">42%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status approved"><span class="dot"></span>Approved</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Onions, Yellow</div>
+              <div class="item-sub">SKU 100061</div>
+            </td>
+            <td>50 lb bag</td>
+            <td class="right num">5</td>
+            <td class="right num">$18.50</td>
+            <td class="right num">$24.00</td>
+            <td class="right"><span class="delta down">−22.9%</span></td>
+            <td class="right num">$0.79/lb</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$0.79</span><span class="arrow">→</span><span class="new">$0.69</span></span></td>
+            <td><span class="margin-flow"><span class="from">43%</span><span class="arrow">→</span><span class="to gain">48%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status safe"><span class="dot"></span>Safe</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Mango (Alphonso)</div>
+              <div class="item-sub">First time seen</div>
+            </td>
+            <td>12 ct case</td>
+            <td class="right num">6</td>
+            <td class="right num">$38.00</td>
+            <td class="right num" style="color: var(--text-soft);">—</td>
+            <td class="right"><span class="delta new">NEW</span></td>
+            <td class="right num" style="color: var(--text-soft);">—</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$5.99</span></span></td>
+            <td><span class="margin-flow"><span class="to">52%</span></span></td>
+            <td><span class="badge badge-new">New item</span></td>
+            <td><span class="row-status new"><span class="dot"></span>New item</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Curry Leaves</div>
+              <div class="item-sub">SKU 100924</div>
+            </td>
+            <td>1 oz bunch</td>
+            <td class="right num">30</td>
+            <td class="right num">$0.85</td>
+            <td class="right num">$0.85</td>
+            <td class="right"><span class="delta flat">—</span></td>
+            <td class="right num">$1.49</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$1.49</span></span></td>
+            <td><span class="margin-flow"><span class="to">43%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status approved"><span class="dot"></span>Approved</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Ghee (Amul)</div>
+              <div class="item-sub">SKU 100618 · 2 candidates</div>
+            </td>
+            <td>32 oz</td>
+            <td class="right num">8</td>
+            <td class="right num">$14.20</td>
+            <td class="right num">$13.50</td>
+            <td class="right"><span class="delta up">+5.2%</span></td>
+            <td class="right num">$19.99</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$19.99</span><span class="arrow">→</span><span class="new">$20.99</span></span></td>
+            <td><span class="margin-flow"><span class="from">33%</span><span class="arrow">→</span><span class="to loss">32%</span></span></td>
+            <td><span class="badge badge-fuzzy">Fuzzy 84%</span></td>
+            <td><span class="row-status review"><span class="dot"></span>Needs review</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Tomato, Roma</div>
+              <div class="item-sub">SKU 100079</div>
+            </td>
+            <td>25 lb box</td>
+            <td class="right num">8</td>
+            <td class="right num">$16.40</td>
+            <td class="right num">$19.80</td>
+            <td class="right"><span class="delta down">−17.2%</span></td>
+            <td class="right num">$1.29/lb</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$1.29</span><span class="arrow">→</span><span class="new">$1.09</span></span></td>
+            <td><span class="margin-flow"><span class="from">39%</span><span class="arrow">→</span><span class="to gain">44%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status safe"><span class="dot"></span>Safe</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Cardamom, Green</div>
+              <div class="item-sub">SKU 100541</div>
+            </td>
+            <td>7 oz</td>
+            <td class="right num">12</td>
+            <td class="right num">$28.50</td>
+            <td class="right num">$24.00</td>
+            <td class="right"><span class="delta up">+18.8%</span></td>
+            <td class="right num">$39.99</td>
+            <td class="right"><span class="arrow-flow"><span class="old">$39.99</span><span class="arrow">→</span><span class="new">$46.99</span></span></td>
+            <td><span class="margin-flow"><span class="from">40%</span><span class="arrow">→</span><span class="to loss">39%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status review"><span class="dot"></span>Needs review</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Paneer (Nanak)</div>
+              <div class="item-sub">SKU 100672</div>
+            </td>
+            <td>14 oz</td>
+            <td class="right num">16</td>
+            <td class="right num">$4.20</td>
+            <td class="right num">$4.20</td>
+            <td class="right"><span class="delta flat">—</span></td>
+            <td class="right num">$6.99</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$6.99</span></span></td>
+            <td><span class="margin-flow"><span class="to">40%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status approved"><span class="dot"></span>Approved</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td class="check-cell"><span class="check"></span></td>
+            <td>
+              <div class="item-name">Methi Leaves, Frozen (Deep)</div>
+              <div class="item-sub">SKU 100835</div>
+            </td>
+            <td>12 oz</td>
+            <td class="right num">12</td>
+            <td class="right num">$2.40</td>
+            <td class="right num">$2.40</td>
+            <td class="right"><span class="delta flat">—</span></td>
+            <td class="right num">$3.99</td>
+            <td class="right"><span class="arrow-flow"><span class="new">$3.99</span></span></td>
+            <td><span class="margin-flow"><span class="to">40%</span></span></td>
+            <td><span class="badge badge-exact">Exact</span></td>
+            <td><span class="row-status safe"><span class="dot"></span>Safe</span></td>
+            <td><button class="row-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary">
+      <div class="card">
+        <div class="k">Safe to approve</div>
+        <div class="v">24</div>
+        <div class="help">No retail change or margin held</div>
+      </div>
+      <div class="card">
+        <div class="k">Price changes</div>
+        <div class="v">18</div>
+        <div class="help">11 up · 7 down</div>
+      </div>
+      <div class="card alert">
+        <div class="k">Needs review</div>
+        <div class="v">6</div>
+        <div class="help">Large jumps or fuzzy matches</div>
+      </div>
+      <div class="card accent">
+        <div class="k">Margin loss avoided</div>
+        <div class="v">$342.18</div>
+        <div class="help">If retail held at old levels</div>
+      </div>
+      <div class="card gain">
+        <div class="k">Projected profit gain</div>
+        <div class="v">$128.50</div>
+        <div class="help">From suggested retail this cycle</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

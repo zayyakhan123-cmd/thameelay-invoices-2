@@ -29,3 +29,14 @@ Phase A–G ships the Inbox → Workbench → Export core only. Products, Vendor
 - Clean Claude Design visual pass (light/neutral, single accent, Linear/Notion/Stripe references). Not started.
 
 When Phase A planning begins, this file is the structural reference. Visual direction will come from a separate file in this folder.
+
+## visual-ref/
+
+Claude Design output of the Inbox and Workbench screens in the locked visual direction. Use these as the literal visual reference — every Phase A–G production commit's styling should match these files.
+
+- `visual-ref/inbox.html`
+- `visual-ref/workbench.html`
+
+## TOKENS.md
+
+Design token contract extracted from `visual-ref/`. Source of truth for colors, typography, spacing, and shadow rules. If a production commit diverges from this doc, either the commit is wrong or the doc needs updating — do not let production silently drift.

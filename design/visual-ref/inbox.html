@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inbox — Thameelay Invoices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #08090f;
+    --bg-elev: #11141d;
+    --surface: #161a24;
+    --surface-hover: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #e7e9f0;
+    --text-muted: #8a90a0;
+    --text-soft: #5e6474;
+    --accent: #22d3ee;
+    --accent-hover: #67e8f9;
+    --accent-soft: rgba(34,211,238,0.12);
+    --accent-border: rgba(34,211,238,0.36);
+    --accent-glow-sm: 0 0 0 1px rgba(34,211,238,0.18), 0 0 12px -2px rgba(34,211,238,0.35);
+    --green: #10b981;
+    --green-soft: rgba(16,185,129,0.12);
+    --green-border: rgba(16,185,129,0.30);
+    --red: #f43f5e;
+    --red-soft: rgba(244,63,94,0.12);
+    --red-border: rgba(244,63,94,0.28);
+    --amber: #f59e0b;
+    --amber-soft: rgba(245,158,11,0.12);
+    --amber-border: rgba(245,158,11,0.28);
+    --blue-soft: rgba(59,130,246,0.12);
+    --blue-border: rgba(59,130,246,0.28);
+    --blue: #60a5fa;
+    --gray-soft: rgba(148,163,184,0.08);
+    --gray-border: rgba(148,163,184,0.20);
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  ::selection { background: var(--accent-soft); color: var(--accent); }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100vh;
+    min-height: 720px;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 12px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px 18px;
+  }
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .brand-mark svg { width: 28px; height: 28px; display: block; }
+  .brand-name {
+    font-weight: 600;
+    font-size: 14.5px;
+    letter-spacing: -0.01em;
+  }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-soft);
+    padding: 14px 10px 6px;
+  }
+  .nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: var(--surface-hover); }
+  .nav-item.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .nav-item.active svg { color: var(--accent); }
+  .nav-item svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .nav-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-item.active .nav-count { color: var(--accent); }
+  .sidebar-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .user:hover { background: var(--surface-hover); }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3a4250 0%, #20252e 100%);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    border: 1px solid var(--border-strong);
+  }
+  .user-meta { line-height: 1.2; }
+  .user-name { font-size: 13px; font-weight: 600; }
+  .user-store { font-size: 11.5px; color: var(--text-muted); }
+
+  /* ---------- Main ---------- */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 22px 32px 0;
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .page-title {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.18), 0 0 10px rgba(16,185,129,0.45);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 8px 13px;
+    border-radius: 6px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--surface-hover); border-color: var(--accent-border); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-primary {
+    background: var(--accent);
+    color: #04161c;
+    border-color: var(--accent);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    font-size: 11.5px;
+    padding: 8px 13px;
+    box-shadow: 0 0 0 1px rgba(34,211,238,0.40), 0 8px 24px -6px rgba(34,211,238,0.55);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 0 0 1px rgba(103,232,249,0.50), 0 10px 28px -6px rgba(34,211,238,0.65);
+  }
+  .btn .mono-cap {
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 14px;
+  }
+  .search {
+    flex: 1;
+    max-width: 360px;
+    position: relative;
+  }
+  .search input {
+    width: 100%;
+    padding: 7px 10px 7px 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+  }
+  .search input::placeholder { color: var(--text-soft); }
+  .search input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .search svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+  }
+  .search kbd {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .filter-chip svg { width: 12px; height: 12px; color: var(--text-muted); }
+  .filter-chip:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+
+  .tabs {
+    display: flex;
+    gap: 18px;
+    border-bottom: 1px solid var(--border);
+    margin: 0 -32px;
+    padding: 0 32px;
+  }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 12px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab .pill {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    padding: 0 6px;
+    height: 17px;
+    line-height: 17px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    text-shadow: none;
+  }
+  .tab.active .pill { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- Table ---------- */
+  .table-wrap {
+    flex: 1;
+    overflow: auto;
+    padding: 0 32px 32px;
+  }
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--text-soft);
+    padding: 11px 16px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: rgba(255,255,255,0.025); }
+
+  .vendor {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .invoice-id {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Status pills ---------- */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 8px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .status .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-processing {
+    color: var(--blue);
+    background: var(--blue-soft);
+    border-color: var(--blue-border);
+    box-shadow: inset 0 0 8px rgba(96,165,250,0.12);
+  }
+  .status-processing .dot {
+    background: var(--blue);
+    box-shadow: 0 0 0 0 rgba(96,165,250,0.4), 0 0 8px rgba(96,165,250,0.7);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(96,165,250,0.4), 0 0 8px rgba(96,165,250,0.7); }
+    50% { box-shadow: 0 0 0 4px rgba(96,165,250,0), 0 0 8px rgba(96,165,250,0.4); }
+  }
+  .status-review {
+    color: var(--amber);
+    background: var(--amber-soft);
+    border-color: var(--amber-border);
+    box-shadow: inset 0 0 8px rgba(245,158,11,0.10);
+  }
+  .status-review .dot { background: var(--amber); box-shadow: 0 0 6px rgba(245,158,11,0.7); }
+  .status-approved {
+    color: var(--green);
+    background: var(--green-soft);
+    border-color: var(--green-border);
+    box-shadow: inset 0 0 8px rgba(16,185,129,0.10);
+  }
+  .status-approved .dot { background: var(--green); box-shadow: 0 0 6px rgba(16,185,129,0.7); }
+  .status-exported {
+    color: var(--text-muted);
+    background: var(--gray-soft);
+    border-color: var(--gray-border);
+  }
+  .status-exported .dot { background: var(--text-muted); }
+
+  .changes-flag {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+  .changes-flag.up { color: var(--text); }
+  .changes-flag .delta-up { color: var(--red); }
+  .changes-flag .delta-down { color: var(--green); }
+
+  .chevron {
+    color: var(--text-soft);
+    width: 14px;
+    height: 14px;
+  }
+
+  /* AI bar — subtle banner */
+  .ai-banner {
+    margin: 14px 32px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: linear-gradient(180deg, rgba(34,211,238,0.06), rgba(34,211,238,0.02));
+    border: 1px solid var(--accent-border);
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--text);
+    box-shadow: inset 0 0 24px rgba(34,211,238,0.04);
+  }
+  .ai-banner svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
+  .ai-banner .label {
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    font-size: 10.5px;
+    color: var(--accent);
+    padding-right: 6px;
+    border-right: 1px solid var(--accent-border);
+    margin-right: 4px;
+  }
+  .ai-banner .muted { color: var(--text-muted); }
+  .ai-banner .sep { color: var(--text-soft); margin: 0 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 32 32" fill="none">
+          <polygon points="16,3 27.3,9.5 27.3,22.5 16,29 4.7,22.5 4.7,9.5" stroke="#22d3ee" stroke-width="1.4" fill="rgba(34,211,238,0.10)"/>
+          <path d="M11 12 H21 M16 12 V21" stroke="#22d3ee" stroke-width="1.6" stroke-linecap="square"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Thameelay</div>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Workspace</div>
+    <nav class="nav">
+      <a class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>
+        Inbox
+        <span class="nav-count">14</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        All invoices
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>
+        Vendors
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg>
+        Reports
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Catalog
+      </a>
+    </nav>
+
+    <div class="nav-section-label">Account</div>
+    <nav class="nav">
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+        Help &amp; support
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user">
+        <div class="avatar">RP</div>
+        <div class="user-meta">
+          <div class="user-name">Ravi Patel</div>
+          <div class="user-store">Patel Bros · Edison</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="header">
+      <div class="header-row">
+        <div>
+          <h1 class="page-title">Inbox</h1>
+          <div class="page-sub"><span class="live-dot"></span>14 invoices waiting · last sync 2 min ago</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload invoice
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Connect supplier
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" placeholder="Search vendor, invoice ID, or item…" />
+          <kbd>⌘K</kbd>
+        </div>
+        <button class="filter-chip">
+          Vendor: All
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="filter-chip">
+          Date: Last 30 days
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="filter-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          More filters
+        </button>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active">All <span class="pill">14</span></div>
+        <div class="tab">Ready for review <span class="pill">5</span></div>
+        <div class="tab">Processing <span class="pill">2</span></div>
+        <div class="tab">Approved <span class="pill">4</span></div>
+        <div class="tab">Exported <span class="pill">3</span></div>
+      </div>
+    </div>
+
+    <div class="ai-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 14.5 8.5 21 11 14.5 13.5 12 20 9.5 13.5 3 11 9.5 8.5z"/></svg>
+      <span class="label">AI Engine</span>
+      <span>Extracted <strong>192 line items</strong> across 5 invoices this morning.</span>
+      <span class="sep">·</span>
+      <span class="muted">Average match confidence 96.4%</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 170px;">Status</th>
+            <th>Vendor</th>
+            <th style="width: 100px;">Items</th>
+            <th style="width: 200px;">Price changes</th>
+            <th style="width: 160px;">Received</th>
+            <th style="width: 32px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr onclick="location.href='workbench.html'">
+            <td><span class="status status-review"><span class="dot"></span>Ready for review</span></td>
+            <td>
+              <div class="vendor">ABC Distributors</div>
+              <div class="invoice-id">INV-2026-0847</div>
+            </td>
+            <td class="num">42</td>
+            <td><span class="changes-flag up"><span class="delta-up">↑11</span> · <span class="delta-down">↓7</span> · 24 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">Today, 9:14 AM</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-processing"><span class="dot"></span>Processing</span></td>
+            <td>
+              <div class="vendor">Krishna Wholesale</div>
+              <div class="invoice-id">INV-2026-0846 · extracting…</div>
+            </td>
+            <td class="num" style="color: var(--text-soft);">—</td>
+            <td><span class="changes-flag">parsing 3 of 4 pages</span></td>
+            <td class="num" style="color: var(--text-muted);">Today, 8:47 AM</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-review"><span class="dot"></span>Ready for review</span></td>
+            <td>
+              <div class="vendor">Sunshine Foods Inc.</div>
+              <div class="invoice-id">INV-2026-0845</div>
+            </td>
+            <td class="num">67</td>
+            <td><span class="changes-flag up"><span class="delta-up">↑16</span> · <span class="delta-down">↓8</span> · 43 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">Yesterday</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-review"><span class="dot"></span>Ready for review</span></td>
+            <td>
+              <div class="vendor">Coastal Dairy</div>
+              <div class="invoice-id">INV-2026-0844</div>
+            </td>
+            <td class="num">12</td>
+            <td><span class="changes-flag up"><span class="delta-up">↑5</span> · <span class="delta-down">↓4</span> · 3 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">Yesterday</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-approved"><span class="dot"></span>Approved</span></td>
+            <td>
+              <div class="vendor">Pacific Produce Co.</div>
+              <div class="invoice-id">INV-2026-0843</div>
+            </td>
+            <td class="num">28</td>
+            <td><span class="changes-flag"><span class="delta-up">↑4</span> · <span class="delta-down">↓3</span> · 21 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">Yesterday</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-review"><span class="dot"></span>Ready for review</span></td>
+            <td>
+              <div class="vendor">Royal Spices Ltd.</div>
+              <div class="invoice-id">INV-2026-0842</div>
+            </td>
+            <td class="num">23</td>
+            <td><span class="changes-flag up"><span class="delta-up">↑9</span> · <span class="delta-down">↓3</span> · 11 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">May 12</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-processing"><span class="dot"></span>Processing</span></td>
+            <td>
+              <div class="vendor">Heritage Grains</div>
+              <div class="invoice-id">INV-2026-0841 · matching catalog…</div>
+            </td>
+            <td class="num" style="color: var(--text-soft);">—</td>
+            <td><span class="changes-flag">matching 14 of 15 items</span></td>
+            <td class="num" style="color: var(--text-muted);">May 12</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-approved"><span class="dot"></span>Approved</span></td>
+            <td>
+              <div class="vendor">ABC Distributors</div>
+              <div class="invoice-id">INV-2026-0840</div>
+            </td>
+            <td class="num">38</td>
+            <td><span class="changes-flag"><span class="delta-up">↑8</span> · <span class="delta-down">↓6</span> · 24 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">May 11</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-review"><span class="dot"></span>Ready for review</span></td>
+            <td>
+              <div class="vendor">Bombay Sweets &amp; Snacks</div>
+              <div class="invoice-id">INV-2026-0839</div>
+            </td>
+            <td class="num">19</td>
+            <td><span class="changes-flag up"><span class="delta-up">↑4</span> · <span class="delta-down">↓2</span> · 13 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">May 11</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-exported"><span class="dot"></span>Exported</span></td>
+            <td>
+              <div class="vendor">Heritage Grains</div>
+              <div class="invoice-id">INV-2026-0838</div>
+            </td>
+            <td class="num">15</td>
+            <td><span class="changes-flag">2 changes · 0 review</span></td>
+            <td class="num" style="color: var(--text-muted);">May 10</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-approved"><span class="dot"></span>Approved</span></td>
+            <td>
+              <div class="vendor">Pacific Produce Co.</div>
+              <div class="invoice-id">INV-2026-0837</div>
+            </td>
+            <td class="num">31</td>
+            <td><span class="changes-flag"><span class="delta-up">↑6</span> · <span class="delta-down">↓4</span> · 21 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">May 9</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-exported"><span class="dot"></span>Exported</span></td>
+            <td>
+              <div class="vendor">Krishna Wholesale</div>
+              <div class="invoice-id">INV-2026-0836</div>
+            </td>
+            <td class="num">54</td>
+            <td><span class="changes-flag"><span class="delta-up">↑12</span> · <span class="delta-down">↓7</span> · 35 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">May 8</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-approved"><span class="dot"></span>Approved</span></td>
+            <td>
+              <div class="vendor">Coastal Dairy</div>
+              <div class="invoice-id">INV-2026-0835</div>
+            </td>
+            <td class="num">11</td>
+            <td><span class="changes-flag"><span class="delta-up">↑2</span> · <span class="delta-down">↓2</span> · 7 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">May 7</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+          <tr>
+            <td><span class="status status-exported"><span class="dot"></span>Exported</span></td>
+            <td>
+              <div class="vendor">Royal Spices Ltd.</div>
+              <div class="invoice-id">INV-2026-0834</div>
+            </td>
+            <td class="num">26</td>
+            <td><span class="changes-flag"><span class="delta-up">↑5</span> · <span class="delta-down">↓3</span> · 18 unchanged</span></td>
+            <td class="num" style="color: var(--text-muted);">May 6</td>
+            <td><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>
