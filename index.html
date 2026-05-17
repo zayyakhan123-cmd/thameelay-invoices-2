@@ -4654,12 +4654,16 @@ function renderNewEditShell(){
   let itemsHtml = '';
   if(populatedInv){
     const purch = INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0);
-    const safeCnt = purch.filter(i => (i._conf || 1) >= 0.7).length;
+    // Safe pill and Review pill partition `purch` exactly — every row is in
+    // one set, no overlap, no gap. Materialize safeItems() once per render
+    // (each call runs detectChange per item) and reuse via Set membership.
+    const safeSet = new Set(safeItems());
+    const safeCnt = safeSet.size;
     const reviewCnt = purch.length - safeCnt;
     const filtered = _newEditFilter === 'safe'
-      ? purch.filter(i => (i._conf || 1) >= 0.7)
+      ? purch.filter(i => safeSet.has(i))
       : _newEditFilter === 'review'
-        ? purch.filter(i => (i._conf || 1) < 0.7)
+        ? purch.filter(i => !safeSet.has(i))
         : purch;
     const pillsHtml = `<div class="new-edit-pills">
         <button type="button" class="new-edit-pill${_newEditFilter==='all'?' pill-active':''}" onclick="_newEditSetFilter('all')">All <span class="pill-cnt">${purch.length}</span></button>
@@ -4928,11 +4932,10 @@ function renderSummaryBanner(){
   const purch = INV.items.filter(i=>i._rt===RT.PURCHASED && i.qty>0);
   const vk = normV(INV.vendor);
 
-  // "Safe" matches the bulk-approve button's filter (and renderNewEditShell's
-  // safeCount) — high-confidence purchased items. The previous stricter
-  // definition (conf>=0.7 AND no significant change) made the stats card and
-  // the "Approve all safe (N)" button disagree, which confused users.
-  const safe = purch.filter(i => (i._conf || 1) >= 0.7).length;
+  // Single source of truth: stats card and bulk button both read from
+  // safeItems(). "Safe" means high-confidence extraction AND cost-stable
+  // (no_change || no_history || pct <= 5).
+  const safe = safeItems().length;
   let changes=0, review=0;
   let estLoss=0, projGain=0;
 
