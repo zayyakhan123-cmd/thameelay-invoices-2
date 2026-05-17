@@ -5491,7 +5491,7 @@ function pcSaveHostUrl(u){ try{ localStorage.setItem('tm_pc_host', u); }catch(e)
 // Photos for the seeded Truong catalog ship in /produce-photos/{slug}.jpg.
 // This is the out-of-the-box default when no custom tm_pc_host is set;
 // users with a custom pattern override it.
-const PC_DEFAULT_HOST = 'produce-photos/{slug}.jpg';
+const PC_DEFAULT_HOST = './produce-photos/{slug}.jpg';
 function pcImgUrl(item){
   if(!item) return '';
   if(item.image && (item.image.startsWith('http://')||item.image.startsWith('https://')||item.image.startsWith('data:'))) return pcRewriteForCors(item.image);
