@@ -3048,15 +3048,11 @@ function dbLoadLastInvoice(){
 }
 function dbApproveSafe(){
   if(!INV){showToast('warn','Upload an invoice first');return;}
-  const vk=normV(INV.vendor); let n=0;
-  Object.keys(APPROVALS).forEach(k=>{
-    const item=INV.items.find(i=>i.item===k);if(!item)return;
-    const ch=detectChange(item,vk,INV.invoiceNo,INV.date);
-    const isSafe = (ch.status==='no_change'||ch.status==='no_history'||(Math.abs(ch.pct||0)<=2)) && (item._conf||1)>=0.7;
-    if(isSafe){APPROVALS[k].status='approved';n++;}
-  });
+  const items = safeItems().filter(it => APPROVALS[it.item]);
+  items.forEach(it => { APPROVALS[it.item].status='approved'; });
   renderDashboardTable();
   updateExportSummary();
+  const n = items.length;
   showToast('success', n>0 ? `Approved ${n} safe item${n!==1?'s':''}` : 'No safe items to auto-approve');
 }
 
@@ -4563,15 +4559,23 @@ function _newEditStopObserver(){
   _newEditLoggedSteps = new Set();
 }
 
-// Shared safe-item filter for the Workbench top bar. Used by both the
-// bulk button's label count and newEditApproveSafe() (the action), so
-// the displayed N can never disagree with the items the bulk approve
-// operates on. Note: this filter intentionally differs from
-// dbApproveSafe()'s definition — they are not unified here. See
-// comment near renderDashboardTable for the divergence history.
+// Single source of truth for "safe to bulk approve." Consumed by the
+// Workbench bulk button's (N) label, newEditApproveSafe() (the action),
+// and the legacy dbApproveSafe() callsite. An item is safe only when
+// it's a high-confidence purchased line AND cost movement is stable —
+// no history yet, no change, or a signed pct <= 5. Decreases of any
+// size auto-pass (negative pct always satisfies pct <= 5); increases
+// above 5% require individual review.
 function safeItems(){
   if(!INV || !INV.items) return [];
-  return INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0 && (i._conf || 1) >= 0.7);
+  const vk = normV(INV.vendor);
+  return INV.items.filter(i => {
+    if(i._rt !== RT.PURCHASED) return false;
+    if(i.qty <= 0) return false;
+    if((i._conf || 1) < 0.7) return false;
+    const ch = detectChange(i, vk, INV.invoiceNo, INV.date);
+    return ch.status === 'no_change' || ch.status === 'no_history' || (ch.pct || 0) <= 5;
+  });
 }
 
 function renderNewEditShell(){
