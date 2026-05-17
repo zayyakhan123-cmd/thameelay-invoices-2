@@ -4563,6 +4563,17 @@ function _newEditStopObserver(){
   _newEditLoggedSteps = new Set();
 }
 
+// Shared safe-item filter for the Workbench top bar. Used by both the
+// bulk button's label count and newEditApproveSafe() (the action), so
+// the displayed N can never disagree with the items the bulk approve
+// operates on. Note: this filter intentionally differs from
+// dbApproveSafe()'s definition — they are not unified here. See
+// comment near renderDashboardTable for the divergence history.
+function safeItems(){
+  if(!INV || !INV.items) return [];
+  return INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0 && (i._conf || 1) >= 0.7);
+}
+
 function renderNewEditShell(){
   const tw = document.querySelector('.dash-row-full .card .tw');
   if(!tw) return;
@@ -4577,9 +4588,7 @@ function renderNewEditShell(){
   const isExtracting = _newEditExtractionRunning();
   const shouldRender = hasInv || isExtracting;
 
-  const safeCount = hasInv
-    ? INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0 && (i._conf || 1) >= 0.7).length
-    : 0;
+  const safeCount = hasInv ? safeItems().length : 0;
 
   const leftHtml = hasInv
     ? `<span style="font-weight:500;color:var(--text)">${esc(INV.vendor || '')}</span><span style="color:var(--text3)">·</span><span style="color:var(--text2)">${esc(INV.date || '')}</span>`
@@ -4587,8 +4596,12 @@ function renderNewEditShell(){
         ? `<span style="color:var(--text2)">Extracting invoice…</span>`
         : `<span style="color:var(--text3)">No invoice loaded</span>`);
 
+  const approveBtnHtml = safeCount > 0
+    ? `<button type="button" class="db-bulk-btn primary" onclick="newEditApproveSafe()"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button>`
+    : `<button type="button" class="db-bulk-btn" disabled style="background:var(--greenl);color:var(--green);border:1px solid rgba(16,185,129,0.30);box-shadow:none;opacity:1;cursor:default">✓ All safe items approved</button>`;
+
   const rightHtml = hasInv
-    ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button><button type="button" class="db-bulk-btn primary"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button><div class="exp-menu-wrap" id="exp-menu-wrap"><button type="button" class="db-bulk-btn" id="exp-menu-btn" onclick="toggleExportMenu(event)" aria-haspopup="menu" aria-expanded="false">Export <i class="ti ti-chevron-down" aria-hidden="true"></i></button><div class="exp-menu" id="exp-menu" role="menu"><div class="exp-menu-item" role="menuitem" onclick="exportMenuGo('export')"><div class="exp-menu-item-title"><i class="ti ti-file-export" aria-hidden="true"></i>Export to POS (CSV)</div><div class="exp-menu-item-desc">Download approved price changes as CSV</div></div></div></div>`
+    ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button>${approveBtnHtml}<div class="exp-menu-wrap" id="exp-menu-wrap"><button type="button" class="db-bulk-btn" id="exp-menu-btn" onclick="toggleExportMenu(event)" aria-haspopup="menu" aria-expanded="false">Export <i class="ti ti-chevron-down" aria-hidden="true"></i></button><div class="exp-menu" id="exp-menu" role="menu"><div class="exp-menu-item" role="menuitem" onclick="exportMenuGo('export')"><div class="exp-menu-item-title"><i class="ti ti-file-export" aria-hidden="true"></i>Export to POS (CSV)</div><div class="exp-menu-item-desc">Download approved price changes as CSV</div></div></div></div>`
     : '';
 
   const pdfUrl = (hasInv && INV.pdfDataUrl) ? INV.pdfDataUrl : '';
@@ -4724,7 +4737,7 @@ function renderNewEditShell(){
       } else if(apStatus === 'rejected'){
         btnsHtml = `<div style="display:flex;gap:6px;align-items:center"><span class="db-act-status rejected">✕ Rejected</span><span class="db-act-undo" onclick="setAp('${escKey}','pending'); renderNewEditShell()">Undo</span></div>`;
       } else {
-        btnsHtml = `<button type="button" class="db-act-btn reject" onclick="setAp('${escKey}','rejected'); renderNewEditShell()"><i class="ti ti-x" aria-hidden="true"></i>Reject</button><button type="button" class="db-act-btn approve" onclick="setAp('${escKey}','approved'); renderNewEditShell()"><i class="ti ti-check" aria-hidden="true"></i>Approve</button>`;
+        btnsHtml = `<button type="button" class="db-act-btn reject" onclick="setAp('${escKey}','rejected'); renderNewEditShell()"><i class="ti ti-x" aria-hidden="true"></i>Reject</button><button type="button" class="db-act-btn approve" onclick="setAp('${escKey}','approved'); showToast('success','✓ Item approved'); renderNewEditShell()"><i class="ti ti-check" aria-hidden="true"></i>Approve</button>`;
       }
 
       // Detail header sub-row omitted by design — the matched name is
@@ -4834,6 +4847,21 @@ function renderNewEditShell(){
   } else {
     _newEditStopObserver();
   }
+}
+
+// Bulk-approves every item that safeItems() reports — same filter the
+// "(N)" label reads, so count and action operate on the same set. Per-
+// item state flip goes through setAp() so the per-product retail memory
+// side effect (setProdLastRetail) stays consistent with single-row
+// approvals. setAp's internal renderDashboardTable call is a no-op in
+// the new editor (tbody guard), so the N small calls don't thrash; one
+// renderNewEditShell at the end refreshes the top bar.
+function newEditApproveSafe(){
+  const items = safeItems();
+  if(!items.length) return;
+  items.forEach(it => { if(APPROVALS[it.item]) setAp(it.item, 'approved'); });
+  renderNewEditShell();
+  showToast('success', `✓ ${items.length} item${items.length === 1 ? '' : 's'} approved`);
 }
 
 // Export dropdown (Workbench top bar). The wrap re-renders on every
