@@ -1440,6 +1440,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
         <button class="bp" onclick="pcSaveHost()">Save</button>
         <button onclick="pcTestHost()">Test</button>
+        <button onclick="pcResetHost()" title="Clear custom pattern and use the in-repo default (produce-photos/{slug}.jpg)"><i class="ti ti-refresh" style="margin-right:4px"></i>Reset to default</button>
       </div>
       <div id="pc-host-status" style="font-size:11px;margin-top:8px;color:var(--text3)"></div>
     </div>
@@ -5569,6 +5570,17 @@ function pcSaveHost(){
   }
   pcSaveHostUrl(v);
   showToast('success', v ? 'Photo host saved' : 'Photo host cleared');
+  pcRenderCatalog();
+  if(PC_LAST_MATCHED) pcRenderResults();
+}
+function pcResetHost(){
+  // Clear the user's saved pattern so pcImgUrl falls through to PC_DEFAULT_HOST
+  // (the in-repo produce-photos/{slug}.jpg path).
+  try { localStorage.removeItem('tm_pc_host'); } catch(e) {}
+  const inp = document.getElementById('pc-host-pattern'); if(inp) inp.value = '';
+  const status = document.getElementById('pc-host-status');
+  if(status) status.innerHTML = `<span style="color:var(--text2)">Using built-in default: <code style="font-size:10px">${esc(PC_DEFAULT_HOST)}</code></span>`;
+  showToast('success', 'Reset to built-in photo path');
   pcRenderCatalog();
   if(PC_LAST_MATCHED) pcRenderResults();
 }
