@@ -4936,7 +4936,7 @@ function renderSummaryBanner(){
   // safeItems(). "Safe" means high-confidence extraction AND cost-stable
   // (no_change || no_history || pct <= 5).
   const safe = safeItems().length;
-  let changes=0, review=0;
+  let changes=0;
   let estLoss=0, projGain=0;
 
   purch.forEach(item=>{
@@ -4945,8 +4945,11 @@ function renderSummaryBanner(){
     const ru = retailUnit(item);
     const margin = ru>0 ? ((ru-cu)/ru)*100 : 0;
 
-    if(item._conf < 0.7){ review++; }
-    else if(ch.status === 'increase' && Math.abs(ch.pct)>2){
+    // Low-confidence rows are bucketed into review (computed below as the
+    // complement of safe). Skip so `changes` and the loss/gain estimates
+    // stay scoped to high-confidence rows — preserves the prior semantic.
+    if(item._conf < 0.7) return;
+    if(ch.status === 'increase' && Math.abs(ch.pct)>2){
       changes++;
       // estimated loss = pct change * volume * cost
       estLoss += Math.abs(ch.diff) * item.qty * (item._u||1);
@@ -4957,8 +4960,14 @@ function renderSummaryBanner(){
       projGain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3;
     }
   });
-  
+
   const total = purch.length;
+  // safe and review partition `purch` — every purchased row is in exactly
+  // one set, no overlap, no gap. `changes` is an independent classification
+  // (high-confidence rows with cost movement >2%) and may overlap either
+  // bucket. Action Required mirrors review: the complement-of-safe set is
+  // exactly what needs human attention.
+  const review = total - safe;
   const pct = (n) => total>0 ? ((n/total)*100).toFixed(1)+'%' : '0%';
   
   set('db-items', total);
@@ -4972,7 +4981,7 @@ function renderSummaryBanner(){
   set('db-loss', f2(estLoss).replace('$','$').replace('.00',''));
   set('db-gain', f2(projGain).replace('$','$').replace('.00',''));
   
-  document.getElementById('db-action-pill').textContent = `${changes+review} Action Required`;
+  document.getElementById('db-action-pill').textContent = `${review} Action Required`;
 }
 
 // 2. PRICE APPROVALS TABLE (the hero)
