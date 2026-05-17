@@ -5487,11 +5487,15 @@ function pcSaveMap(m){ lsSet(SK.PC_MAP, m); cloudMark('produce_map'); }
 function pcId(){ return 'pc_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
 function pcLoadHost(){ return localStorage.getItem('tm_pc_host') || ''; }
 function pcSaveHostUrl(u){ try{ localStorage.setItem('tm_pc_host', u); }catch(e){} }
+// Photos for the seeded Truong catalog ship in /produce-photos/{slug}.jpg.
+// This is the out-of-the-box default when no custom tm_pc_host is set;
+// users with a custom pattern override it.
+const PC_DEFAULT_HOST = 'produce-photos/{slug}.jpg';
 function pcImgUrl(item){
   if(!item) return '';
   if(item.image && (item.image.startsWith('http://')||item.image.startsWith('https://')||item.image.startsWith('data:'))) return pcRewriteForCors(item.image);
-  const pattern = pcLoadHost();
-  if(!pattern || !item.image) return '';
+  if(!item.image) return '';
+  const pattern = (pcLoadHost().trim()) || PC_DEFAULT_HOST;
   const url = pattern.replace('{slug}', item.image.replace(/\.jpg$/,'').replace(/\.png$/,'').replace(/\.jpeg$/,''));
   return pcRewriteForCors(url);
 }
