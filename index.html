@@ -681,6 +681,17 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .exp-menu-item:hover{background:var(--bg4)}
 .exp-menu-item-title{font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
 .exp-menu-item-desc{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* ─── EXPORT SIDE PANEL (commit 3a) ────────────── */
+.export-panel{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100vw;background:var(--surface);border-left:1px solid var(--border);z-index:200;transform:translateX(100%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,0.4)}
+.export-panel.open{transform:translateX(0)}
+.export-panel-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.export-panel-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.export-panel-close{background:transparent;border:0;color:var(--text2);cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;border-radius:5px;transition:background .12s}
+.export-panel-close:hover{background:var(--bg4);color:var(--text)}
+.export-panel-body{flex:1;overflow-y:auto;padding:16px 18px}
+.export-panel-footer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0}
+.export-panel-footer .db-bulk-btn{flex:1;justify-content:center}
 </style>
 </head>
 <body>
@@ -1092,19 +1103,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="g2">
     <div class="card">
       <div class="ctit">Export settings</div><div class="csub">Configure for your POS format</div>
-      <div class="ig"><label>POS format</label>
-        <select id="pos-fmt">
-          <option value="generic">Generic CSV (Item#, Description, Price)</option>
-          <option value="square">Square POS</option>
-          <option value="clover">Clover POS</option>
-        </select>
-      </div>
-      <div class="ig"><label>Include items</label>
-        <select id="exp-scope"><option value="approved">Approved only</option><option value="all">All shipped</option><option value="changed">Changed prices only</option></select>
-      </div>
-      <div class="ig"><label>Price rounding</label>
-        <select id="exp-round"><option value="charm4" selected>Charm: .29 / .49 / .79 / .99 (up)</option><option value="charm2">Charm: .49 / .99 (up)</option><option value="none">Exact markup (no rounding)</option></select>
-      </div>
+      <div id="exp-page-settings"></div>
       <div class="brow">
         <button class="bp" onclick="downloadCSV()"><i class="ti ti-download" style="margin-right:6px"></i>Download CSV</button>
         <button class="bgo" onclick="previewCSV()">Preview</button>
@@ -1574,6 +1573,23 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </div>
 </div><!-- /.app-wrap -->
 <div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- Export side panel (commit 3a). Opened by the Workbench Export dropdown.
+     Footer actions route to the standalone Export to POS page until commit
+     3b wires inline Download CSV / Save to history. -->
+<aside class="export-panel" id="export-panel" aria-hidden="true" aria-label="Export settings">
+  <div class="export-panel-header">
+    <div class="export-panel-title">Export</div>
+    <button type="button" class="export-panel-close" onclick="closeExportPanel()" aria-label="Close">×</button>
+  </div>
+  <div class="export-panel-body">
+    <div id="exp-panel-settings"></div>
+  </div>
+  <div class="export-panel-footer">
+    <button type="button" class="db-bulk-btn" onclick="closeExportPanel(); goTo('export')"><i class="ti ti-device-floppy" aria-hidden="true"></i>Save to history</button>
+    <button type="button" class="db-bulk-btn primary" onclick="closeExportPanel(); goTo('export')"><i class="ti ti-download" aria-hidden="true"></i>Download CSV</button>
+  </div>
+</aside>
 
 <!-- Vendor drill-down modal: opened by clicking a vendor card on the Vendor Dashboard -->
 <div id="vnd-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto" onclick="if(event.target===this)vendorClose()">
@@ -2505,6 +2521,10 @@ function goTo(id){
   if(id==='history')renderHistory();
   if(id==='pricing')renderTargets();
   if(id==='produce')pcOpenPage();
+  if(id==='export'){
+    renderExportSettings(document.getElementById('exp-page-settings'));
+    updateExportSummary();
+  }
 }
 document.querySelectorAll('nav a[data-pg]').forEach(a=>a.addEventListener('click',()=>goTo(a.dataset.pg)));
 
@@ -3057,10 +3077,52 @@ function dbApproveSafe(){
 }
 
 // ═══════════ EXPORT ═══════════
+// In-memory settings shared by both the standalone Export to POS page and
+// the side panel (commit 3a). Not persisted across reloads — matches the
+// prior no-persist behavior of the standalone <select>s. Mirrored into
+// every mounted [data-exp-setting] element via setExportSetting().
+const EXPORT_SETTINGS = { fmt: 'generic', scope: 'approved', round: 'charm4' };
+function setExportSetting(key, value){
+  EXPORT_SETTINGS[key] = value;
+  document.querySelectorAll(`[data-exp-setting="${key}"]`).forEach(el => {
+    if(el.value !== value) el.value = value;
+  });
+  // Keep the export summary on the standalone page in sync when the user
+  // changes scope/round/fmt from the panel.
+  if(typeof updateExportSummary === 'function') updateExportSummary();
+}
+function renderExportSettings(container){
+  if(!container) return;
+  container.innerHTML = `
+    <div class="ig"><label>POS format</label>
+      <select data-exp-setting="fmt" onchange="setExportSetting('fmt', this.value)">
+        <option value="generic">Generic CSV (Item#, Description, Price)</option>
+        <option value="square">Square POS</option>
+        <option value="clover">Clover POS</option>
+      </select>
+    </div>
+    <div class="ig"><label>Include items</label>
+      <select data-exp-setting="scope" onchange="setExportSetting('scope', this.value)">
+        <option value="approved">Approved only</option>
+        <option value="all">All shipped</option>
+        <option value="changed">Changed prices only</option>
+      </select>
+    </div>
+    <div class="ig"><label>Price rounding</label>
+      <select data-exp-setting="round" onchange="setExportSetting('round', this.value)">
+        <option value="charm4">Charm: .29 / .49 / .79 / .99 (up)</option>
+        <option value="charm2">Charm: .49 / .99 (up)</option>
+        <option value="none">Exact markup (no rounding)</option>
+      </select>
+    </div>`;
+  container.querySelectorAll('[data-exp-setting]').forEach(el => {
+    el.value = EXPORT_SETTINGS[el.dataset.expSetting] || el.value;
+  });
+}
 function getExportRows(){
   if(!INV)return[];
-  const scope=document.getElementById('exp-scope')?.value||'approved';
-  const rm=document.getElementById('exp-round')?.value||'charm4';
+  const scope=EXPORT_SETTINGS.scope||'approved';
+  const rm=EXPORT_SETTINGS.round||'charm4';
   // Always rounds UP — never decreases price below the markup target
   function round(p){
     if(rm==='charm4')return charmRoundUp(p,[0.29,0.49,0.79,0.99]);
@@ -3078,7 +3140,7 @@ function getExportRows(){
   });
 }
 function buildCSV(rows){
-  const fmt=document.getElementById('pos-fmt')?.value||'generic';
+  const fmt=EXPORT_SETTINGS.fmt||'generic';
   let h,fn;
   if(fmt==='generic'){h=['Item#','Description','Size','Case Cost','Unit Cost','Retail Price'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.box.toFixed(2),r.unit.toFixed(2),r.retail.toFixed(2)];}
   else{h=['SKU','Name','Size','Case Cost','Unit Cost','Retail'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.box.toFixed(2),r.unit.toFixed(2),r.retail.toFixed(2)];}
@@ -4605,7 +4667,7 @@ function renderNewEditShell(){
     : `<button type="button" class="db-bulk-btn" disabled style="background:var(--greenl);color:var(--green);border:1px solid rgba(16,185,129,0.30);box-shadow:none;opacity:1;cursor:default">✓ All safe items approved</button>`;
 
   const rightHtml = hasInv
-    ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button>${approveBtnHtml}<div class="exp-menu-wrap" id="exp-menu-wrap"><button type="button" class="db-bulk-btn" id="exp-menu-btn" onclick="toggleExportMenu(event)" aria-haspopup="menu" aria-expanded="false">Export <i class="ti ti-chevron-down" aria-hidden="true"></i></button><div class="exp-menu" id="exp-menu" role="menu"><div class="exp-menu-item" role="menuitem" onclick="exportMenuGo('export')"><div class="exp-menu-item-title"><i class="ti ti-file-export" aria-hidden="true"></i>Export to POS (CSV)</div><div class="exp-menu-item-desc">Download approved price changes as CSV</div></div></div></div>`
+    ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button>${approveBtnHtml}<div class="exp-menu-wrap" id="exp-menu-wrap"><button type="button" class="db-bulk-btn" id="exp-menu-btn" onclick="toggleExportMenu(event)" aria-haspopup="menu" aria-expanded="false">Export <i class="ti ti-chevron-down" aria-hidden="true"></i></button><div class="exp-menu" id="exp-menu" role="menu"><div class="exp-menu-item" role="menuitem" onclick="openExportPanel()"><div class="exp-menu-item-title"><i class="ti ti-file-export" aria-hidden="true"></i>Export to POS (CSV)</div><div class="exp-menu-item-desc">Download approved price changes as CSV</div></div></div></div>`
     : '';
 
   const pdfUrl = (hasInv && INV.pdfDataUrl) ? INV.pdfDataUrl : '';
@@ -4894,13 +4956,36 @@ function exportMenuGo(pg){
   closeExportMenu();
   goTo(pg);
 }
+
+// Export side panel (commit 3a). Opens from the Workbench Export dropdown
+// item; renders shared settings via renderExportSettings into the panel
+// body each open so values mirror the latest EXPORT_SETTINGS state.
+function openExportPanel(){
+  closeExportMenu();
+  const p = document.getElementById('export-panel');
+  if(!p) return;
+  renderExportSettings(document.getElementById('exp-panel-settings'));
+  p.classList.add('open');
+  p.setAttribute('aria-hidden', 'false');
+}
+function closeExportPanel(){
+  const p = document.getElementById('export-panel');
+  if(!p) return;
+  p.classList.remove('open');
+  p.setAttribute('aria-hidden', 'true');
+}
 document.addEventListener('click', e => {
   const wrap = document.getElementById('exp-menu-wrap');
-  if(!wrap) return;
-  if(!wrap.contains(e.target)) closeExportMenu();
+  if(wrap && !wrap.contains(e.target)) closeExportMenu();
+  const panel = document.getElementById('export-panel');
+  if(panel && panel.classList.contains('open')
+     && !panel.contains(e.target)
+     && (!wrap || !wrap.contains(e.target))){
+    closeExportPanel();
+  }
 });
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') closeExportMenu();
+  if(e.key === 'Escape'){ closeExportMenu(); closeExportPanel(); }
 });
 
 // 1. SUMMARY BANNER
