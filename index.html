@@ -1110,9 +1110,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <button class="bg" onclick="finalizeAndSave()"><i class="ti ti-device-floppy" style="margin-right:6px"></i>Save to history</button>
       </div>
     </div>
-    <div class="card"><div class="ctit">Export summary</div><div id="exp-summary"><div style="color:var(--text3);font-size:12px">No invoice loaded</div></div></div>
+    <div id="exp-page-summary"></div>
   </div>
-  <div id="csv-card" style="display:none"><div class="card"><div class="ctit">CSV preview</div><pre class="csv" id="csv-pre"></pre></div></div>
+  <div id="csv-card" style="display:none"><div id="exp-page-preview"></div></div>
 </div>
 
 <!-- TRACKER -->
@@ -1584,10 +1584,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
   <div class="export-panel-body">
     <div id="exp-panel-settings"></div>
+    <div id="exp-panel-summary" style="margin-top:14px"></div>
+    <div id="exp-panel-preview" style="margin-top:14px"></div>
   </div>
   <div class="export-panel-footer">
-    <button type="button" class="db-bulk-btn" onclick="closeExportPanel(); goTo('export')"><i class="ti ti-device-floppy" aria-hidden="true"></i>Save to history</button>
-    <button type="button" class="db-bulk-btn primary" onclick="closeExportPanel(); goTo('export')"><i class="ti ti-download" aria-hidden="true"></i>Download CSV</button>
+    <button type="button" class="db-bulk-btn" onclick="finalizeAndSave(true); showToast('success','✓ Saved to history')"><i class="ti ti-device-floppy" aria-hidden="true"></i>Save to history</button>
+    <button type="button" class="db-bulk-btn primary" onclick="downloadCSV()"><i class="ti ti-download" aria-hidden="true"></i>Download CSV</button>
   </div>
 </aside>
 
@@ -2523,7 +2525,8 @@ function goTo(id){
   if(id==='produce')pcOpenPage();
   if(id==='export'){
     renderExportSettings(document.getElementById('exp-page-settings'));
-    updateExportSummary();
+    renderExportSummary(document.getElementById('exp-page-summary'));
+    renderCsvPreview(document.getElementById('exp-page-preview'));
   }
 }
 document.querySelectorAll('nav a[data-pg]').forEach(a=>a.addEventListener('click',()=>goTo(a.dataset.pg)));
@@ -3087,9 +3090,11 @@ function setExportSetting(key, value){
   document.querySelectorAll(`[data-exp-setting="${key}"]`).forEach(el => {
     if(el.value !== value) el.value = value;
   });
-  // Keep the export summary on the standalone page in sync when the user
-  // changes scope/round/fmt from the panel.
+  // Keep summary + CSV preview on every mounted surface in sync when the
+  // user changes scope/round/fmt from either the panel or the standalone
+  // page. Both routines no-op when no [data-exp-*] elements are mounted.
   if(typeof updateExportSummary === 'function') updateExportSummary();
+  if(typeof refreshCsvPreview === 'function') refreshCsvPreview();
 }
 function renderExportSettings(container){
   if(!container) return;
@@ -3146,30 +3151,60 @@ function buildCSV(rows){
   else{h=['SKU','Name','Size','Case Cost','Unit Cost','Retail'];fn=r=>[r.no,`"${r.desc}"`,r.size,r.box.toFixed(2),r.unit.toFixed(2),r.retail.toFixed(2)];}
   return [h.join(','),...rows.map(r=>fn(r).join(','))].join('\n');
 }
+// Renders the summary card chrome (title + dynamic body) into the container.
+// Mirrors the 3a renderExportSettings pattern. Both surfaces call this on
+// mount; the dynamic body is then refreshed by updateExportSummary on
+// every state change (approvals, settings, invoice load).
+function renderExportSummary(container){
+  if(!container) return;
+  container.innerHTML = `<div class="card"><div class="ctit">Export summary</div><div data-exp-summary><div style="color:var(--text3);font-size:12px">No invoice loaded</div></div></div>`;
+  updateExportSummary();
+}
+function renderCsvPreview(container){
+  if(!container) return;
+  container.innerHTML = `<div class="card"><div class="ctit">CSV preview</div><pre class="csv" data-exp-preview></pre></div>`;
+  refreshCsvPreview();
+}
 function updateExportSummary(){
+  const targets = document.querySelectorAll('[data-exp-summary]');
+  if(!targets.length) return;
   const rows=getExportRows();
   const appr=Object.values(APPROVALS).filter(v=>v.status==='approved').length;
   const total=INV?INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).length:0;
-  document.getElementById('exp-summary').innerHTML=`
+  const html = `
     <div class="cr"><span class="crl">Approved items</span><span class="crv" style="color:var(--green)">${appr}</span></div>
     <div class="cr"><span class="crl">Total purchased items</span><span class="crv">${total}</span></div>
     <div class="cr"><span class="crl">Items in export</span><span class="crv" style="color:var(--c1)">${rows.length}</span></div>
     <div class="cr"><span class="crl">Invoice</span><span class="crv mn" style="font-size:12px">${INV?INV.vendor+' #'+INV.invoiceNo:'—'}</span></div>
     <div class="cr"><span class="crl">Date</span><span class="crv mn" style="font-size:12px">${INV?INV.date:'—'}</span></div>`;
+  targets.forEach(el => { el.innerHTML = html; });
 }
-function previewCSV(){const rows=getExportRows();document.getElementById('csv-pre').textContent=buildCSV(rows).split('\n').slice(0,11).join('\n');show('csv-card',true);}
+// Single source for the CSV preview text. Writes into every mounted
+// [data-exp-preview] element (both panel and standalone share the preview
+// text — the standalone page's #csv-card visibility toggle is preserved
+// via previewCSV below; the panel keeps its preview always visible).
+function refreshCsvPreview(){
+  const targets = document.querySelectorAll('[data-exp-preview]');
+  if(!targets.length) return;
+  const text = INV ? buildCSV(getExportRows()).split('\n').slice(0,11).join('\n') : '';
+  targets.forEach(el => { el.textContent = text; });
+}
+function previewCSV(){ refreshCsvPreview(); show('csv-card', true); }
 function downloadCSV(){
   if(!INV){alert('No invoice.');return;}const rows=getExportRows();if(!rows.length){alert('Nothing to export.');return;}
   const blob=new Blob([buildCSV(rows)],{type:'text/csv'});const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`${INV.vendor.replace(/\s+/g,'-')}-${INV.invoiceNo}.csv`;a.click();URL.revokeObjectURL(url);
 }
-function finalizeAndSave(){
+// `silent`: when truthy, suppresses the success alert so the caller (the
+// Export panel) can show a toast instead. Standalone page passes nothing,
+// preserving the original blocking-alert behavior.
+function finalizeAndSave(silent){
   if(!INV){alert('No invoice.');return;}
   const {saved,skipped}=saveInvoiceToDB(INV);
   const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor);
   if(idx>=0)hist.splice(idx,1);hist.unshift({...INV,savedAt:new Date().toISOString()});saveHist(hist);
   renderHistory();renderTracker('all');renderVendors();updateNavCounts();
-  alert(`Saved! ${saved} products added to price history. ${skipped} rows excluded.`);
+  if(!silent) alert(`Saved! ${saved} products added to price history. ${skipped} rows excluded.`);
 }
 
 // ═══════════ PRICE TRACKER ═══════════
@@ -4965,6 +5000,8 @@ function openExportPanel(){
   const p = document.getElementById('export-panel');
   if(!p) return;
   renderExportSettings(document.getElementById('exp-panel-settings'));
+  renderExportSummary(document.getElementById('exp-panel-summary'));
+  renderCsvPreview(document.getElementById('exp-panel-preview'));
   p.classList.add('open');
   p.setAttribute('aria-hidden', 'false');
 }
