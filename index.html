@@ -672,6 +672,15 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .db-bulk-btn.warn{background:var(--surface);color:var(--red);border-color:var(--red)}
 .db-bulk-btn.warn:hover{background:var(--redbg)}
 .db-bulk-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* ─── EXPORT DROPDOWN (Workbench top bar) ────────── */
+.exp-menu-wrap{position:relative;display:inline-block}
+.exp-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);box-shadow:0 4px 12px rgba(0,0,0,0.3);padding:4px;z-index:50;display:none}
+.exp-menu.open{display:block}
+.exp-menu-item{padding:8px 10px;border-radius:5px;cursor:pointer;transition:background .12s}
+.exp-menu-item:hover{background:var(--bg4)}
+.exp-menu-item-title{font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.exp-menu-item-desc{font-size:10px;color:var(--text3);margin-top:2px}
 </style>
 </head>
 <body>
@@ -4579,7 +4588,7 @@ function renderNewEditShell(){
         : `<span style="color:var(--text3)">No invoice loaded</span>`);
 
   const rightHtml = hasInv
-    ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button><button type="button" class="db-bulk-btn primary"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button>`
+    ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button><button type="button" class="db-bulk-btn primary"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button><div class="exp-menu-wrap" id="exp-menu-wrap"><button type="button" class="db-bulk-btn" id="exp-menu-btn" onclick="toggleExportMenu(event)" aria-haspopup="menu" aria-expanded="false">Export <i class="ti ti-chevron-down" aria-hidden="true"></i></button><div class="exp-menu" id="exp-menu" role="menu"><div class="exp-menu-item" role="menuitem" onclick="exportMenuGo('export')"><div class="exp-menu-item-title"><i class="ti ti-file-export" aria-hidden="true"></i>Export to POS (CSV)</div><div class="exp-menu-item-desc">Download approved price changes as CSV</div></div></div></div>`
     : '';
 
   const pdfUrl = (hasInv && INV.pdfDataUrl) ? INV.pdfDataUrl : '';
@@ -4826,6 +4835,37 @@ function renderNewEditShell(){
     _newEditStopObserver();
   }
 }
+
+// Export dropdown (Workbench top bar). The wrap re-renders on every
+// renderNewEditShell pass, so toggling/closing reads elements by id
+// rather than caching references. Document-level outside-click and
+// Escape listeners are registered once below.
+function toggleExportMenu(e){
+  if(e) e.stopPropagation();
+  const m = document.getElementById('exp-menu');
+  const btn = document.getElementById('exp-menu-btn');
+  if(!m || !btn) return;
+  const open = m.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function closeExportMenu(){
+  const m = document.getElementById('exp-menu');
+  const btn = document.getElementById('exp-menu-btn');
+  if(m) m.classList.remove('open');
+  if(btn) btn.setAttribute('aria-expanded', 'false');
+}
+function exportMenuGo(pg){
+  closeExportMenu();
+  goTo(pg);
+}
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('exp-menu-wrap');
+  if(!wrap) return;
+  if(!wrap.contains(e.target)) closeExportMenu();
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeExportMenu();
+});
 
 // 1. SUMMARY BANNER
 function renderSummaryBanner(){
