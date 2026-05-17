@@ -400,12 +400,6 @@ button:hover{background:var(--bg3);color:var(--text)}
 .rc td:first-child{box-shadow:inset 3px 0 0 var(--purple)}
 .rm td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 
-/* ─── APPROVAL ROWS legacy ─────────────────────── */
-.apr{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--rl);margin-bottom:8px;background:var(--surface);transition:all .15s}
-.apr:hover{border-color:var(--border2)}
-.apr.aok{border-left:3px solid var(--green)}
-.apr.ano{border-left:3px solid var(--text4);opacity:.5}
-.apr.ap{border-left:3px solid var(--amber);background:var(--amberbg)}
 .tinput{font-family:var(--font-mono);font-size:12px;padding:6px 9px;border:1px solid var(--border2);border-radius:5px;background:var(--surface);color:var(--text);outline:none;width:90px}
 .tinput:focus{border-color:var(--c1);box-shadow:0 0 0 2px rgba(34,211,238,.1)}
 .tsel{font-size:11px;padding:4px 7px;border:1px solid var(--border2);border-radius:5px;background:var(--surface);color:var(--text);outline:none;cursor:pointer}
@@ -731,7 +725,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="sg"><div class="slabel">Workflow</div>
     <a data-pg="dashboard" class="on"><i class="sico ti ti-layout-dashboard"></i>Dashboard</a>
     <a data-pg="upload"><i class="sico ti ti-upload"></i>Upload Invoices</a>
-    <a data-pg="approve"><i class="sico ti ti-check"></i>Price Approvals <span class="scnt scnt-red" id="ap-cnt">0</span></a>
     <a data-pg="export"><i class="sico ti ti-file-export"></i>Export to POS</a>
   </div>
   <div class="sg"><div class="slabel">Intelligence</div>
@@ -871,7 +864,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <button class="db-bulk-btn primary" onclick="dbApproveAll()" title="Approve every item"><i class="ti ti-checks" style="margin-right:6px"></i>All</button>
         <button class="db-bulk-btn warn" onclick="dbRejectAll()"><i class="ti ti-x" style="margin-right:6px"></i>Reject All</button>
         <button class="db-bulk-btn" onclick="dbLoadLastInvoice()" title="Re-load the most recently uploaded invoice"><i class="ti ti-file-text" style="margin-right:6px"></i>Last Invoice</button>
-        <button class="db-bulk-btn" onclick="goTo('approve')" title="Open detailed approvals page"><i class="ti ti-arrow-right" style="margin-right:6px"></i>Details</button>
       </div>
       <div class="tw">
         <table>
@@ -1084,57 +1076,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <!-- VERIFY -->
 
 <!-- APPROVE -->
-<div class="pg" id="pg-approve">
-  <div class="pgh"><div class="pgt">Price Approvals</div><div class="pgs">Suggested retail prices — approve, adjust, or reject before export</div></div>
-  <div class="steps"><div class="step done">1 ✓</div><div class="step done">2 ✓</div><div class="step active">3 · Approve</div><div class="step">4 · Export</div></div>
-  <div class="mets">
-    <div class="met">
-      <div class="met-hdr"><div class="met-lbl">Pending Review</div><div class="met-ico" style="font-size:18px"><i class="ti ti-clock"></i></div></div>
-      <div class="met-val mn" id="am-p" style="color:var(--amber)">0</div>
-      <div class="met-foot"><span class="met-chip ta">awaiting</span><span class="met-comp">your action</span></div>
-    </div>
-    <div class="met">
-      <div class="met-hdr"><div class="met-lbl">Approved</div><div class="met-ico" style="font-size:18px"><i class="ti ti-check"></i></div></div>
-      <div class="met-val mn" id="am-a" style="color:var(--green)">0</div>
-      <div class="met-foot"><span class="met-chip dn">ready</span><span class="met-comp">for export</span></div>
-    </div>
-    <div class="met">
-      <div class="met-hdr"><div class="met-lbl">Cost Increases</div><div class="met-ico" style="font-size:18px;background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.3)">▲</div></div>
-      <div class="met-val mn" id="am-u" style="color:var(--red)">0</div>
-      <div class="met-foot"><span class="met-chip up">▲ alert</span><span class="met-comp">vs prior</span></div>
-    </div>
-    <div class="met">
-      <div class="met-hdr"><div class="met-lbl">Cost Decreases</div><div class="met-ico" style="font-size:18px;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3)">▼</div></div>
-      <div class="met-val mn" id="am-d" style="color:var(--green)">0</div>
-      <div class="met-foot"><span class="met-chip dn">▼ savings</span><span class="met-comp">vs prior</span></div>
-    </div>
-  </div>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-      <div><div class="ctit">Suggested prices</div><div class="csub" style="margin-bottom:0">Edit retail/unit directly then approve</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="bg" onclick="bulkApprove()"><i class="ti ti-check" style="margin-right:6px"></i>Approve all</button>
-        <button onclick="approveSelected()">Approve selected</button>
-        <button class="br" onclick="rejectAll()"><i class="ti ti-x" style="margin-right:6px"></i>Reject all</button>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-        <input type="checkbox" id="sel-all" class="chk" onchange="toggleSelAll(this.checked)">Select all
-      </label>
-      <div class="pills" style="margin-bottom:0" id="af-pills">
-        <div class="pill on" data-af="all">All</div>
-        <div class="pill" data-af="pending">Pending</div>
-        <div class="pill" data-af="approved">Approved</div>
-        <div class="pill" data-af="up">Cost up ▲</div>
-        <div class="pill" data-af="dn">Cost down ▼</div>
-      </div>
-    </div>
-    <div id="ap-list"></div>
-  </div>
-  <div class="brow"><button class="bp" onclick="goTo('export')">Go to export →</button></div>
-</div>
-
 <!-- EXPORT -->
 <div class="pg" id="pg-export">
   <div class="pgh"><div class="pgt">Export to POS</div><div class="pgs">Download approved price changes as CSV</div></div>
@@ -2985,8 +2926,7 @@ function loadInvoice(inv){
     APPROVALS[i.item]={status:'pending',retailPrice:resolveSuggestedRetail(i,inv.vendor).retail,change:ch,
       desc:i.desc,cat:i.cat,size:i.size,qty:i.qty,caseCost:i.caseCost};
   });
-  renderApprovals("all");
-  updateApprovalCounts();buildAlerts();updateNavCounts();
+  buildAlerts();updateNavCounts();
   renderDashboard();
   goTo('dashboard');
 }
@@ -3010,87 +2950,7 @@ if(_vfPills) _vfPills.addEventListener('click',e=>{
 function editDesc(item,v){if(!INV)return;const i=INV.items.find(x=>x.item===item);if(i){i.desc=v;if(APPROVALS[item])APPROVALS[item].desc=v;}}
 function editCat(item,v){if(!INV)return;const i=INV.items.find(x=>x.item===item);if(i){i.cat=v;if(APPROVALS[item]){APPROVALS[item].cat=v;APPROVALS[item].retailPrice=charmRoundUp(retailUnit(i),[0.29,0.49,0.79,0.99]);}}}
 
-function runPricing(){
-  if(!INV){alert('No invoice loaded.');return;}
-  INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).forEach(i=>{if(APPROVALS[i.item])APPROVALS[i.item].retailPrice=charmRoundUp(retailUnit(i),[0.29,0.49,0.79,0.99]);});
-  renderApprovals('all');updateApprovalCounts();goTo('approve');
-}
-
 // ═══════════ APPROVALS ═══════════
-function renderApprovals(filter){
-  if(!INV)return;
-  let items=INV.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0);
-  if(filter==='pending')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].status==='pending');
-  else if(filter==='approved')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].status==='approved');
-  else if(filter==='up')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].change&&APPROVALS[i.item].change.status==='increase');
-  else if(filter==='dn')items=items.filter(i=>APPROVALS[i.item]&&APPROVALS[i.item].change&&APPROVALS[i.item].change.status==='decrease');
-
-  document.getElementById('ap-list').innerHTML=items.map(i=>{
-    const ap=APPROVALS[i.item]||{};
-    const cu=unitCost(i);
-    const retail=ap.retailPrice||retailUnit(i);
-    const prof=retail-cu; const marg=retail>0?(prof/retail*100):0;
-    const mc=marg>=30?'var(--green)':marg>=20?'var(--amber)':'var(--red)';
-    const st=ap.status||'pending'; const ch=ap.change||{};
-    let chTag='';
-    if(ch.status==='increase'){
-      chTag=`<span class="tag tr">▲ +${ch.pct.toFixed(1)}% vs ${esc(ch.prevDate||'prev invoice')}</span>`;
-      if(ch.matchType==='cross_vendor')chTag+=` <span class="tag tp">cross-vendor match</span>`;
-      else if(ch.matchType==='fuzzy')chTag+=` <span class="tag ta">${Math.round((ch.matchConf||0)*100)}% similarity</span>`;
-    }
-    else if(ch.status==='decrease')chTag=`<span class="tag tg">▼ ${ch.pct.toFixed(1)}%</span>`;
-    else if(ch.status==='no_history')chTag=`<span class="tag tb">First time ordered</span>`;
-    // Cross-vendor cheaper option
-    if(ch.crossVendor&&ch.crossVendor.cheaperCount>0){
-      chTag+=` <span class="tag tg" style="font-size:10px">💰 cheaper from another vendor (save ${f2(ch.crossVendor.savings)}/unit)</span>`;
-    }
-    return `<div class="apr ap${st==='approved'?'ok':st==='rejected'?'no':'p'}" data-item="${esc(i.item)}">
-      <input type="checkbox" class="chk apchk" data-item="${esc(i.item)}">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;margin-bottom:3px">${esc(i.desc)} ${i._isNew?'<span class="tag tb">NEW</span>':''}</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:5px">${esc(CLABEL[i.cat]||'')} · ${esc(i.size)} · ${i._u||1} ${soldByLabelPlural(i)}/case · ${i.qty} cases</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:12px">Cost: <b class="mn">${f2(cu)}</b>/${soldByLabel(i)} · Case: <b class="mn">${f2(i.caseCost)}</b></span>
-          <select onchange="setProdSoldBy('${escJs(i.desc)}','${escJs(INV.vendor||'')}',this.value)" style="font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface)" title="Sold by">
-            <option value="">Auto (${i._inferredSoldBy||'each'})</option>
-            <option value="each" ${i._soldByOverride==='each'?'selected':''}>Each</option>
-            <option value="box" ${i._soldByOverride==='box'?'selected':''}>Box</option>
-            <option value="lb" ${i._soldByOverride==='lb'?'selected':''}>Pound</option>
-            <option value="kg" ${i._soldByOverride==='kg'?'selected':''}>Kg</option>
-            <option value="oz" ${i._soldByOverride==='oz'?'selected':''}>Ounce</option>
-          </select>
-          ${i._soldByDisagrees ? `<span title="AI suggested '${esc(i._aiSoldBy)}' but the size pattern looks like '${esc(i._inferredSoldBy)}' — please verify." style="font-size:13px;cursor:help;color:var(--amber)"><i class="ti ti-alert-triangle"></i></span>` : ''}
-          ${chTag}
-        </div>
-      </div>
-      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding-left:12px">
-        <div>
-          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/UNIT</div>
-          <input type="number" class="tinput" value="${retail.toFixed(2)}" step="0.01" min="0"
-            onchange="updateRetail('${escJs(i.item)}',parseFloat(this.value))">
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">RETAIL/CASE</div>
-          <div class="mn" style="font-size:14px;font-weight:700;color:var(--c1)">${f2(retail*(i._u||1))}</div>
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:3px">MARGIN</div>
-          <div class="mn" style="font-size:14px;font-weight:700;color:${mc}">${marg.toFixed(1)}%</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="setAp('${escJs(i.item)}','approved')" ${st==='approved'?'class="bg"':''}><i class="ti ti-check"></i></button>
-          <button onclick="setAp('${escJs(i.item)}','rejected')" ${st==='rejected'?'class="br"':''}><i class="ti ti-x"></i></button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.querySelectorAll('#af-pills .pill').forEach(p=>{
-    p.onclick=()=>{document.querySelectorAll('#af-pills .pill').forEach(x=>x.classList.remove('on'));p.classList.add('on');renderApprovals(p.dataset.af);};
-  });
-}
-
-function updateRetail(k,v){if(APPROVALS[k])APPROVALS[k].retailPrice=v;const p=document.querySelector('#af-pills .pill.on');renderApprovals(p?p.dataset.af:'all');}
 // Dashboard-table retail editing. Keeps typing snappy by updating only the
 // row's projected-margin cell instead of re-rendering the whole table.
 function onRetailInput(itemKey, el){
@@ -3151,51 +3011,12 @@ function setAp(k,s){
     const ap = APPROVALS[k];
     setProdLastRetail(ap.desc, INV.vendor, ap.retailPrice);
   }
-  updateApprovalCounts();
   updateExportSummary();
-
-  // Only update the dashboard table if it's actually visible. When the user is on the
-  // approvals page (the most common case), the dashboard table will be re-rendered
-  // naturally on tab switch — saves ~30ms per click for no visible difference.
-  const dashboardVisible = document.getElementById('pg-dashboard')?.classList.contains('on');
-
-  // Decide whether the row should remain visible under the active filter.
-  const activePill = document.querySelector('#af-pills .pill.on');
-  const filter = activePill ? activePill.dataset.af : 'all';
-  const stillVisible = (
-    filter === 'all' ||
-    (filter === 'pending'  && s === 'pending') ||
-    (filter === 'approved' && s === 'approved') ||
-    (filter === 'up' || filter === 'dn') // change-based filters don't depend on status
-  );
-
-  if(stillVisible){
-    // Surgical update: change row class + button highlight without rebuilding the DOM.
-    // Escape just the chars that matter inside an attribute selector. Item codes are
-    // typically alphanumeric, so this is mostly defensive.
-    const sel = String(k).replace(/(["\\])/g, '\\$1');
-    const row = document.querySelector(`.apr[data-item="${sel}"]`);
-    if(row){
-      row.classList.remove('apok', 'apno', 'app');
-      row.classList.add(s === 'approved' ? 'apok' : s === 'rejected' ? 'apno' : 'app');
-      const buttons = row.querySelectorAll('button');
-      buttons.forEach(b => {
-        const onc = b.getAttribute('onclick') || '';
-        b.classList.remove('bg', 'br');
-        if(onc.includes("'approved'") && s === 'approved') b.classList.add('bg');
-        if(onc.includes("'rejected'") && s === 'rejected') b.classList.add('br');
-      });
-      if(dashboardVisible) renderDashboardTable();
-      return;
-    }
-  }
-  // Fallback: full re-render (filter changes membership, or row isn't in the DOM).
-  if(activePill) renderApprovals(filter);
-  if(dashboardVisible) renderDashboardTable();
+  // Dashboard table owns the approval-row UI now (standalone view removed).
+  if(document.getElementById('pg-dashboard')?.classList.contains('on')) renderDashboardTable();
 }
-function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('success', `Approved ${Object.keys(APPROVALS).length} items`);}
-function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
-function approveSelected(){document.querySelectorAll('.apchk:checked').forEach(c=>{if(APPROVALS[c.dataset.item])APPROVALS[c.dataset.item].status='approved';});updateApprovalCounts();renderApprovals('all');renderDashboardTable();updateExportSummary();}
+function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='approved');renderDashboardTable();updateExportSummary();showToast('success', `Approved ${Object.keys(APPROVALS).length} items`);}
+function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');renderDashboardTable();updateExportSummary();showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
 
 // Dashboard-only bulk actions
 function dbApproveAll(){
@@ -3224,19 +3045,9 @@ function dbApproveSafe(){
     const isSafe = (ch.status==='no_change'||ch.status==='no_history'||(Math.abs(ch.pct||0)<=2)) && (item._conf||1)>=0.7;
     if(isSafe){APPROVALS[k].status='approved';n++;}
   });
-  updateApprovalCounts();renderDashboardTable();
-  const p=document.querySelector('#af-pills .pill.on');if(p)renderApprovals(p.dataset.af);
+  renderDashboardTable();
   updateExportSummary();
   showToast('success', n>0 ? `Approved ${n} safe item${n!==1?'s':''}` : 'No safe items to auto-approve');
-}
-function toggleSelAll(v){document.querySelectorAll('.apchk').forEach(c=>c.checked=v);}
-function updateApprovalCounts(){
-  const vals=Object.values(APPROVALS);
-  document.getElementById('am-p').textContent=vals.filter(v=>v.status==='pending').length;
-  document.getElementById('am-a').textContent=vals.filter(v=>v.status==='approved').length;
-  document.getElementById('am-u').textContent=vals.filter(v=>v.change&&v.change.status==='increase').length;
-  document.getElementById('am-d').textContent=vals.filter(v=>v.change&&v.change.status==='decrease').length;
-  const apc=document.getElementById('ap-cnt');if(apc)apc.textContent=vals.filter(v=>v.status==='pending').length;
 }
 
 // ═══════════ EXPORT ═══════════
@@ -3324,10 +3135,6 @@ function setProdSoldBy(name, vendor, value){
         it._soldBy = value || it._inferredSoldBy || parseUnitsRobust(it.size).inferredSoldBy;
       }
     });
-    if(typeof renderApprovals === 'function'){
-      const p = document.querySelector('#af-pills .pill.on');
-      renderApprovals(p ? p.dataset.af : 'all');
-    }
   }
 }
 
@@ -4103,7 +3910,6 @@ function onTgtChange(c){
   const el = document.getElementById('ti-'+c); if(el) el.textContent = `→ ${marg}% margin · $1.00 → $${ret}`;
   populateCatDropdown('cc-cat');
   renderRefTable(); calcRun();
-  if(INV) renderApprovals("all");
 }
 // Add a custom category. Asks for label + match-rule + markup; auto-picks a color.
 function catAddPrompt(){
@@ -4134,7 +3940,6 @@ function catEdit(id){
   const cats = loadCats().map(x => x.id === id ? {...x, label:newLabel, matchRule:newRule} : x);
   saveCats(cats);
   renderTargets();
-  if(INV) renderApprovals("all");
 }
 function catDelete(id){
   const c = catFind(id);
@@ -4143,7 +3948,6 @@ function catDelete(id){
   const cats = loadCats().filter(x => x.id !== id);
   saveCats(cats);
   renderTargets();
-  if(INV) renderApprovals("all");
   if(typeof showToast === 'function') showToast('info', `Removed "${c.label}"`);
 }
 function onTgtChange_legacy_unused(){} // (kept slot — original onTgtChange replaced above)
@@ -5650,7 +5454,6 @@ function updatePageHeader(pgId){
     dashboard: ['Dashboard', 'AI-powered invoice analysis and price optimization'],
     upload: ['Upload Invoices', 'Drop vendor invoice PDFs to extract line items'],
     verify: ['Verify Lines', 'Review and correct extracted line items'],
-    approve: ['Price Approvals', 'Review and approve price recommendations'],
     export: ['Export to POS', 'Export approved prices to your POS system'],
     tracker: ['Price Tracker', 'Track product price history over time'],
     vendors: ['Vendor Insights', 'Analyze vendor performance and pricing'],
