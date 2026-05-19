@@ -6360,10 +6360,9 @@ function pcManualValidate(){
   });
   return !allInvalid;
 }
-// Save current INV to history if it's a real invoice, then create or
-// resume the session-scoped Manual entry accumulator. Preserves the
-// existing APPROVALS state for items already in the manual invoice so
-// re-saving doesn't reset prior approve/reject decisions.
+// Manual entries write to PC_LAST_MATCHED.lines only. They flow into
+// the Match Invoice tab and Export PDF — not into APPROVALS, Dashboard,
+// or the main CSV export. Scoped entirely within Produce Matcher.
 function pcManualSave(){
   if(!pcManualValidate()){
     showToast('warn', 'Fix the highlighted rows before saving');
@@ -6415,7 +6414,7 @@ function pcManualSave(){
   _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', slug:null}];
   _pcManualAcOpenIdx = -1;
   pcManualRender();
-  showToast('success', `✓ Added ${n} item${n===1?'':'s'} to produce matches`);
+  showToast('success', `✓ Added ${n} item${n===1?'':'s'} to Match Invoice`);
 }
 // Close any open autocomplete dropdown on outside click. Cheap delegate
 // — runs once per click, only matters when an autocomplete is open.
