@@ -763,7 +763,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="sg"><div class="slabel">Workflow</div>
     <a data-pg="dashboard" class="on"><i class="sico ti ti-layout-dashboard"></i>Dashboard</a>
     <a data-pg="upload"><i class="sico ti ti-upload"></i>Upload Invoices</a>
-    <a data-pg="export"><i class="sico ti ti-file-export"></i>Export to POS</a>
   </div>
   <div class="sg"><div class="slabel">Intelligence</div>
     <a data-pg="tracker"><i class="sico ti ti-trending-up"></i>Price Tracker</a>
@@ -1621,7 +1620,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div id="exp-panel-preview" style="margin-top:14px"></div>
   </div>
   <div class="export-panel-footer">
-    <button type="button" class="db-bulk-btn" onclick="finalizeAndSave(true); showToast('success','✓ Saved to history')"><i class="ti ti-device-floppy" aria-hidden="true"></i>Save to history</button>
+    <button type="button" class="db-bulk-btn" onclick="if(finalizeAndSave(true)){showToast('success','✓ Saved to history');closeExportPanel();goTo('dashboard');}"><i class="ti ti-device-floppy" aria-hidden="true"></i>Save to history</button>
     <button type="button" class="db-bulk-btn primary" onclick="downloadCSV()"><i class="ti ti-download" aria-hidden="true"></i>Download CSV</button>
   </div>
 </aside>
@@ -3238,6 +3237,7 @@ function finalizeAndSave(silent){
   if(idx>=0)hist.splice(idx,1);hist.unshift({...INV,savedAt:new Date().toISOString()});saveHist(hist);
   renderHistory();renderTracker('all');renderVendors();updateNavCounts();
   if(!silent) alert(`Saved! ${saved} products added to price history. ${skipped} rows excluded.`);
+  return true;
 }
 
 // ═══════════ PRICE TRACKER ═══════════
