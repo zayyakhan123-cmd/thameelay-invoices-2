@@ -695,7 +695,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 /* ─── PRODUCE MATCHER · MANUAL ENTRY FORM ──────── */
 .pc-manual-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.pc-manual-row{display:grid;grid-template-columns:minmax(0,2fr) 90px 120px 30px;gap:8px;align-items:start;position:relative}
+.pc-manual-row{display:grid;grid-template-columns:minmax(0,2fr) 80px 90px 110px 30px;gap:8px;align-items:start;position:relative}
 .pc-manual-row .ig{margin:0;min-width:0}
 .pc-manual-row.invalid input{border-color:var(--red)}
 .pc-manual-row-x{background:transparent;border:1px solid var(--border);color:var(--text3);width:30px;height:34px;border-radius:5px;cursor:pointer;align-self:end;font-size:14px;line-height:1}
@@ -6237,15 +6237,13 @@ function pcClearAllMatches(){
 
 // ── Manual produce entry ────────────────────────
 // Parallel entry path that writes into the main approval pipeline
-// (INV/APPROVALS), not into PC_LAST_MATCHED. Rows accumulate into a
-// session-scoped "Manual entry" invoice; if a real invoice is loaded,
-// it gets saved to history first so its approval state isn't lost.
-// Items get _conf, _rt, etc. via the same classifyInvoice that
-// invoice-extracted items go through — fields defaulted: size='1 each',
-// soldBy='each', cat='produce'. Field defaults documented above the
-// row-build in pcManualSave().
+// Manual produce entry — writes items directly into PC_LAST_MATCHED
+// (the Produce Matcher pipeline). Does NOT touch INV, APPROVALS, or the
+// main CSV export. Each entry becomes a line item with the same shape
+// as invoice-extracted items (invoiceText, cost, unitType, qty, etc.)
+// with catalogId/catalogName populated when the user picks from autocomplete.
 const PC_MANUAL_VENDOR = 'Manual entry';
-let _pcManualRows = [{name:'', qty:'', cost:'', slug:null}];
+let _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', slug:null}];
 let _pcManualAcOpenIdx = -1;
 function pcManualToggle(){
   const card = document.getElementById('pc-manual-card');
@@ -6253,7 +6251,7 @@ function pcManualToggle(){
   const opening = card.style.display === 'none';
   card.style.display = opening ? 'block' : 'none';
   if(opening){
-    _pcManualRows = [{name:'', qty:'', cost:'', slug:null}];
+    _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', slug:null}];
     _pcManualAcOpenIdx = -1;
     pcManualRender();
   } else {
@@ -6261,7 +6259,7 @@ function pcManualToggle(){
   }
 }
 function pcManualAddRow(){
-  _pcManualRows.push({name:'', qty:'', cost:'', slug:null});
+  _pcManualRows.push({name:'', qty:'', cost:'', unit:'lb', slug:null});
   pcManualRender();
 }
 function pcManualRemoveRow(i){
@@ -6279,6 +6277,7 @@ function pcManualOnName(i, val){
 }
 function pcManualOnQty(i, val){ _pcManualRows[i].qty = val; pcManualUpdateSaveLabel(); }
 function pcManualOnCost(i, val){ _pcManualRows[i].cost = val; pcManualUpdateSaveLabel(); }
+function pcManualOnUnit(i, val){ _pcManualRows[i].unit = val; }
 function pcManualPickMatch(i, id){
   const cat = pcLoadCatalog().find(c => c.id === id);
   if(!cat) return;
@@ -6321,7 +6320,12 @@ function pcManualRender(){
         <div class="pc-manual-ac" id="pc-manual-ac-${i}"></div>
       </div>
       <div class="ig"><label>Qty</label><input type="number" min="0" step="1" value="${esc(r.qty)}" placeholder="1" oninput="pcManualOnQty(${i}, this.value)"></div>
-      <div class="ig"><label>Case cost</label><input type="number" min="0" step="0.01" value="${esc(r.cost)}" placeholder="0.00" oninput="pcManualOnCost(${i}, this.value)"></div>
+      <div class="ig"><label>Unit</label><select onchange="pcManualOnUnit(${i}, this.value)">
+        <option value="lb"${r.unit==='lb'?' selected':''}>lb</option>
+        <option value="each"${r.unit==='each'?' selected':''}>each</option>
+        <option value="bunch"${r.unit==='bunch'?' selected':''}>bunch</option>
+      </select></div>
+      <div class="ig"><label>Unit cost</label><input type="number" min="0" step="0.01" value="${esc(r.cost)}" placeholder="0.00" oninput="pcManualOnCost(${i}, this.value)"></div>
       <button type="button" class="pc-manual-row-x" onclick="pcManualRemoveRow(${i})" title="Remove row">×</button>
     </div>`).join('');
   if(_pcManualAcOpenIdx >= 0) pcManualRenderAcOnly(_pcManualAcOpenIdx);
@@ -6368,84 +6372,50 @@ function pcManualSave(){
   const validRows = _pcManualRows.filter(r => r.name.trim() && parseFloat(r.qty) > 0 && parseFloat(r.cost) > 0);
   if(!validRows.length) return;
 
-  // 1. Decide invoice: resume current manual-entry INV if active, else
-  //    save current INV to history (if any) and create a fresh one.
-  let inv;
-  if(INV && INV.vendor === PC_MANUAL_VENDOR){
-    inv = INV;
-  } else {
-    if(INV && INV.items && INV.items.length){
-      const hist = loadHist();
-      const idx = hist.findIndex(h => h.invoiceNo === INV.invoiceNo && h.vendor === INV.vendor);
-      if(idx >= 0) hist.splice(idx, 1);
-      hist.unshift({...INV, savedAt: new Date().toISOString()});
-      saveHist(hist);
-    }
-    const today = new Date().toISOString().slice(0, 10);
-    inv = {
-      vendor: PC_MANUAL_VENDOR,
-      invoiceNo: 'MANUAL-' + Date.now(),
-      date: today,
-      items: [],
-      docType: 'invoice'
-    };
-  }
+  if(!PC_LAST_MATCHED) PC_LAST_MATCHED = {lines:[], when: new Date().toISOString(), invoice: null};
 
-  // 2. Append rows. Defaults documented above: size='1 each' yields a
-  //    high parseUnitsRobust conf so classifyRow assigns _conf ≈ 1.0
-  //    and _rt = PURCHASED (since qty > 0 and caseCost > 0). soldBy
-  //    'each' means unitCost = caseCost / qty. cat 'produce' is the
-  //    natural bucket for this entry path.
-  const startIdx = inv.items.length;
-  validRows.forEach((r, i) => {
-    inv.items.push({
-      item: 'MAN-' + Date.now() + '-' + (startIdx + i),
-      desc: r.name.trim(),
-      cat: 'produce',
-      size: '1 each',
-      qty: parseFloat(r.qty),
-      caseCost: parseFloat(r.cost),
-      soldBy: 'each'
+  const today = new Date().toISOString().slice(0, 10);
+  const cat = pcLoadCatalog();
+
+  validRows.forEach(r => {
+    const cost = parseFloat(r.cost);
+    const qty  = parseFloat(r.qty);
+    const catItem = r.slug ? cat.find(c => c.id === r.slug) : null;
+    const unitType = r.unit || (catItem && catItem.unit) || 'each';
+    PC_LAST_MATCHED.lines.push({
+      invoiceText:   r.name.trim(),
+      invoiceSize:   '',
+      baseCaseCost:  cost,
+      shipPerCase:   0,
+      ruleName:      '',
+      caseCost:      cost,
+      unitsPerCase:  1,
+      cost:          cost,
+      unitType:      unitType,
+      qty:           qty,
+      catalogId:     catItem ? catItem.id   : null,
+      catalogName:   catItem ? catItem.name : null,
+      score:         catItem ? 1 : 0,
+      confidence:    catItem ? 'high' : 'none',
+      fromMap:       false,
+      remember:      false,
+      retailOverride: null,
+      _vendor:       PC_MANUAL_VENDOR,
+      _invoiceNo:    '',
+      _invoiceDate:  today,
+      _manual:       true
     });
   });
 
-  // 3. Re-classify and rebuild APPROVALS, preserving status for items
-  //    that were already in inv.items (so prior approve/reject sticks
-  //    when the user adds more rows in the same session).
-  const prevAppr = (INV === inv) ? {...APPROVALS} : {};
-  classifyInvoice(inv);
-  INV = inv;
-  const vk = normV(inv.vendor);
-  const nextAppr = {};
-  inv.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0).forEach(i => {
-    const ch = detectChange(i, vk, inv.invoiceNo, inv.date);
-    const existing = prevAppr[i.item];
-    nextAppr[i.item] = existing || {
-      status: 'pending',
-      retailPrice: resolveSuggestedRetail(i, inv.vendor).retail,
-      change: ch,
-      desc: i.desc, cat: i.cat, size: i.size, qty: i.qty, caseCost: i.caseCost
-    };
-  });
-  APPROVALS = nextAppr;
+  PC_LAST_MATCHED.when = new Date().toISOString();
+  pcSaveLast();
+  pcRenderResults();
 
-  // 4. Refresh downstream UI without auto-navigating away from Produce
-  //    Matcher (per UX decision — stay on PC, link to Dashboard via
-  //    toast).
-  const _hb = document.getElementById('hbadge');
-  if(_hb) _hb.textContent = inv.vendor + ' #' + inv.invoiceNo + ' · ' + inv.date;
-  buildAlerts();
-  updateNavCounts();
-  renderDashboard();
-  updateExportSummary();
-  refreshCsvPreview();
-
-  // 5. Reset form, fire toast with link.
   const n = validRows.length;
-  _pcManualRows = [{name:'', qty:'', cost:'', slug:null}];
+  _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', slug:null}];
   _pcManualAcOpenIdx = -1;
   pcManualRender();
-  showToast('success', `✓ Added ${n} item${n===1?'':'s'} — view in Dashboard`);
+  showToast('success', `✓ Added ${n} item${n===1?'':'s'} to produce matches`);
 }
 // Close any open autocomplete dropdown on outside click. Cheap delegate
 // — runs once per click, only matters when an autocomplete is open.
