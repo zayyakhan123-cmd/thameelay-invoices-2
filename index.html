@@ -695,7 +695,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 /* ─── PRODUCE MATCHER · MANUAL ENTRY FORM ──────── */
 .pc-manual-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.pc-manual-row{display:grid;grid-template-columns:minmax(0,2fr) 80px 90px 110px 30px;gap:8px;align-items:start;position:relative}
+.pc-manual-trigger{width:100%;padding:10px;background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--rl);color:var(--text2);font-size:12px;cursor:pointer;text-align:center;transition:background .15s}
+.pc-manual-trigger:hover{background:var(--bg4);color:var(--text)}
+.pc-manual-row{display:grid;grid-template-columns:minmax(0,2fr) 80px 90px 110px 90px 30px;gap:8px;align-items:start;position:relative}
 .pc-manual-row .ig{margin:0;min-width:0}
 .pc-manual-row.invalid input{border-color:var(--red)}
 .pc-manual-row-x{background:transparent;border:1px solid var(--border);color:var(--text3);width:30px;height:34px;border-radius:5px;cursor:pointer;align-self:end;font-size:14px;line-height:1}
@@ -1419,20 +1421,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
       </div>
       <div class="brow" style="gap:8px;flex-wrap:wrap">
         <button class="bp" onclick="document.getElementById('pc-file-in').click()"><i class="ti ti-folder" style="margin-right:6px"></i>Choose File(s)</button>
-        <button onclick="pcManualToggle()" id="pc-manual-toggle-btn"><i class="ti ti-plus" style="margin-right:6px"></i>Add produce manually</button>
         <button onclick="pcLoadDemo()" style="display:none" data-demo-btn><i class="ti ti-player-play" style="margin-right:6px"></i>Demo Invoice</button>
         <button onclick="pcClearAllMatches()" style="color:var(--red);margin-left:auto" id="pc-clear-btn"><i class="ti ti-trash" style="margin-right:6px"></i>Clear All Matches</button>
-      </div>
-      <div id="pc-manual-card" style="display:none;margin-top:12px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rl)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div class="ctit" style="font-size:13px">Add produce manually</div>
-          <button type="button" class="db-bulk-btn" onclick="pcManualToggle()" style="padding:4px 10px"><i class="ti ti-x" aria-hidden="true"></i>Close</button>
-        </div>
-        <div id="pc-manual-rows" class="pc-manual-rows"></div>
-        <div class="brow" style="gap:8px">
-          <button type="button" class="db-bulk-btn" onclick="pcManualAddRow()"><i class="ti ti-plus" aria-hidden="true"></i>Add row</button>
-          <button type="button" class="db-bulk-btn primary" id="pc-manual-save-btn" onclick="pcManualSave()" style="margin-left:auto"><i class="ti ti-device-floppy" aria-hidden="true"></i><span id="pc-manual-save-label">Save 1 item</span></button>
-        </div>
       </div>
       <div id="pc-extracting" class="up-prog" style="display:none">
         <div class="up-prog-file">
@@ -1458,6 +1448,21 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
       </div>
       <div id="pc-results-list" class="pc-results-list"></div>
+    </div>
+
+    <div id="pc-manual-section" style="margin-top:8px">
+      <button onclick="pcManualToggle()" id="pc-manual-toggle-btn" class="pc-manual-trigger"><i class="ti ti-plus" style="margin-right:6px"></i>Add produce manually</button>
+      <div id="pc-manual-card" style="display:none;margin-top:8px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rl)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="ctit" style="font-size:13px">Add produce manually</div>
+          <button type="button" class="db-bulk-btn" onclick="pcManualToggle()" style="padding:4px 10px"><i class="ti ti-x" aria-hidden="true"></i>Close</button>
+        </div>
+        <div id="pc-manual-rows" class="pc-manual-rows"></div>
+        <div class="brow" style="gap:8px">
+          <button type="button" class="db-bulk-btn" onclick="pcManualAddRow()"><i class="ti ti-plus" aria-hidden="true"></i>Add row</button>
+          <button type="button" class="db-bulk-btn primary" id="pc-manual-save-btn" onclick="pcManualSave()" style="margin-left:auto"><i class="ti ti-device-floppy" aria-hidden="true"></i><span id="pc-manual-save-label">Save 1 item</span></button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -6243,7 +6248,7 @@ function pcClearAllMatches(){
 // as invoice-extracted items (invoiceText, cost, unitType, qty, etc.)
 // with catalogId/catalogName populated when the user picks from autocomplete.
 const PC_MANUAL_VENDOR = 'Manual entry';
-let _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', slug:null}];
+let _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', retail:'', retailEdited:false, slug:null}];
 let _pcManualAcOpenIdx = -1;
 function pcManualToggle(){
   const card = document.getElementById('pc-manual-card');
@@ -6251,7 +6256,7 @@ function pcManualToggle(){
   const opening = card.style.display === 'none';
   card.style.display = opening ? 'block' : 'none';
   if(opening){
-    _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', slug:null}];
+    _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', retail:'', retailEdited:false, slug:null}];
     _pcManualAcOpenIdx = -1;
     pcManualRender();
   } else {
@@ -6259,12 +6264,12 @@ function pcManualToggle(){
   }
 }
 function pcManualAddRow(){
-  _pcManualRows.push({name:'', qty:'', cost:'', unit:'lb', slug:null});
+  _pcManualRows.push({name:'', qty:'', cost:'', unit:'lb', retail:'', retailEdited:false, slug:null});
   pcManualRender();
 }
 function pcManualRemoveRow(i){
   _pcManualRows.splice(i, 1);
-  if(!_pcManualRows.length) _pcManualRows.push({name:'', qty:'', cost:'', slug:null});
+  if(!_pcManualRows.length) _pcManualRows.push({name:'', qty:'', cost:'', unit:'lb', retail:'', retailEdited:false, slug:null});
   _pcManualAcOpenIdx = -1;
   pcManualRender();
 }
@@ -6276,8 +6281,22 @@ function pcManualOnName(i, val){
   pcManualUpdateSaveLabel();
 }
 function pcManualOnQty(i, val){ _pcManualRows[i].qty = val; pcManualUpdateSaveLabel(); }
-function pcManualOnCost(i, val){ _pcManualRows[i].cost = val; pcManualUpdateSaveLabel(); }
+function pcManualOnCost(i, val){
+  _pcManualRows[i].cost = val;
+  if(!_pcManualRows[i].retailEdited){
+    const cost = parseFloat(val);
+    const retail = cost > 0 ? pcRetailFor(cost).toFixed(2) : '';
+    _pcManualRows[i].retail = retail;
+    const retInput = document.querySelector(`#pc-manual-rows .pc-manual-row[data-row-idx="${i}"] .pc-manual-retail-input`);
+    if(retInput) retInput.value = retail;
+  }
+  pcManualUpdateSaveLabel();
+}
 function pcManualOnUnit(i, val){ _pcManualRows[i].unit = val; }
+function pcManualOnRetail(i, val){
+  _pcManualRows[i].retail = val;
+  _pcManualRows[i].retailEdited = true;
+}
 function pcManualPickMatch(i, id){
   const cat = pcLoadCatalog().find(c => c.id === id);
   if(!cat) return;
@@ -6326,6 +6345,7 @@ function pcManualRender(){
         <option value="bunch"${r.unit==='bunch'?' selected':''}>bunch</option>
       </select></div>
       <div class="ig"><label>Unit cost</label><input type="number" min="0" step="0.01" value="${esc(r.cost)}" placeholder="0.00" oninput="pcManualOnCost(${i}, this.value)"></div>
+      <div class="ig"><label>Retail $</label><input type="number" min="0" step="0.01" class="pc-manual-retail-input" value="${esc(r.retail)}" placeholder="auto" oninput="pcManualOnRetail(${i}, this.value)" style="${r.retailEdited?'border-color:var(--c1)':''}"></div>
       <button type="button" class="pc-manual-row-x" onclick="pcManualRemoveRow(${i})" title="Remove row">×</button>
     </div>`).join('');
   if(_pcManualAcOpenIdx >= 0) pcManualRenderAcOnly(_pcManualAcOpenIdx);
@@ -6398,7 +6418,7 @@ function pcManualSave(){
       confidence:    catItem ? 'high' : 'none',
       fromMap:       false,
       remember:      false,
-      retailOverride: null,
+      retailOverride: parseFloat(r.retail) > 0 ? parseFloat(r.retail) : null,
       _vendor:       PC_MANUAL_VENDOR,
       _invoiceNo:    '',
       _invoiceDate:  today,
@@ -6411,7 +6431,7 @@ function pcManualSave(){
   pcRenderResults();
 
   const n = validRows.length;
-  _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', slug:null}];
+  _pcManualRows = [{name:'', qty:'', cost:'', unit:'lb', retail:'', retailEdited:false, slug:null}];
   _pcManualAcOpenIdx = -1;
   pcManualRender();
   showToast('success', `✓ Added ${n} item${n===1?'':'s'} to Match Invoice`);
