@@ -6733,6 +6733,25 @@ function pcParseCSV(text){
   return rows;
 }
 
+// Parses a produce size string (e.g. "25 lb", "30 ct", "12 ea") and
+// returns {qty, unit}. qty defaults to 1; unit is null if unrecognized.
+function pcParseSize(str){
+  if(!str) return {qty:1, unit:null};
+  const s = str.toUpperCase().trim();
+  let m;
+  m = s.match(/(\d+(?:\.\d+)?)\s*LBS?\b/);
+  if(m) return {qty:parseFloat(m[1]), unit:'lb'};
+  m = s.match(/(\d+(?:\.\d+)?)\s*OZ\b/);
+  if(m) return {qty:parseFloat(m[1]), unit:'oz'};
+  m = s.match(/(\d+(?:\.\d+)?)\s*KGS?\b/);
+  if(m) return {qty:parseFloat(m[1]), unit:'kg'};
+  m = s.match(/(\d+)\s*(?:COUNTS?|PIECES?|PC\b|CT\b|EA(?:CH)?\b)/);
+  if(m) return {qty:parseFloat(m[1]), unit:'each'};
+  m = s.match(/(\d+)\s*(?:BUNCHE?S?|BCH)\b/);
+  if(m) return {qty:parseFloat(m[1]), unit:'bunch'};
+  return {qty:1, unit:null};
+}
+
 async function pcExtractProduceLines(inv){
   // Produce invoices don't fit the dried-grocery classifier's "PURCHASED" patterns —
   // running classifyInvoice() drops most lines. Use a direct filter instead:
@@ -6759,23 +6778,13 @@ async function pcExtractProduceLines(inv){
     const text = texts[idx];
     const m = matches[text] || {catalogId:null, score:0, confidence:'none'};
     const catItem = m.catalogId ? cat.find(x=>x.id===m.catalogId) : null;
-    // Compute true per-unit cost based on the catalog item's unit type.
     const baseCaseCost = it.caseCost || it.unitCost || 0;
     const shipPerCase = (rule && rule.shipPerCase) ? rule.shipPerCase : 0;
     const caseCost = baseCaseCost + shipPerCase;
-    const unitType = catItem ? (catItem.unit || 'lb') : 'lb';
-    let unitsPerCase = 1;
-    const sz = (it.size||'').toUpperCase();
-    if(unitType === 'lb'){
-      const lbMatch = sz.match(/(\d+(?:\.\d+)?)\s*LB/);
-      if(lbMatch) unitsPerCase = parseFloat(lbMatch[1]);
-      else if(it._u && it._u > 1) unitsPerCase = it._u;
-    } else {
-      const pcMatch = sz.match(/(\d+)\s*(?:PC|CT|BU|BUNCH|EA|EACH)/);
-      if(pcMatch) unitsPerCase = parseFloat(pcMatch[1]);
-      else if(it._u && it._u > 1) unitsPerCase = it._u;
-    }
-    if(unitsPerCase <= 0) unitsPerCase = 1;
+    const parsed = pcParseSize(it.size);
+    // Size-string unit overrides catalog unit when clearly parseable (fixes AI soldBy mislabeling).
+    const unitType = parsed.unit || (catItem ? catItem.unit || 'lb' : 'lb');
+    const unitsPerCase = parsed.qty > 1 ? parsed.qty : (it._u && it._u > 1 ? it._u : 1);
     const cost = caseCost / unitsPerCase;
     const conf = m.confidence || pcConfBucket(m.score);
     lines.push({
@@ -6838,15 +6847,21 @@ function pcRenderResults(){
   
   list.innerHTML = PC_LAST_MATCHED.lines.map((line, idx)=>{
     const conf = line.confidence;
+    // Re-derive per-unit cost from stored invoiceSize + caseCost so existing
+    // data (extracted before the parse fix) renders correctly without re-extraction.
+    const _rp = pcParseSize(line.invoiceSize);
+    const effUnits = _rp.qty > 1 ? _rp.qty : (line.unitsPerCase || 1);
+    const effCost = effUnits > 0 ? (line.caseCost || line.cost || 0) / effUnits : (line.cost || 0);
+    const effUnit = _rp.unit || line.unitType || 'lb';
     const matched = line.catalogId ? cat.find(x=>x.id===line.catalogId) : null;
     const url = matched ? pcImgUrl(matched) : '';
     const safe = safeUrl(url);
     const imgHtml = matched
       ? (safe ? `<img src="${esc(safe)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=&quot;pc-row-r-img-empty&quot;><i class=&quot;ti ti-camera&quot;></i></div>'">` : `<div class="pc-row-r-img-empty"><i class="ti ti-package"></i></div>`)
       : `<div class="pc-row-r-img-empty"><i class="ti ti-help"></i></div>`;
-    const autoRetail = pcRetailFor(line.cost);
+    const autoRetail = pcRetailFor(effCost);
     const retail = (line.retailOverride != null) ? line.retailOverride : autoRetail;
-    const unitLbl = matched ? ({lb:'/ lb',bunch:'/ bunch',each:'each'}[matched.unit]||'') : '';
+    const unitLbl = ({lb:'/ lb',bunch:'/ bunch',each:'each'})[effUnit] || '';
     const isOverridden = line.retailOverride != null;
     const confPill = {high:'High',med:'Medium',low:'Low',none:'No Match'}[conf];
     const confScore = line.score>0 ? `${(line.score*100).toFixed(0)}%` : '';
@@ -6855,9 +6870,11 @@ function pcRenderResults(){
     if((line.shipPerCase||0) > 0){
       costBreakdown = `Case ${esc(line.invoiceSize||'')} @ $${(line.baseCaseCost||0).toFixed(2)}<br>
         <span style="color:var(--amberd)">+ shipping $${line.shipPerCase.toFixed(2)}/box</span><br>
-        = $${(line.caseCost||0).toFixed(2)} ÷ ${line.unitsPerCase} → cost <b>$${line.cost.toFixed(2)}/${esc(line.unitType||'lb')}</b>`;
+        = $${(line.caseCost||0).toFixed(2)} ÷ ${effUnits} → cost <b>$${effCost.toFixed(2)}/${esc(effUnit)}</b>`;
     } else {
-      costBreakdown = `Case ${esc(line.invoiceSize||'')} @ $${(line.caseCost||0).toFixed(2)} → cost <b>$${line.cost.toFixed(2)}/${esc(line.unitType||'lb')}</b>`;
+      costBreakdown = effUnits > 1
+        ? `Case ${esc(line.invoiceSize||'')} @ $${(line.caseCost||0).toFixed(2)} ÷ ${effUnits} → cost <b>$${effCost.toFixed(2)}/${esc(effUnit)}</b>`
+        : `Case ${esc(line.invoiceSize||'')} @ $${(line.caseCost||0).toFixed(2)} → cost <b>$${effCost.toFixed(2)}/${esc(effUnit)}</b>`;
     }
     
     // Vendor + duplicate label
@@ -6873,7 +6890,7 @@ function pcRenderResults(){
     const prior = line.catalogId ? pcFindPriorCost(line.catalogId, lineVendor, line._invoiceNo||'') : null;
     let changeBadge = '';
     if(prior){
-      const diff = line.cost - prior.cost;
+      const diff = effCost - prior.cost;
       const pct = prior.cost>0 ? (diff/prior.cost*100) : 0;
       const xVendorTag = prior.sameVendor ? '' : ` (${esc(prior.vendor)})`;
       if(Math.abs(pct) < 0.5){
@@ -7039,7 +7056,12 @@ function pcGetExportItems(){
       .filter(l => l.catalogId)
       .map(l=>{
         const c = cat.find(x=>x.id===l.catalogId);
-        return c ? {name:c.name, unit:c.unit, image:pcImgUrl(c), cost:l.cost, retailOverride:l.retailOverride} : null;
+        if(!c) return null;
+        const _rp = pcParseSize(l.invoiceSize);
+        const _eu = _rp.qty > 1 ? _rp.qty : (l.unitsPerCase || 1);
+        const effCost = _eu > 0 ? (l.caseCost || l.cost || 0) / _eu : (l.cost || 0);
+        const effUnit = _rp.unit || l.unitType || c.unit || 'lb';
+        return {name:c.name, unit:effUnit, image:pcImgUrl(c), cost:effCost, retailOverride:l.retailOverride};
       })
       .filter(Boolean);
   }
