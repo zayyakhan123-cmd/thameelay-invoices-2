@@ -4865,7 +4865,17 @@ function renderNewEditShell(){
       const tagsParts = [];
       if(item.item) tagsParts.push('Barcode ' + item.item);
       if(item.cat) tagsParts.push((typeof CLABEL !== 'undefined' && CLABEL[item.cat]) ? CLABEL[item.cat] : item.cat);
-      const tagsHtml = tagsParts.length ? `<div class="new-edit-detail-tags">${esc(tagsParts.join(' · '))}</div>` : '';
+      let chBadgeHtml = '';
+      if(ch.status === 'increase'){
+        chBadgeHtml = `<span style="color:var(--red);font-size:10px;font-weight:600" title="Cost up from ${esc(f2(ch.prev||0))} on ${esc(ch.prevDate||'')}">▲ +${(ch.pct||0).toFixed(1)}% vs ${esc(f2(ch.prev||0))} (${esc(ch.prevDate||'')})</span>`;
+      } else if(ch.status === 'decrease'){
+        chBadgeHtml = `<span style="color:var(--green);font-size:10px;font-weight:600" title="Cost down from ${esc(f2(ch.prev||0))} on ${esc(ch.prevDate||'')}">▼ ${(ch.pct||0).toFixed(1)}% vs ${esc(f2(ch.prev||0))} (${esc(ch.prevDate||'')})</span>`;
+      } else if(ch.status === 'no_history'){
+        chBadgeHtml = `<span style="color:var(--text3);font-size:10px;padding:1px 5px;border:1px solid var(--border2);border-radius:10px" title="No prior purchase of this item">First time</span>`;
+      }
+      const tagsSegments = tagsParts.map(t => esc(t));
+      if(chBadgeHtml) tagsSegments.push(chBadgeHtml);
+      const tagsHtml = tagsSegments.length ? `<div class="new-edit-detail-tags">${tagsSegments.join(' · ')}</div>` : '';
       // Retail cell — input + Memory/Formula pill + Custom pill (hidden via
       // CSS until input gains .edited) + reset button. All four are direct
       // children of the same wrapper, so .retail-edit.edited ~ .retail-src-*
