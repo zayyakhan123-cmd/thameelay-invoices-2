@@ -3227,6 +3227,19 @@ function downloadCSV(){
   const blob=new Blob([buildCSV(rows)],{type:'text/csv'});const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=`${INV.vendor.replace(/\s+/g,'-')}-${INV.invoiceNo}.csv`;a.click();URL.revokeObjectURL(url);
 }
+// Re-export a saved history entry as CSV, emitting stored retails verbatim.
+// Falls back to computed retail for legacy entries that predate _approvedRetails.
+function downloadHistoryCSV(idx){
+  const inv=loadHist()[idx];if(!inv)return;
+  const items=(inv.items||[]).filter(i=>i._rt===RT.PURCHASED&&i.qty>0);
+  if(!items.length){showToast('warn','No exported items in this invoice');return;}
+  const retails=inv._approvedRetails||{};
+  const rows=items.map(i=>{const cu=unitCost(i);return{no:i.item,desc:i.desc||'',size:i.size||'',box:i.caseCost||0,unit:cu,retail:retails[i.item]!=null?retails[i.item]:retailUnit(i)};});
+  const csv=buildCSV(rows);const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`${(inv.vendor||'invoice').replace(/\s+/g,'-')}-${inv.invoiceNo||'export'}.csv`;
+  a.click();URL.revokeObjectURL(url);
+}
 // `silent`: when truthy, suppresses the success alert so the caller (the
 // Export panel) can show a toast instead. Standalone page passes nothing,
 // preserving the original blocking-alert behavior.
@@ -3234,7 +3247,9 @@ function finalizeAndSave(silent){
   if(!INV){alert('No invoice.');return;}
   const {saved,skipped}=saveInvoiceToDB(INV);
   const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor);
-  if(idx>=0)hist.splice(idx,1);hist.unshift({...INV,savedAt:new Date().toISOString()});saveHist(hist);
+  if(idx>=0)hist.splice(idx,1);
+  const _ar={};Object.entries(APPROVALS).forEach(([k,v])=>{if(v&&v.retailPrice!=null)_ar[k]=v.retailPrice;});
+  hist.unshift({...INV,_approvedRetails:_ar,savedAt:new Date().toISOString()});saveHist(hist);
   renderHistory();renderTracker('all');renderVendors();updateNavCounts();
   if(!silent) alert(`Saved! ${saved} products added to price history. ${skipped} rows excluded.`);
   return true;
@@ -3981,6 +3996,7 @@ function renderHistory(){
           <div style="text-align:center"><div class="mn" style="font-size:15px;font-weight:700">${fBig(inv.total||0)}</div><div style="font-size:10px;color:var(--text3)">total</div></div>
           ${newCt?`<span class="tag tb">${newCt} new</span>`:''}
           ${oos?`<span class="tag tr">${oos} OOS</span>`:''}
+          <button onclick="event.stopPropagation();downloadHistoryCSV(${idx})" style="font-size:11px;padding:4px 10px"><i class="ti ti-download" style="margin-right:4px"></i>CSV</button>
           <button onclick="event.stopPropagation();deleteHistory(${idx})" style="font-size:11px;padding:4px 10px;color:var(--red)">Delete</button>
         </div>
       </div>
