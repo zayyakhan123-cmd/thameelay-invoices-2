@@ -320,6 +320,8 @@ body.new-edit-fullpage #pg-dashboard #batch-done{display:none !important}
 .apr-retail-cell{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
 .apr-retail-input{width:76px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:4px;background:var(--surface);color:var(--text);font-size:12px;font-family:var(--font-mono);font-weight:600}
 .apr-retail-input.edited{border-color:var(--c1);color:var(--c1d)}
+.apr-field-input{padding:3px 5px;border:0.5px solid var(--border2);border-radius:4px;background:var(--surface);color:var(--text);font-size:12px;font-family:var(--font-mono);text-align:right}
+.apr-field-input:focus{outline:none;border-color:var(--c1)}
 
 .conf-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;font-size:10px;font-weight:600;border:1px solid}
 .conf-high{background:var(--greenl);color:var(--green);border-color:rgba(16,185,129,0.30)}
@@ -3109,6 +3111,60 @@ function resetRetail(itemKey){
   if(APPROVALS[itemKey]) APPROVALS[itemKey].retailPrice = calc;
   renderDashboardTable();
 }
+// Approvals table — editable cost fields (QTY, Units/Case, Case Cost).
+// Mutate INV.items directly; Unit Cost and All In recompute live from
+// DOM IDs apr-uc-{key} and apr-ai-{key}. Full re-render on onchange so
+// detectChange, safeItems, filter counts, and stats banner all refresh.
+function _aprRefreshFormulaRetail(itemKey, item){
+  // After a cost edit, update APPROVALS retail for Formula-source rows
+  // so the retail cell shows the updated formula value, not the stale one.
+  // Skip if the user has manually edited retail (input carries .edited class).
+  if(!INV || !APPROVALS[itemKey]) return;
+  const retInput = document.getElementById('apr-ret-input-' + cssEscapeId(itemKey));
+  if(retInput && retInput.classList.contains('edited')) return;
+  const resolved = resolveSuggestedRetail(item, INV.vendor);
+  if(resolved.source === 'calculated') APPROVALS[itemKey].retailPrice = resolved.retail;
+}
+function onQtyChange(itemKey, el){
+  const item = INV && INV.items.find(x => x.item === itemKey); if(!item) return;
+  let v = parseFloat(el.value); if(!Number.isFinite(v) || v < 0) v = 0;
+  item.qty = v; el.value = v;
+  renderNewEditShell();
+}
+function onUnitsInput(itemKey, el){
+  const item = INV && INV.items.find(x => x.item === itemKey); if(!item) return;
+  let v = parseFloat(el.value); if(!(v >= 1)) v = 1;
+  item._u = v;
+  const cu = unitCost(item);
+  const ucEl = document.getElementById('apr-uc-' + cssEscapeId(itemKey));
+  if(ucEl) ucEl.textContent = f2(cu);
+  recalcRowMargin(itemKey);
+}
+function onUnitsChange(itemKey, el){
+  const item = INV && INV.items.find(x => x.item === itemKey); if(!item) return;
+  let v = parseFloat(el.value); if(!(v >= 1)) v = 1;
+  item._u = v; el.value = v;
+  _aprRefreshFormulaRetail(itemKey, item);
+  renderNewEditShell();
+}
+function onCaseCostInput(itemKey, el){
+  const item = INV && INV.items.find(x => x.item === itemKey); if(!item) return;
+  let v = parseFloat(el.value); if(!(v >= 0)) v = 0;
+  item.caseCost = v;
+  const cu = unitCost(item);
+  const ucEl = document.getElementById('apr-uc-' + cssEscapeId(itemKey));
+  if(ucEl) ucEl.textContent = f2(cu);
+  const aiEl = document.getElementById('apr-ai-' + cssEscapeId(itemKey));
+  if(aiEl) aiEl.textContent = f2(v); // All In = Case Cost (no vendor surcharges)
+  recalcRowMargin(itemKey);
+}
+function onCaseCostChange(itemKey, el){
+  const item = INV && INV.items.find(x => x.item === itemKey); if(!item) return;
+  let v = parseFloat(el.value); if(!Number.isFinite(v) || v < 0) v = 0;
+  item.caseCost = v; el.value = v.toFixed(2);
+  _aprRefreshFormulaRetail(itemKey, item);
+  renderNewEditShell();
+}
 // Saves the user's approved retail to per-product memory. Called from setAp
 // when status flips to 'approved'. Mirrors setProdNote/setProdSoldBy.
 function setProdLastRetail(name, vendor, retail){
@@ -5013,14 +5069,17 @@ function renderNewEditShell(){
         <div style="font-weight:500">${esc(item.desc||'')}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:1px">${item.item?'Barcode: '+esc(item.item):''}${item.item&&catLbl?' · ':''}${esc(catLbl)}</div>
       </td>
-      <td style="text-align:right">${item.qty||0}</td>
-      <td style="text-align:right"><div>${upc}</div><div style="font-size:10px;color:var(--text3)">${esc(item.size||'')}</div></td>
-      <td style="text-align:right;min-width:90px"><div>${f2(allIn)}</div>${chgHtml}</td>
-      <td style="text-align:right">${f2(item.caseCost||0)}</td>
-      <td style="text-align:right">${f2(cu)}</td>
+      <td style="text-align:right"><input class="apr-field-input" type="number" min="0" step="1" value="${item.qty||0}" onchange="onQtyChange('${escKey}',this)" style="width:50px"></td>
+      <td style="text-align:right">
+        <input class="apr-field-input" type="number" min="1" step="1" value="${upc}" oninput="onUnitsInput('${escKey}',this)" onchange="onUnitsChange('${escKey}',this)" style="width:50px">
+        <div style="font-size:10px;color:var(--text3)">${esc(item.size||'')}</div>
+      </td>
+      <td style="text-align:right;min-width:90px"><div><span id="apr-ai-${cssEscapeId(item.item)}">${f2(allIn)}</span></div>${chgHtml}</td>
+      <td style="text-align:right"><input class="apr-field-input" type="number" min="0" step="0.01" value="${(item.caseCost||0).toFixed(2)}" oninput="onCaseCostInput('${escKey}',this)" onchange="onCaseCostChange('${escKey}',this)" style="width:70px"></td>
+      <td style="text-align:right"><span id="apr-uc-${cssEscapeId(item.item)}">${f2(cu)}</span></td>
       <td style="min-width:110px">
         <div class="apr-retail-cell">
-          <input class="apr-retail-input retail-edit${editedAttr}" type="number" step="0.01" min="0"
+          <input id="apr-ret-input-${cssEscapeId(item.item)}" class="apr-retail-input retail-edit${editedAttr}" type="number" step="0.01" min="0"
                  value="${retailVal.toFixed(2)}" data-orig="${origRetail}"
                  oninput="onRetailInput('${escKey}',this)"
                  onchange="onRetailCommit('${escKey}',this);renderNewEditShell()">
@@ -5034,7 +5093,6 @@ function renderNewEditShell(){
           ${projMargin<tgt?`<span style="font-size:10px;color:var(--red)">↓ target</span>`:''}
         </div>
       </td>
-      <td><span class="${isSafe?'apr-status-safe':'apr-status-review'}">${isSafe?'Safe':'Review'}</span></td>
       <td>${actionHtml}</td>
     </tr>`;
   }).join('');
@@ -5084,8 +5142,8 @@ function renderNewEditShell(){
   const tableHtml = `<div class="apr-table-wrap">
     <table class="apr-table"><thead><tr>
       <th style="width:28px"></th>
-      ${th('desc','Item')}${th('qty','QTY')}<th>UNIT/CASE</th>${th('allin','All In')}${th('casecost','Case Cost')}${th('unitcost','Unit Cost')}${th('retail','Sugg. Retail')}${th('margin','Margin')}<th>Status</th><th>Action</th>
-    </tr></thead><tbody>${totalFiltered===0?`<tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text3)">No items match this filter.</td></tr>`:tableRows}</tbody></table>
+      ${th('desc','Item')}${th('qty','QTY')}<th>UNIT/CASE</th>${th('allin','All In')}${th('casecost','Case Cost')}${th('unitcost','Unit Cost')}${th('retail','Sugg. Retail')}${th('margin','Margin')}<th>Action</th>
+    </tr></thead><tbody>${totalFiltered===0?`<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text3)">No items match this filter.</td></tr>`:tableRows}</tbody></table>
   </div>`;
 
   const rightPane = `<div class="apr-main">
