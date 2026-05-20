@@ -278,6 +278,49 @@ body.new-edit-fullpage #pg-dashboard #batch-done{display:none !important}
 .retail-reset{font-size:12px;line-height:1;padding:2px 5px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer}
 .retail-reset:hover{background:var(--bg3);color:var(--text2)}
 
+/* ─── APPROVALS TABLE (dense table redesign) ────────────── */
+.apr-wrap{display:grid;grid-template-columns:280px 1fr;gap:12px;align-items:start}
+.apr-pdf-pane{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;display:flex;flex-direction:column;min-height:480px}
+.apr-pdf-embed{width:100%;flex:1;display:block;border:0;min-height:420px}
+.apr-pdf-foot{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;justify-content:flex-end;flex-shrink:0}
+.apr-main{display:flex;flex-direction:column;gap:10px;min-width:0}
+.apr-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.apr-stat{background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;padding:10px 14px}
+.apr-stat-val{font-size:20px;font-weight:700;font-family:var(--font-mono);color:var(--text);line-height:1.2}
+.apr-stat-lbl{font-size:10px;color:var(--text3);margin-top:3px}
+.apr-pills{display:flex;gap:5px;flex-wrap:wrap}
+.apr-pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.apr-pill:hover{background:var(--bg4);color:var(--text)}
+.apr-pill.active{background:var(--c1);color:#fff;border-color:var(--c1)}
+.apr-pill .cnt{font-size:10px;opacity:.75}
+.apr-search{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--text);font-size:12px;min-width:160px;outline:none}
+.apr-table-wrap{overflow-x:auto;border:0.5px solid var(--border);border-radius:8px}
+.apr-table{width:100%;border-collapse:collapse;font-size:12px}
+.apr-table th{padding:6px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;text-transform:uppercase;letter-spacing:.04em}
+.apr-table th:hover{background:var(--bg4);color:var(--text2)}
+.apr-table td{padding:5px 8px;border-bottom:1px solid var(--border2);vertical-align:middle}
+.apr-table tbody tr:last-child td{border-bottom:none}
+.apr-table tbody tr:hover td{background:var(--bg3)}
+.apr-chg-up{color:var(--red);font-size:10px;font-weight:600;white-space:nowrap}
+.apr-chg-down{color:var(--green);font-size:10px;font-weight:600;white-space:nowrap}
+.apr-status-safe{background:var(--greenl);color:var(--green);border:1px solid rgba(16,185,129,.3);padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+.apr-status-review{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3);padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+.apr-act-btn{padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);white-space:nowrap}
+.apr-act-btn.approve{background:var(--greenl);color:var(--green);border-color:rgba(16,185,129,.3)}
+.apr-act-btn.reject{color:var(--red)}
+.apr-act-btn.approved{background:var(--greenl);color:var(--green);border-color:rgba(16,185,129,.3)}
+.apr-act-btn.rejected{color:var(--red);background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.3)}
+.apr-sort-dim{opacity:.4;font-size:10px}
+.apr-sort-active{opacity:1;font-size:10px}
+.apr-legend{font-size:10px;color:var(--text3);display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.apr-page{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)}
+.apr-page button{padding:2px 8px;border:1px solid var(--border2);background:var(--bg3);border-radius:4px;cursor:pointer;font-size:11px;color:var(--text2)}
+.apr-page button:hover{background:var(--bg4)}
+.apr-page button:disabled{opacity:.35;cursor:default}
+.apr-retail-cell{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.apr-retail-input{width:76px;padding:3px 6px;border:0.5px solid var(--border2);border-radius:4px;background:var(--surface);color:var(--text);font-size:12px;font-family:var(--font-mono);font-weight:600}
+.apr-retail-input.edited{border-color:var(--c1);color:var(--c1d)}
+
 .conf-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;font-size:10px;font-weight:600;border:1px solid}
 .conf-high{background:var(--greenl);color:var(--green);border-color:rgba(16,185,129,0.30)}
 .conf-med{background:var(--amberl);color:var(--amber);border-color:rgba(245,158,11,0.28)}
@@ -2019,9 +2062,24 @@ let _newEditLoggedSteps = new Set();
 // identity changes (new invoice loaded). Single-select, in-memory only.
 let _newEditFilter = 'all';
 let _newEditPrevInv = null;
+// Approvals table state — sort, pagination, search
+let _newApprovalSort = {col: null, dir: 'asc'};
+let _newApprovalPage = 1;
+let _newApprovalPageSize = 25;
+let _newApprovalSearch = '';
 function _newEditSetFilter(f){
   _newEditFilter = f;
+  _newApprovalPage = 1;
   if(typeof renderNewEditShell === 'function') renderNewEditShell();
+}
+function _newApprovalSetSort(col){
+  if(_newApprovalSort.col === col){
+    _newApprovalSort = {col, dir: _newApprovalSort.dir === 'asc' ? 'desc' : 'asc'};
+  } else {
+    _newApprovalSort = {col, dir: 'asc'};
+  }
+  _newApprovalPage = 1;
+  renderNewEditShell();
 }
 // Phase A commit 9 — click-to-expand removed; every item renders its
 // detail panel always. The `_newEditExpandedItemKey` state from commit 8
@@ -4730,287 +4788,326 @@ function renderNewEditShell(){
 
   const hasInv = !!(INV && INV.items);
   const populatedInv = hasInv && INV.items.length > 0;
-  // DOM-derived extraction state. Note: the original commit-5 spec said
-  // "INV truthy AND items empty" — that condition never fires in practice
-  // because INV is null until loadInvoice runs AFTER extraction. Reading
-  // #db-extracting visibility instead matches the actual extraction
-  // lifecycle and the smoke test's described behavior.
   const isExtracting = _newEditExtractionRunning();
   const shouldRender = hasInv || isExtracting;
 
   const safeCount = hasInv ? safeItems().length : 0;
 
+  // Top bar (unchanged from Phase A)
   const leftHtml = hasInv
     ? `<span style="font-weight:500;color:var(--text)">${esc(INV.vendor || '')}</span><span style="color:var(--text3)">·</span><span style="color:var(--text2)">${esc(INV.date || '')}</span>`
-    : (isExtracting
-        ? `<span style="color:var(--text2)">Extracting invoice…</span>`
-        : `<span style="color:var(--text3)">No invoice loaded</span>`);
-
+    : (isExtracting ? `<span style="color:var(--text2)">Extracting invoice…</span>` : `<span style="color:var(--text3)">No invoice loaded</span>`);
   const approveBtnHtml = safeCount > 0
     ? `<button type="button" class="db-bulk-btn primary" onclick="newEditApproveSafe()"><i class="ti ti-check" aria-hidden="true"></i>Approve all safe (${safeCount})</button>`
     : `<button type="button" class="db-bulk-btn" disabled style="background:var(--greenl);color:var(--green);border:1px solid rgba(16,185,129,0.30);box-shadow:none;opacity:1;cursor:default">✓ All safe items approved</button>`;
-
   const rightHtml = hasInv
     ? `<button type="button" class="db-bulk-btn"><i class="ti ti-plus" aria-hidden="true"></i>Add item</button>${approveBtnHtml}<div class="exp-menu-wrap" id="exp-menu-wrap"><button type="button" class="db-bulk-btn" id="exp-menu-btn" onclick="toggleExportMenu(event)" aria-haspopup="menu" aria-expanded="false">Export <i class="ti ti-chevron-down" aria-hidden="true"></i></button><div class="exp-menu" id="exp-menu" role="menu"><div class="exp-menu-item" role="menuitem" onclick="openExportPanel()"><div class="exp-menu-item-title"><i class="ti ti-file-export" aria-hidden="true"></i>Export to POS (CSV)</div><div class="exp-menu-item-desc">Download approved price changes as CSV</div></div></div></div>`
     : '';
 
-  const pdfUrl = (hasInv && INV.pdfDataUrl) ? INV.pdfDataUrl : '';
-  const isPdf = pdfUrl.startsWith('data:application/pdf');
-  const isImage = pdfUrl.startsWith('data:image/');
-
-  const leftPaneHtml = isPdf
-    ? `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;min-height:500px">
-          <embed src="${pdfUrl}" type="application/pdf" style="width:100%;height:500px;display:block;border:0">
-        </div>`
-    : (() => {
-        const label = isImage ? 'Image preview coming later'
-          : (hasInv ? 'PDF preview not available' : 'PDF will appear after extraction');
-        const sub = (isImage || !hasInv) ? ''
-          : `<div style="font-size:12px;color:var(--text3)">Source PDF wasn't retained for this invoice.</div>`;
-        return `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:500px">
-          <i class="ti ti-file-text" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
-          <div style="font-weight:500;color:var(--text);font-size:13px">${label}</div>
-          ${sub}
-        </div>`;
-      })();
-
-  // Right pane state precedence (top wins):
-  //   1. populatedInv          → line item list (commit 6, read-only)
-  //   2. isExtracting & !pop'd → live log (commit 5)
-  //   3. else (fallback)       → placeholder
-  // populatedInv is the authoritative "done" signal — never falls back to
-  // the log even if #db-extracting is still visible at this instant.
-  const renderingLog = !populatedInv && isExtracting;
-
-  // Filter state reset on INV identity change (new invoice loaded, swap
-  // from history, fresh upload). Reference equality is enough because
-  // loadInvoice always assigns a fresh inv object.
+  // Reset per-invoice state when a new invoice is loaded
   if(INV !== _newEditPrevInv){
     _newEditFilter = 'all';
+    _newApprovalPage = 1;
+    _newApprovalSearch = '';
+    _newApprovalSort = {col: null, dir: 'asc'};
     _newEditPrevInv = INV;
   }
 
-  // Phase A commit 9 — full-page mode toggle. Activates only when the
-  // flag is on AND an invoice with items is loaded. Anything else (flag
-  // off, no INV, INV with empty items) leaves the Dashboard normal.
+  // Full-page mode toggle (preserved from Phase A commit 9)
   const _populated = !!(INV && INV.items && INV.items.length > 0);
   if(isNewEditActive() && _populated) document.body.classList.add('new-edit-fullpage');
   else document.body.classList.remove('new-edit-fullpage');
 
-  let itemsHtml = '';
-  if(populatedInv){
-    const purch = INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0);
-    // Safe pill and Review pill partition `purch` exactly — every row is in
-    // one set, no overlap, no gap. Materialize safeItems() once per render
-    // (each call runs detectChange per item) and reuse via Set membership.
-    const safeSet = new Set(safeItems());
-    const safeCnt = safeSet.size;
-    const reviewCnt = purch.length - safeCnt;
-    const filtered = _newEditFilter === 'safe'
-      ? purch.filter(i => safeSet.has(i))
-      : _newEditFilter === 'review'
-        ? purch.filter(i => !safeSet.has(i))
-        : purch;
-    const pillsHtml = `<div class="new-edit-pills">
-        <button type="button" class="new-edit-pill${_newEditFilter==='all'?' pill-active':''}" onclick="_newEditSetFilter('all')">All <span class="pill-cnt">${purch.length}</span></button>
-        <button type="button" class="new-edit-pill safe${_newEditFilter==='safe'?' pill-active':''}" onclick="_newEditSetFilter('safe')">Safe <span class="pill-cnt">${safeCnt}</span></button>
-        <button type="button" class="new-edit-pill review${_newEditFilter==='review'?' pill-active':''}" onclick="_newEditSetFilter('review')">Review <span class="pill-cnt">${reviewCnt}</span></button>
+  // ── Left pane: PDF preview via <embed> (Option A — native browser controls,
+  //    no PDF.js). pdfDataUrl is non-enumerable/session-only; lost on history
+  //    load by design (keeps localStorage/Supabase free of multi-MB blobs).
+  const pdfUrl = (hasInv && INV.pdfDataUrl) ? INV.pdfDataUrl : '';
+  const hasPdf = pdfUrl.startsWith('data:application/pdf') || pdfUrl.startsWith('data:image/');
+  const leftPaneHtml = hasPdf
+    ? `<div class="apr-pdf-pane">
+        <embed src="${esc(pdfUrl)}" type="${pdfUrl.startsWith('data:application/pdf')?'application/pdf':'image/*'}" class="apr-pdf-embed">
+        <div class="apr-pdf-foot">
+          <a href="${esc(pdfUrl)}" download="${esc((INV.vendor||'invoice').replace(/\s+/g,'-'))}-${esc(INV.invoiceNo||'invoice')}.pdf" class="db-bulk-btn" style="font-size:11px;text-decoration:none"><i class="ti ti-download" style="margin-right:4px"></i>Download PDF</a>
+        </div>
+      </div>`
+    : `<div class="apr-pdf-pane" style="align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center">
+        <i class="ti ti-file-text" style="font-size:32px;color:var(--text3)" aria-hidden="true"></i>
+        <div style="font-size:13px;font-weight:500;color:var(--text2);margin-top:8px">${hasInv?'Preview unavailable':'No invoice loaded'}</div>
+        <div style="font-size:11px;color:var(--text3)">${hasInv?'Source PDF not retained for this invoice.':'Upload or load from history.'}</div>
       </div>`;
-    const vk = normV(INV.vendor);
-    const rows = filtered.map(item => {
-      const conf = item._conf || 1;
-      const dotColor = conf >= 0.7 ? '#10b981' : '#f59e0b';
-      const resolved = resolveSuggestedRetail(item, INV.vendor);
-      const apRetail = APPROVALS[item.item] && APPROVALS[item.item].retailPrice;
-      const retailVal = (Number.isFinite(apRetail) && apRetail > 0) ? apRetail : (resolved.retail || 0);
-      let pillHtml = '';
-      if(resolved.source === 'memory'){
-        pillHtml = `<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 6px"><i class="ti ti-refresh"></i>Memory</span>`;
-      } else if(resolved.source === 'calculated'){
-        pillHtml = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px"><i class="ti ti-math-function"></i>Formula</span>`;
-      }
-      const qtyCost = `${item.qty} · $${(item.caseCost || 0).toFixed(2)}`;
-      const compactInner = `
-          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>
-          <span class="new-edit-name">${esc(item.desc || '')}</span>
-          <span class="new-edit-data">${esc(qtyCost)}</span>
-          ${pillHtml}
-          <span class="new-edit-retail">$${retailVal.toFixed(2)}</span>`;
 
-      // Phase A commit 9 — always render the detail panel (no
-      // click-to-expand). Inputs/buttons remain disabled; commit 10
-      // wires them.
-      const ch = (typeof detectChange === 'function') ? detectChange(item, vk, INV.invoiceNo, INV.date) : {status:'no_history'};
-      const cu = unitCost(item);
-      const projMargin = retailVal > 0 ? ((retailVal - cu) / retailVal) * 100 : 0;
-      let curMargin = projMargin;
-      if(ch.status === 'increase' && ch.prev > 0){
-        const oldRetail = ch.prev * (1 + getTgt(item.cat)/100);
-        curMargin = oldRetail > 0 ? ((oldRetail - cu) / oldRetail) * 100 : 0;
-      }
-      let reason = 'Pricing optimal; margin within target range';
-      if(ch.status === 'increase' && Math.abs(ch.pct||0) > 2){
-        reason = `Cost increased ${(ch.pct||0).toFixed(1)}% from vendor; margin below target`;
-      } else if(ch.status === 'decrease' && Math.abs(ch.pct||0) > 2){
-        reason = `Cost decreased ${Math.abs(ch.pct||0).toFixed(1)}%; pass on benefit`;
-      } else if((item._conf || 1) < 0.7){
-        reason = 'Match confidence low; verify item details';
-      }
-      let caseAnno = '';
-      if(ch.prevCase && Math.abs(ch.prevCase - (item.caseCost||0)) > 0.005){
-        const arrow = (item.caseCost||0) > ch.prevCase ? '↑' : '↓';
-        caseAnno = `${arrow} from $${ch.prevCase.toFixed(2)}`;
-      }
-      const unitsPerCase = item._u || (typeof parseUnitsRobust === 'function' ? (parseUnitsRobust(item.size).u || 1) : 1);
-      const tagsParts = [];
-      if(item.item) tagsParts.push('Barcode ' + item.item);
-      if(item.cat) tagsParts.push((typeof CLABEL !== 'undefined' && CLABEL[item.cat]) ? CLABEL[item.cat] : item.cat);
-      let chBadgeHtml = '';
-      if(ch.status === 'increase'){
-        chBadgeHtml = `<span style="color:var(--red);font-size:10px;font-weight:600" title="Cost up from ${esc(f2(ch.prev||0))} on ${esc(ch.prevDate||'')}">▲ +${(ch.pct||0).toFixed(1)}% vs ${esc(f2(ch.prev||0))} (${esc(ch.prevDate||'')})</span>`;
-      } else if(ch.status === 'decrease'){
-        chBadgeHtml = `<span style="color:var(--green);font-size:10px;font-weight:600" title="Cost down from ${esc(f2(ch.prev||0))} on ${esc(ch.prevDate||'')}">▼ ${(ch.pct||0).toFixed(1)}% vs ${esc(f2(ch.prev||0))} (${esc(ch.prevDate||'')})</span>`;
-      } else if(ch.status === 'no_history'){
-        chBadgeHtml = `<span style="color:var(--text3);font-size:10px;padding:1px 5px;border:1px solid var(--border2);border-radius:10px" title="No prior purchase of this item">First time</span>`;
-      }
-      const tagsSegments = tagsParts.map(t => esc(t));
-      if(chBadgeHtml) tagsSegments.push(chBadgeHtml);
-      const tagsHtml = tagsSegments.length ? `<div class="new-edit-detail-tags">${tagsSegments.join(' · ')}</div>` : '';
-      // Retail cell — input + Memory/Formula pill + Custom pill (hidden via
-      // CSS until input gains .edited) + reset button. All four are direct
-      // children of the same wrapper, so .retail-edit.edited ~ .retail-src-*
-      // CSS combinator fires correctly. data-orig holds the resolved value
-      // so onRetailInput can toggle .edited based on diff vs original.
-      let srcPill = '';
-      if(resolved.source === 'memory'){
-        srcPill = `<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 6px"><i class="ti ti-refresh"></i>Memory</span>`;
-      } else if(resolved.source === 'calculated'){
-        srcPill = `<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 6px"><i class="ti ti-math-function"></i>Formula</span>`;
-      }
-      const custPill = `<span class="retail-src retail-src-cust" style="font-size:10px;padding:1px 6px"><i class="ti ti-pencil"></i>Custom</span>`;
-      const origRetail = (resolved.retail || 0).toFixed(2);
-      const editedAttr = (Math.abs(retailVal - (resolved.retail || 0)) > 0.0049) ? ' edited' : '';
-      const escKey = escJs(item.item);
-
-      // Approve/Reject state — mirrors renderDashboardTable's branching.
-      // setAp() handles all status mutations + setProdLastRetail on approve.
-      const apStatus = (APPROVALS[item.item] && APPROVALS[item.item].status) || 'pending';
-      let btnsHtml;
-      if(apStatus === 'approved'){
-        btnsHtml = `<div style="display:flex;gap:6px;align-items:center"><span class="db-act-status approved">✓ Approved</span><span class="db-act-undo" onclick="setAp('${escKey}','pending'); renderNewEditShell()">Undo</span></div>`;
-      } else if(apStatus === 'rejected'){
-        btnsHtml = `<div style="display:flex;gap:6px;align-items:center"><span class="db-act-status rejected">✕ Rejected</span><span class="db-act-undo" onclick="setAp('${escKey}','pending'); renderNewEditShell()">Undo</span></div>`;
-      } else {
-        btnsHtml = `<button type="button" class="db-act-btn reject" onclick="setAp('${escKey}','rejected'); renderNewEditShell()"><i class="ti ti-x" aria-hidden="true"></i>Reject</button><button type="button" class="db-act-btn approve" onclick="setAp('${escKey}','approved'); showToast('success','✓ Item approved'); renderNewEditShell()"><i class="ti ti-check" aria-hidden="true"></i>Approve</button>`;
-      }
-
-      // Detail header sub-row omitted by design — the matched name is
-      // already shown in the compact summary directly above; restating it
-      // would be redundant. Detail starts with tags (Barcode · category).
-      const detailHtml = `
-        <div class="new-edit-detail">
-          ${tagsHtml}
-          <div class="new-edit-detail-grid">
-            <div class="new-edit-detail-cell">
-              <div class="new-edit-detail-lbl">Qty</div>
-              <input class="new-edit-detail-input" type="number" value="${item.qty || 0}" disabled>
-              <div class="new-edit-detail-note"></div>
-            </div>
-            <div class="new-edit-detail-cell">
-              <div class="new-edit-detail-lbl">Units / case</div>
-              <input class="new-edit-detail-input" type="number" value="${unitsPerCase}" disabled>
-              <div class="new-edit-detail-note">${esc(item.size || '')}</div>
-            </div>
-            <div class="new-edit-detail-cell">
-              <div class="new-edit-detail-lbl">Case cost</div>
-              <input class="new-edit-detail-input" type="number" step="0.01" value="${(item.caseCost || 0).toFixed(2)}" disabled>
-              <div class="new-edit-detail-note">${esc(caseAnno)}</div>
-            </div>
-            <div class="new-edit-detail-cell">
-              <div class="new-edit-detail-lbl">Unit cost</div>
-              <input class="new-edit-detail-input" type="number" step="0.01" value="${cu.toFixed(2)}" disabled>
-              <div class="new-edit-detail-note"></div>
-            </div>
-            <div class="new-edit-detail-cell">
-              <div class="new-edit-detail-lbl">Suggested retail</div>
-              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%">
-                <input class="new-edit-detail-input retail-edit${editedAttr}" type="number" step="0.01" min="0"
-                       value="${retailVal.toFixed(2)}" data-orig="${origRetail}"
-                       oninput="onRetailInput('${escKey}', this)"
-                       onchange="onRetailCommit('${escKey}', this); renderNewEditShell()">
-                ${srcPill}
-                ${custPill}
-                <button type="button" class="retail-reset" onclick="resetRetail('${escKey}'); renderNewEditShell()" title="Revert to calculated cost × markup">↺</button>
-              </div>
-            </div>
-            <div class="new-edit-detail-cell">
-              <div class="new-edit-detail-lbl">Margin</div>
-              <div class="new-edit-detail-input" id="db-pmar-${cssEscapeId(item.item)}" style="background:var(--bg3);text-align:right;display:flex;justify-content:flex-end;align-items:center"><span class="margin-num">${projMargin.toFixed(1)}%</span></div>
-              <div class="new-edit-detail-note">current: ${curMargin.toFixed(1)}%</div>
-            </div>
-          </div>
-          <div class="new-edit-detail-foot">
-            <div class="new-edit-detail-reason"><i class="ti ti-info-circle" aria-hidden="true"></i>${esc(reason)}</div>
-            <div class="new-edit-detail-btns">${btnsHtml}</div>
-          </div>
+  // ── Non-populated states (extraction log / placeholder) ──────────────
+  const renderingLog = !populatedInv && isExtracting;
+  if(!populatedInv){
+    const rPane = renderingLog
+      ? `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:16px;min-height:500px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-weight:500;color:var(--text);font-size:13px">Processing invoice</div>
+          <pre id="newedit-log" style="margin:8px 0 0;flex:1;background:#0F172A;color:#E2E8F0;font-family:var(--font-mono);font-size:11px;padding:12px;border-radius:6px;min-height:320px;overflow-y:auto;white-space:pre-wrap"></pre>
+        </div>`
+      : `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:500px">
+          <i class="ti ti-list" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
+          <div style="font-size:13px;font-weight:500;color:var(--text)">No invoice loaded</div>
+          <div style="font-size:11px;color:var(--text3)">Upload an invoice or load from history.</div>
         </div>`;
-
-      return `<div class="new-edit-row-wrap">
-          <div class="new-edit-row">${compactInner}</div>
-          ${detailHtml}
-        </div>`;
-    }).join('');
-    const emptyMsg = `<div style="padding:32px 10px;text-align:center;color:var(--text3);font-size:13px">No items match this filter.</div>`;
-    itemsHtml = `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:12px;min-height:500px;max-height:calc(100vh - 200px);overflow-y:auto">
-        ${pillsHtml}
-        ${filtered.length ? rows : emptyMsg}
+    tw.innerHTML = `
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px">${leftHtml}</div>
+          <div style="display:flex;gap:6px">${rightHtml}</div>
+        </div>
+        ${shouldRender?`<div style="height:1px;background:var(--border);margin:12px 0"></div><div class="apr-wrap">${leftPaneHtml}${rPane}</div>`:''}
       </div>`;
+    if(renderingLog){ _newEditStartObserver(); _newEditCatchUpLog(); } else { _newEditStopObserver(); }
+    return;
+  }
+  _newEditStopObserver();
+
+  // ── TABLE RENDER ─────────────────────────────────────────────────────
+  const vk = normV(INV.vendor);
+  const purch = INV.items.filter(i => i._rt === RT.PURCHASED && i.qty > 0);
+
+  // Run detectChange once per item and cache — reused by filter counts,
+  // All In cell indicator, and Est. Margin Impact without re-calling.
+  const itemsData = purch.map(item => {
+    const ch = (typeof detectChange === 'function')
+      ? detectChange(item, vk, INV.invoiceNo, INV.date) : {status:'no_history'};
+    return {item, ch};
+  });
+
+  // safeItems() call — one call per render, result shared across all consumers
+  const safeSet = new Set(safeItems());
+
+  // Filter pill counts
+  const counts = {all:purch.length, safe:safeSet.size, review:purch.length-safeSet.size, costup:0, costdown:0, newItems:0, lowMargin:0};
+  itemsData.forEach(({item, ch}) => {
+    if(ch.status==='increase') counts.costup++;
+    if(ch.status==='decrease') counts.costdown++;
+    if(item._isNew) counts.newItems++;
+    const cu=unitCost(item), ru=retailUnit(item);
+    if(ru>0 && ((ru-cu)/ru)*100 < getTgt(item.cat)) counts.lowMargin++;
+  });
+
+  // Est. Margin Impact — sum of (projected_unit_profit - prior_unit_profit) × qty × units_per_case.
+  // Items WITH history: prior_retail = charmRoundUp(ch.prev × (1+markup), tiers).
+  // Items WITHOUT history (no_history / new): full projected profit contributes as baseline.
+  // Uses approved retail if set, otherwise retailUnit() formula.
+  let marginImpact = 0;
+  itemsData.forEach(({item, ch}) => {
+    const cu = unitCost(item);
+    const units = item._u || (typeof parseUnitsRobust==='function' ? (parseUnitsRobust(item.size).u||1) : 1);
+    const qty = item.qty || 0;
+    const apR = (APPROVALS[item.item] && APPROVALS[item.item].retailPrice > 0) ? APPROVALS[item.item].retailPrice : retailUnit(item);
+    const projProfit = apR - cu;
+    if(ch.status==='no_history'){
+      marginImpact += projProfit * qty * units;
+    } else {
+      const priorRetail = charmRoundUp((ch.prev||0)*(1+getTgt(item.cat)/100), [0.29,0.49,0.79,0.99]);
+      marginImpact += (projProfit - (priorRetail-(ch.prev||0))) * qty * units;
+    }
+  });
+
+  // Apply filter
+  let filtered = itemsData;
+  switch(_newEditFilter){
+    case 'safe':      filtered = itemsData.filter(d => safeSet.has(d.item)); break;
+    case 'review':    filtered = itemsData.filter(d => !safeSet.has(d.item)); break;
+    case 'costup':    filtered = itemsData.filter(d => d.ch.status==='increase'); break;
+    case 'costdown':  filtered = itemsData.filter(d => d.ch.status==='decrease'); break;
+    case 'new':       filtered = itemsData.filter(d => d.item._isNew); break;
+    case 'lowmargin': filtered = itemsData.filter(d => { const cu=unitCost(d.item),ru=retailUnit(d.item); return ru>0&&((ru-cu)/ru)*100<getTgt(d.item.cat); }); break;
   }
 
-  const placeholderRightHtml = `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:500px">
-        <i class="ti ti-list" style="font-size:28px;color:var(--text3)" aria-hidden="true"></i>
-        <div style="font-weight:500;color:var(--text);font-size:13px">Line items</div>
-        <div style="font-size:12px;color:var(--text3)">Coming in commits 6–8</div>
-      </div>`;
+  // Search
+  if(_newApprovalSearch){
+    const q = _newApprovalSearch.toLowerCase();
+    filtered = filtered.filter(d => (d.item.desc||'').toLowerCase().includes(q)||(d.item.item||'').toLowerCase().includes(q));
+  }
 
-  const rightPaneHtml = populatedInv
-    ? itemsHtml
-    : (renderingLog
-        ? `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:16px;min-height:500px;display:flex;flex-direction:column;gap:8px">
-            <div style="font-weight:500;color:var(--text);font-size:13px">Processing invoice</div>
-            <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(document.getElementById('db-up-name')?.textContent || '')}</div>
-            <div style="height:2px;background:var(--bg3);border-radius:1px;overflow:hidden">
-              <div id="newedit-progress" style="height:100%;width:0%;background:var(--green);transition:width .3s ease"></div>
-            </div>
-            <pre id="newedit-log" style="margin:8px 0 0;flex:1;background:#0F172A;color:#E2E8F0;font-family:var(--font-mono);font-size:11px;padding:12px;border-radius:6px;min-height:320px;overflow-y:auto;white-space:pre-wrap"></pre>
-          </div>`
-        : placeholderRightHtml);
+  // Sort
+  if(_newApprovalSort.col){
+    const getR = d => (APPROVALS[d.item.item]&&APPROVALS[d.item.item].retailPrice>0)?APPROVALS[d.item.item].retailPrice:retailUnit(d.item);
+    const getM = d => { const r=getR(d),cu=unitCost(d.item); return r>0?((r-cu)/r)*100:0; };
+    filtered = [...filtered].sort((a,b)=>{
+      let va,vb;
+      switch(_newApprovalSort.col){
+        case 'desc':     va=a.item.desc||''; vb=b.item.desc||''; break;
+        case 'qty':      va=a.item.qty||0; vb=b.item.qty||0; break;
+        case 'allin':
+        case 'casecost': va=a.item.caseCost||0; vb=b.item.caseCost||0; break;
+        case 'unitcost': va=unitCost(a.item); vb=unitCost(b.item); break;
+        case 'retail':   va=getR(a); vb=getR(b); break;
+        case 'margin':   va=getM(a); vb=getM(b); break;
+        default:         va=a.item.desc||''; vb=b.item.desc||'';
+      }
+      const c = typeof va==='string' ? va.localeCompare(vb) : va-vb;
+      return _newApprovalSort.dir==='asc' ? c : -c;
+    });
+  }
 
-  const panesHtml = shouldRender ? `
-      <div style="height:1px;background:var(--border);margin:12px 0"></div>
-      <div style="display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2fr);gap:12px;min-height:500px">
-        ${leftPaneHtml}
-        ${rightPaneHtml}
-      </div>` : '';
+  // Pagination
+  const totalFiltered = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered/_newApprovalPageSize));
+  if(_newApprovalPage > totalPages) _newApprovalPage = totalPages;
+  const pgStart = (_newApprovalPage-1)*_newApprovalPageSize;
+  const paginated = filtered.slice(pgStart, pgStart+_newApprovalPageSize);
+
+  // Column header helper
+  const sInd = col => _newApprovalSort.col===col
+    ? `<span class="apr-sort-active">${_newApprovalSort.dir==='asc'?'↑':'↓'}</span>`
+    : `<span class="apr-sort-dim">⇅</span>`;
+  const th = (col,lbl) => `<th onclick="_newApprovalSetSort('${col}')">${lbl} ${sInd(col)}</th>`;
+
+  // Table rows
+  const tableRows = paginated.map(({item, ch}) => {
+    const escKey = escJs(item.item);
+    const cu = unitCost(item);
+    const resolved = resolveSuggestedRetail(item, INV.vendor);
+    const apRetail = APPROVALS[item.item] && APPROVALS[item.item].retailPrice;
+    const retailVal = (Number.isFinite(apRetail)&&apRetail>0) ? apRetail : (resolved.retail||0);
+    const origRetail = (resolved.retail||0).toFixed(2);
+    const editedAttr = Math.abs(retailVal-(resolved.retail||0))>0.0049 ? ' edited' : '';
+    const projMargin = retailVal>0 ? ((retailVal-cu)/retailVal)*100 : 0;
+    const tgt = getTgt(item.cat);
+    const isSafe = safeSet.has(item);
+    const apStatus = (APPROVALS[item.item]&&APPROVALS[item.item].status)||'pending';
+    const upc = item._u||(typeof parseUnitsRobust==='function'?(parseUnitsRobust(item.size).u||1):1);
+    const catLbl = (typeof CLABEL!=='undefined'&&CLABEL[item.cat])?CLABEL[item.cat]:(item.cat||'');
+    const marColor = projMargin>=30?'var(--green)':projMargin>=20?'var(--amber)':'var(--red)';
+
+    // All In = Case Cost (main approval flow has no vendor shipping rules;
+    // TODO: extend here when per-vendor surcharges land in main approval flow)
+    const allIn = item.caseCost||0;
+
+    // Cost-change indicator — lives in All In cell only (not on Item sub-line)
+    let chgHtml = '';
+    if(ch.status==='increase')
+      chgHtml = `<div class="apr-chg-up" title="Up from ${esc(f2(ch.prev||0))} on ${esc(ch.prevDate||'')}">▲ +${(ch.pct||0).toFixed(1)}% vs ${esc(f2(ch.prev||0))}</div>`;
+    else if(ch.status==='decrease')
+      chgHtml = `<div class="apr-chg-down" title="Down from ${esc(f2(ch.prev||0))} on ${esc(ch.prevDate||'')}">▼ ${(ch.pct||0).toFixed(1)}% vs ${esc(f2(ch.prev||0))}</div>`;
+    else if(ch.status==='no_history')
+      chgHtml = `<div style="color:var(--text3);font-size:10px" title="No prior purchase">First time</div>`;
+
+    // Retail cell — three-pill pattern (invariant #5). Wrapper is a flex
+    // column so .retail-edit.edited ~ .retail-src-* combinator fires.
+    let srcPill='';
+    if(resolved.source==='memory')
+      srcPill=`<span class="retail-src retail-src-mem" style="font-size:10px;padding:1px 5px"><i class="ti ti-refresh"></i>Memory</span>`;
+    else if(resolved.source==='calculated')
+      srcPill=`<span class="retail-src retail-src-fx" style="font-size:10px;padding:1px 5px"><i class="ti ti-math-function"></i>Formula</span>`;
+    const custPill=`<span class="retail-src retail-src-cust" style="font-size:10px;padding:1px 5px"><i class="ti ti-pencil"></i>Custom</span>`;
+
+    // Action cell — inline approve/reject buttons; spec "dropdown" interpreted
+    // as compact inline controls (no JS dropdown component added this commit)
+    let actionHtml;
+    if(apStatus==='approved'){
+      actionHtml=`<div style="display:flex;flex-direction:column;gap:3px"><span class="apr-act-btn approved">✓ Approved</span><span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="setAp('${escKey}','pending');renderNewEditShell()">Undo</span></div>`;
+    } else if(apStatus==='rejected'){
+      actionHtml=`<div style="display:flex;flex-direction:column;gap:3px"><span class="apr-act-btn rejected">✕ Rejected</span><span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="setAp('${escKey}','pending');renderNewEditShell()">Undo</span></div>`;
+    } else {
+      actionHtml=`<div style="display:flex;gap:4px"><button type="button" class="apr-act-btn approve" onclick="setAp('${escKey}','approved');showToast('success','✓ Item approved');renderNewEditShell()">✓</button><button type="button" class="apr-act-btn reject" onclick="setAp('${escKey}','rejected');renderNewEditShell()">✕</button></div>`;
+    }
+
+    return `<tr>
+      <td><input type="checkbox" disabled style="opacity:.35"></td>
+      <td style="min-width:160px">
+        <div style="font-weight:500">${esc(item.desc||'')}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${item.item?'Barcode: '+esc(item.item):''}${item.item&&catLbl?' · ':''}${esc(catLbl)}</div>
+      </td>
+      <td style="text-align:right">${item.qty||0}</td>
+      <td style="text-align:right"><div>${upc}</div><div style="font-size:10px;color:var(--text3)">${esc(item.size||'')}</div></td>
+      <td style="text-align:right;min-width:90px"><div>${f2(allIn)}</div>${chgHtml}</td>
+      <td style="text-align:right">${f2(item.caseCost||0)}</td>
+      <td style="text-align:right">${f2(cu)}</td>
+      <td style="min-width:110px">
+        <div class="apr-retail-cell">
+          <input class="apr-retail-input retail-edit${editedAttr}" type="number" step="0.01" min="0"
+                 value="${retailVal.toFixed(2)}" data-orig="${origRetail}"
+                 oninput="onRetailInput('${escKey}',this)"
+                 onchange="onRetailCommit('${escKey}',this);renderNewEditShell()">
+          ${srcPill}${custPill}
+          <button type="button" class="retail-reset" onclick="resetRetail('${escKey}');renderNewEditShell()" title="Revert to calculated">↺</button>
+        </div>
+      </td>
+      <td style="text-align:right;min-width:80px">
+        <div id="db-pmar-${cssEscapeId(item.item)}" style="display:flex;flex-direction:column;align-items:flex-end">
+          <span class="margin-num" style="color:${marColor}">${projMargin.toFixed(1)}%</span>
+          ${projMargin<tgt?`<span style="font-size:10px;color:var(--red)">↓ target</span>`:''}
+        </div>
+      </td>
+      <td><span class="${isSafe?'apr-status-safe':'apr-status-review'}">${isSafe?'Safe':'Review'}</span></td>
+      <td>${actionHtml}</td>
+    </tr>`;
+  }).join('');
+
+  // Filter pills (7 predicates — All, Safe, Review, Cost Up, Cost Down, New Items, Low Margin)
+  const PILLS = [
+    {k:'all',lbl:'All',n:counts.all},
+    {k:'safe',lbl:'Safe',n:counts.safe},
+    {k:'review',lbl:'Review',n:counts.review},
+    {k:'costup',lbl:'Cost Up',n:counts.costup},
+    {k:'costdown',lbl:'Cost Down',n:counts.costdown},
+    {k:'new',lbl:'New Items',n:counts.newItems},
+    {k:'lowmargin',lbl:'Low Margin',n:counts.lowMargin},
+  ];
+  const pillsHtml = `<div class="apr-pills">${PILLS.map(p=>`<button type="button" class="apr-pill${_newEditFilter===p.k?' active':''}" onclick="_newEditSetFilter('${p.k}')">${esc(p.lbl)} <span class="cnt">${p.n}</span></button>`).join('')}</div>`;
+
+  // Stats banner
+  const impColor = marginImpact>0?'var(--green)':marginImpact<0?'var(--red)':'var(--text)';
+  const statsBanner = `<div class="apr-stats">
+    <div class="apr-stat"><div class="apr-stat-val">${counts.safe}</div><div class="apr-stat-lbl">Safe · Ready to approve</div></div>
+    <div class="apr-stat"><div class="apr-stat-val">${counts.review}</div><div class="apr-stat-lbl">Review · Needs attention</div></div>
+    <div class="apr-stat"><div class="apr-stat-val">${purch.length}</div><div class="apr-stat-lbl">Total Items · 100% processed</div></div>
+    <div class="apr-stat"><div class="apr-stat-val" style="color:${impColor}">${marginImpact>=0?'+':''}${f2(marginImpact)}</div><div class="apr-stat-lbl">Est. Margin Impact</div></div>
+  </div>`;
+
+  // Pagination strip
+  const showS = totalFiltered===0?0:pgStart+1, showE=Math.min(pgStart+_newApprovalPageSize,totalFiltered);
+  const pgOpts=[10,25,50,100].map(n=>`<option value="${n}"${_newApprovalPageSize===n?' selected':''}>${n}</option>`).join('');
+  const paginationHtml = `<div class="apr-page">
+    <span>Showing ${showS}–${showE} of ${totalFiltered}</span>
+    ${totalFiltered>_newApprovalPageSize?`
+    <button onclick="_newApprovalPage--;renderNewEditShell()" ${_newApprovalPage<=1?'disabled':''}>‹</button>
+    <span>Page ${_newApprovalPage} of ${totalPages}</span>
+    <button onclick="_newApprovalPage++;renderNewEditShell()" ${_newApprovalPage>=totalPages?'disabled':''}>›</button>
+    <span>Rows: <select onchange="_newApprovalPageSize=+this.value;_newApprovalPage=1;renderNewEditShell()" style="padding:2px 4px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-size:11px">${pgOpts}</select></span>`:''}
+  </div>`;
+
+  // Legend bar
+  const legend = `<div class="apr-legend">
+    <span><b>All In</b> = landed cost/case</span>
+    <span><span class="apr-chg-up">▲</span> Cost up · <span class="apr-chg-down">▼</span> Cost down · — no change</span>
+    <span><span class="apr-status-safe">Safe</span> · <span class="apr-status-review">Review</span> from safeItems()</span>
+    <span>Margin target varies by category</span>
+  </div>`;
+
+  // Table
+  const tableHtml = `<div class="apr-table-wrap">
+    <table class="apr-table"><thead><tr>
+      <th style="width:28px"></th>
+      ${th('desc','Item')}${th('qty','QTY')}<th>UNIT/CASE</th>${th('allin','All In')}${th('casecost','Case Cost')}${th('unitcost','Unit Cost')}${th('retail','Sugg. Retail')}${th('margin','Margin')}<th>Status</th><th>Action</th>
+    </tr></thead><tbody>${totalFiltered===0?`<tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text3)">No items match this filter.</td></tr>`:tableRows}</tbody></table>
+  </div>`;
+
+  const rightPane = `<div class="apr-main">
+    ${statsBanner}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <input type="text" placeholder="Search items…" value="${esc(_newApprovalSearch)}" class="apr-search"
+             oninput="_newApprovalSearch=this.value;_newApprovalPage=1;renderNewEditShell()">
+      ${pillsHtml}
+    </div>
+    ${tableHtml}
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">${paginationHtml}${legend}</div>
+  </div>`;
 
   tw.innerHTML = `
     <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:12px 16px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
         <div style="display:flex;align-items:center;gap:8px;font-size:13px">${leftHtml}</div>
         <div style="display:flex;gap:6px">${rightHtml}</div>
-      </div>${panesHtml}
+      </div>
+      <div style="height:1px;background:var(--border);margin:12px 0"></div>
+      <div class="apr-wrap">${leftPaneHtml}${rightPane}</div>
     </div>`;
-
-  // Observer lifecycle keys off the same flag that picks the right-pane
-  // template: start when the log is on screen, disconnect (and clear the
-  // logged-transitions Set) otherwise. populatedInv → not on screen → stop,
-  // regardless of #db-extracting visibility.
-  if(renderingLog){
-    _newEditStartObserver();
-    _newEditCatchUpLog();
-  } else {
-    _newEditStopObserver();
-  }
 }
 
 // Bulk-approves every item that safeItems() reports — same filter the
