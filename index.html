@@ -4874,22 +4874,34 @@ function renderNewEditShell(){
   if(isNewEditActive() && _populated) document.body.classList.add('new-edit-fullpage');
   else document.body.classList.remove('new-edit-fullpage');
 
-  // ── Left pane: PDF preview via <embed> (Option A — native browser controls,
-  //    no PDF.js). pdfDataUrl is non-enumerable/session-only; lost on history
-  //    load by design (keeps localStorage/Supabase free of multi-MB blobs).
+  // ── Left pane: source preview (Option A — no PDF.js).
+  //    pdfDataUrl is non-enumerable/session-only; lost on history load by
+  //    design (keeps localStorage/Supabase free of multi-MB blobs).
+  //    readFileAsDataUrl writes here for PDFs AND images — dispatch on MIME.
   const pdfUrl = (hasInv && INV.pdfDataUrl) ? INV.pdfDataUrl : '';
-  const hasPdf = pdfUrl.startsWith('data:application/pdf') || pdfUrl.startsWith('data:image/');
-  const leftPaneHtml = hasPdf
+  const _isPdf = pdfUrl.startsWith('data:application/pdf');
+  const _isImg = pdfUrl.startsWith('data:image/');
+  // Derive download extension from MIME type prefix
+  const _dlExt = _isPdf ? 'pdf' : _isImg ? ({'data:image/png':'png','data:image/jpeg':'jpg','data:image/jpg':'jpg','data:image/webp':'webp','data:image/gif':'gif'}[pdfUrl.split(';')[0]] || 'png') : 'bin';
+  const _dlName = `${(INV&&INV.vendor||'invoice').replace(/\s+/g,'-')}-${INV&&INV.invoiceNo||'invoice'}.${_dlExt}`;
+  const leftPaneHtml = _isPdf
     ? `<div class="apr-pdf-pane">
-        <embed src="${esc(pdfUrl)}" type="${pdfUrl.startsWith('data:application/pdf')?'application/pdf':'image/*'}" class="apr-pdf-embed">
+        <embed src="${esc(pdfUrl)}" type="application/pdf" class="apr-pdf-embed">
         <div class="apr-pdf-foot">
-          <a href="${esc(pdfUrl)}" download="${esc((INV.vendor||'invoice').replace(/\s+/g,'-'))}-${esc(INV.invoiceNo||'invoice')}.pdf" class="db-bulk-btn" style="font-size:11px;text-decoration:none"><i class="ti ti-download" style="margin-right:4px"></i>Download PDF</a>
+          <a href="${esc(pdfUrl)}" download="${esc(_dlName)}" class="db-bulk-btn" style="font-size:11px;text-decoration:none"><i class="ti ti-download" style="margin-right:4px"></i>Download PDF</a>
+        </div>
+      </div>`
+    : _isImg
+    ? `<div class="apr-pdf-pane" style="align-items:center;justify-content:center;padding:12px">
+        <img src="${esc(pdfUrl)}" style="max-width:100%;max-height:460px;object-fit:contain;border-radius:4px;display:block">
+        <div class="apr-pdf-foot">
+          <a href="${esc(pdfUrl)}" download="${esc(_dlName)}" class="db-bulk-btn" style="font-size:11px;text-decoration:none"><i class="ti ti-download" style="margin-right:4px"></i>Download image</a>
         </div>
       </div>`
     : `<div class="apr-pdf-pane" style="align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center">
         <i class="ti ti-file-text" style="font-size:32px;color:var(--text3)" aria-hidden="true"></i>
         <div style="font-size:13px;font-weight:500;color:var(--text2);margin-top:8px">${hasInv?'Preview unavailable':'No invoice loaded'}</div>
-        <div style="font-size:11px;color:var(--text3)">${hasInv?'Source PDF not retained for this invoice.':'Upload or load from history.'}</div>
+        <div style="font-size:11px;color:var(--text3)">${hasInv?'Source not retained for this invoice.':'Upload or load from history.'}</div>
       </div>`;
 
   // ── Non-populated states (extraction log / placeholder) ──────────────
