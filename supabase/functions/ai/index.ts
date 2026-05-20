@@ -17,19 +17,28 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// CORS: allow the deployed app to call us. Tighten the origin in production
-// if you want to restrict to one domain.
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// CORS: only allow requests from the production domain.
+// Vercel preview URLs (*.vercel.app) and localhost are blocked — add them
+// to ALLOWED_ORIGINS if local dev against live Edge Functions is needed.
+const ALLOWED_ORIGINS = [
+  "https://trackaisle.com",
+  "https://www.trackaisle.com",
+];
 
-const json = (body: unknown, init: ResponseInit = {}) =>
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : null;
+  return {
+    ...(allowed ? { "Access-Control-Allow-Origin": allowed } : {}),
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
+const json = (body: unknown, origin: string | null, init: ResponseInit = {}) =>
   new Response(JSON.stringify(body), {
     ...init,
-    headers: { ...corsHeaders, "Content-Type": "application/json", ...(init.headers || {}) },
+    headers: { ...getCorsHeaders(origin), "Content-Type": "application/json", ...(init.headers || {}) },
   });
 
 // Retry the upstream Anthropic call on transient failures.
@@ -107,9 +116,11 @@ export async function callAnthropicWithRetry(
 }
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin");
+
   // CORS preflight
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, { status: 405 });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: getCorsHeaders(origin) });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, origin, { status: 405 });
 
   // Server-side configuration
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -118,20 +129,21 @@ serve(async (req) => {
   if (!supabaseUrl || !anonKey || !apiKey) {
     return json(
       { error: "Server misconfigured: missing SUPABASE_URL, SUPABASE_ANON_KEY, or ANTHROPIC_API_KEY" },
+      origin,
       { status: 500 },
     );
   }
 
   // Authenticate the caller via their Supabase JWT.
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return json({ error: "Not authenticated" }, { status: 401 });
+  if (!authHeader) return json({ error: "Not authenticated" }, origin, { status: 401 });
 
   const supabase = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: userData, error: authErr } = await supabase.auth.getUser();
   if (authErr || !userData?.user) {
-    return json({ error: "Invalid session" }, { status: 401 });
+    return json({ error: "Invalid session" }, origin, { status: 401 });
   }
 
   // Exemption — comma-separated list of UUIDs in EXEMPT_USER_IDS skip the
@@ -154,6 +166,7 @@ serve(async (req) => {
     if (profileErr) {
       return json(
         { error: "Approval check failed: " + profileErr.message },
+        origin,
         { status: 500 },
       );
     }
@@ -163,6 +176,7 @@ serve(async (req) => {
           error: "Your account is pending approval. The admin will let you in soon.",
           code: "not_approved",
         },
+        origin,
         { status: 403 },
       );
     }
@@ -174,7 +188,7 @@ serve(async (req) => {
   try {
     body = await req.json();
   } catch {
-    return json({ error: "Invalid JSON in request body" }, { status: 400 });
+    return json({ error: "Invalid JSON in request body" }, origin, { status: 400 });
   }
 
   if (!isExempt) {
@@ -183,7 +197,7 @@ serve(async (req) => {
     const { data: rateRows, error: rateErr } = await supabase
       .rpc("check_and_increment_ai_usage", { lim: DAILY_LIMIT });
     if (rateErr) {
-      return json({ error: "Rate check failed: " + rateErr.message }, { status: 500 });
+      return json({ error: "Rate check failed: " + rateErr.message }, origin, { status: 500 });
     }
     const rate = Array.isArray(rateRows) ? rateRows[0] : rateRows;
     if (!rate?.allowed) {
@@ -194,6 +208,7 @@ serve(async (req) => {
           used: rate?.current_count ?? DAILY_LIMIT,
           limit: DAILY_LIMIT,
         },
+        origin,
         { status: 429 },
       );
     }
@@ -207,6 +222,6 @@ serve(async (req) => {
   const text = await upstream.text();
   return new Response(text, {
     status: upstream.status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
   });
 });
