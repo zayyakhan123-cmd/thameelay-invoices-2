@@ -2414,15 +2414,15 @@ async function cloudPullAll(){
   _CLOUD_PULLING = true;
   try {
     const [invoicesR, obsR, catsR, productsR, linksR, pcCatR, pcMapR, rulesR, metaR] = await Promise.all([
-      _supabase.from('invoices').eq('tenant_id', _USER.id).select('*').order('saved_at', { ascending: false }),
-      _supabase.from('price_observations').eq('tenant_id', _USER.id).select('*'),
-      _supabase.from('categories').eq('tenant_id', _USER.id).select('*').order('sort_order'),
-      _supabase.from('products').eq('tenant_id', _USER.id).select('*'),
-      _supabase.from('product_links').eq('tenant_id', _USER.id).select('*'),
-      _supabase.from('produce_catalog').eq('tenant_id', _USER.id).select('*'),
-      _supabase.from('produce_map').eq('tenant_id', _USER.id).select('*'),
-      _supabase.from('vendor_rules').eq('tenant_id', _USER.id).select('*'),
-      _supabase.from('product_meta').eq('tenant_id', _USER.id).select('*'),
+      _supabase.from('invoices').select('*').eq('tenant_id', _USER.id).order('saved_at', { ascending: false }),
+      _supabase.from('price_observations').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('categories').select('*').eq('tenant_id', _USER.id).order('sort_order'),
+      _supabase.from('products').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('product_links').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('produce_catalog').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('produce_map').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('vendor_rules').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('product_meta').select('*').eq('tenant_id', _USER.id),
     ]);
     // If cloud is completely empty and local has data, this is a first sign-in
     // for a user who'd been using the app pre-cloud. Push localStorage up.
