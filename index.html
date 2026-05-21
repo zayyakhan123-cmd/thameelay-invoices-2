@@ -6932,12 +6932,11 @@ function pcParseSize(str){
   if(!str) return {qty:1, unit:null};
   const s = str.toUpperCase().trim();
   let m;
-  // Multiplicative N1 X N2 unit — checked before single-token LB so that
-  // "40X1LB" doesn't match the bare "1LB" branch (which would return qty=1).
-  m = s.match(/(\d+(?:\.\d+)?)\s*X\s*(\d+(?:\.\d+)?)\s*(LBS?|#)/);
-  if(m) return {qty: parseFloat(m[1]) * parseFloat(m[2]), unit:'lb'};
-  // N1 X N2 weight-per-pack (G/GR/KG/OZ) → item sold per pack, N1 is case count.
-  m = s.match(/(\d+(?:\.\d+)?)\s*X\s*(\d+(?:\.\d+)?)\s*(?:GR?\b|GRAMS?\b|KGS?\b|OZ\b)/);
+  // Multiplicative N1 X N2 weight-unit means N1 packs sold by the pack,
+  // regardless of per-pack weight (8X5LBS = 8 packs, 40X1LB = 40 packs,
+  // 24X250G = 24 packs). Checked before single-token LB to prevent
+  // "40X1LB" matching the bare "1LB" branch.
+  m = s.match(/(\d+(?:\.\d+)?)\s*X\s*(\d+(?:\.\d+)?)\s*(?:LBS?|#|GR?\b|GRAMS?\b|KGS?\b|OZ\b)/);
   if(m) return {qty: parseFloat(m[1]), unit:'each'};
   // Single-token weight
   m = s.match(/(\d+(?:\.\d+)?)\s*LBS?\b/);
