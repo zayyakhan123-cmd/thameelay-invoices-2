@@ -563,6 +563,10 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 .pc-chg.down{background:var(--greenl);color:var(--greend)}
 .pc-chg.flat{background:var(--bg3);color:var(--text3)}
 .pc-chg.first{background:var(--c1l);color:var(--c1d);font-weight:600}
+.pc-units-input{width:44px;padding:2px 4px;border:0.5px solid var(--border2);border-radius:3px;background:var(--surface);color:var(--text);font-size:11px;font-family:var(--font-mono);text-align:right;vertical-align:middle}
+.pc-units-input.edited{border-color:var(--c1);color:var(--c1d)}
+.pc-unit-sel{padding:2px 3px;border:0.5px solid var(--border2);border-radius:3px;background:var(--surface);color:var(--text);font-size:11px;vertical-align:middle;cursor:pointer}
+.pc-unit-sel.edited{border-color:var(--c1)}
 .pc-vpill{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.04em;text-transform:uppercase;background:var(--bg3);color:var(--text3);margin-left:6px;vertical-align:middle}
 .pc-vpill.dup{background:var(--amberl);color:var(--amberd);border:1px solid var(--amber)}
 .pc-row-arrow{font-size:18px;color:var(--text4);text-align:center}
@@ -7048,12 +7052,14 @@ function pcRenderResults(){
   
   list.innerHTML = PC_LAST_MATCHED.lines.map((line, idx)=>{
     const conf = line.confidence;
-    // Re-derive per-unit cost from stored invoiceSize + caseCost so existing
-    // data (extracted before the parse fix) renders correctly without re-extraction.
+    // Re-derive per-unit cost from stored invoiceSize + caseCost, then apply
+    // any user overrides (unitsOverride / soldByOverride) on top.
     const _rp = pcParseSize(line.invoiceSize);
-    const effUnits = _rp.qty > 1 ? _rp.qty : (line.unitsPerCase || 1);
-    const effCost = effUnits > 0 ? (line.caseCost || line.cost || 0) / effUnits : (line.cost || 0);
-    const effUnit = _rp.unit || line.unitType || 'lb';
+    const parsedUnits = _rp.qty > 1 ? _rp.qty : (line.unitsPerCase || 1);
+    const parsedUnit  = _rp.unit || line.unitType || 'lb';
+    const effUnits = line.unitsOverride != null ? line.unitsOverride : parsedUnits;
+    const effUnit  = line.soldByOverride  || parsedUnit;
+    const effCost  = effUnits > 0 ? (line.caseCost || line.cost || 0) / effUnits : (line.cost || 0);
     const matched = line.catalogId ? cat.find(x=>x.id===line.catalogId) : null;
     const url = matched ? pcImgUrl(matched) : '';
     const safe = safeUrl(url);
@@ -7066,16 +7072,19 @@ function pcRenderResults(){
     const isOverridden = line.retailOverride != null;
     const confPill = {high:'High',med:'Medium',low:'Low',none:'No Match'}[conf];
     const confScore = line.score>0 ? `${(line.score*100).toFixed(0)}%` : '';
-    // Cost breakdown — show shipping line separately when a vendor rule applied
+    // Cost breakdown with editable ÷ units and sold-by unit selector.
+    // unitsOverride / soldByOverride on the line object take precedence over parser.
+    const _uEdited = line.unitsOverride != null;
+    const _sbEdited = line.soldByOverride != null;
+    const _unitInput = `<input class="pc-units-input${_uEdited?' edited':''}" type="number" min="1" step="1" value="${effUnits}" oninput="pcUnitsInput(${idx},this)" onchange="pcUnitsChange(${idx},this)">`;
+    const _unitSel = `<select class="pc-unit-sel${_sbEdited?' edited':''}" onchange="pcSoldByChange(${idx},this)"><option value="lb"${effUnit==='lb'?' selected':''}>lb</option><option value="each"${effUnit==='each'?' selected':''}>each</option><option value="bunch"${effUnit==='bunch'?' selected':''}>bunch</option></select>`;
     let costBreakdown;
     if((line.shipPerCase||0) > 0){
       costBreakdown = `Case ${esc(line.invoiceSize||'')} @ $${(line.baseCaseCost||0).toFixed(2)}<br>
         <span style="color:var(--amberd)">+ shipping $${line.shipPerCase.toFixed(2)}/box</span><br>
-        = $${(line.caseCost||0).toFixed(2)} ÷ ${effUnits} → cost <b>$${effCost.toFixed(2)}/${esc(effUnit)}</b>`;
+        = $${(line.caseCost||0).toFixed(2)} ÷ ${_unitInput} → cost <b><span id="pc-uc-${idx}">$${effCost.toFixed(2)}</span>${_unitSel}</b>`;
     } else {
-      costBreakdown = effUnits > 1
-        ? `Case ${esc(line.invoiceSize||'')} @ $${(line.caseCost||0).toFixed(2)} ÷ ${effUnits} → cost <b>$${effCost.toFixed(2)}/${esc(effUnit)}</b>`
-        : `Case ${esc(line.invoiceSize||'')} @ $${(line.caseCost||0).toFixed(2)} → cost <b>$${effCost.toFixed(2)}/${esc(effUnit)}</b>`;
+      costBreakdown = `Case ${esc(line.invoiceSize||'')} @ $${(line.caseCost||0).toFixed(2)} ÷ ${_unitInput} → cost <b><span id="pc-uc-${idx}">$${effCost.toFixed(2)}</span>${_unitSel}</b>`;
     }
     
     // Vendor + duplicate label
@@ -7126,10 +7135,10 @@ function pcRenderResults(){
           ${matched ? `
           <div class="pc-row-r-price-edit">
             <span style="font-size:11px;color:var(--text3)">Retail $</span>
-            <input type="number" step="0.01" min="0" value="${retail.toFixed(2)}" 
+            <input id="pc-ret-input-${idx}" type="number" step="0.01" min="0" value="${retail.toFixed(2)}"
               onchange="pcSetRetail(${idx}, this.value)"
               style="width:70px;padding:3px 6px;border:1px solid ${isOverridden?'var(--c1)':'var(--border2)'};border-radius:5px;font-family:var(--font-mono);font-weight:700;color:${isOverridden?'var(--c1d)':'var(--green)'};font-size:13px">
-            <span style="font-size:11px;color:var(--text3)">${esc(unitLbl)}</span>
+            <span id="pc-ret-unit-${idx}" style="font-size:11px;color:var(--text3)">${esc(unitLbl)}</span>
             ${isOverridden ? `<span onclick="pcResetRetail(${idx})" title="Reset to auto-calculated" style="font-size:10px;color:var(--text3);cursor:pointer;text-decoration:underline">reset</span>` : `<span style="font-size:10px;color:var(--text4)">auto from $${autoRetail.toFixed(2)}</span>`}
           </div>
           ` : '<div class="pc-row-r-no">No catalog match</div>'}
@@ -7144,6 +7153,35 @@ function pcRenderResults(){
   }).join('');
 }
 
+// Editable units-per-case and sold-by unit handlers.
+// oninput: surgical DOM update (no full re-render). onchange: persist to line + pcSaveLast.
+// Formula-source retail is refreshed on cost change; retailOverride (user-set) is left alone.
+function pcUnitsInput(idx, el){
+  const line = PC_LAST_MATCHED && PC_LAST_MATCHED.lines[idx]; if(!line) return;
+  const v = Math.max(1, parseFloat(el.value)||1);
+  line.unitsOverride = v;
+  const cost = (line.caseCost || line.cost || 0) / v;
+  const ucEl = document.getElementById('pc-uc-' + idx);
+  if(ucEl) ucEl.textContent = '$' + cost.toFixed(2);
+  if(line.retailOverride == null){
+    const retEl = document.getElementById('pc-ret-input-' + idx);
+    if(retEl) retEl.value = pcRetailFor(cost).toFixed(2);
+  }
+}
+function pcUnitsChange(idx, el){
+  const line = PC_LAST_MATCHED && PC_LAST_MATCHED.lines[idx]; if(!line) return;
+  const v = Math.max(1, parseFloat(el.value)||1);
+  line.unitsOverride = v; el.value = v;
+  pcSaveLast();
+}
+function pcSoldByChange(idx, el){
+  const line = PC_LAST_MATCHED && PC_LAST_MATCHED.lines[idx]; if(!line) return;
+  line.soldByOverride = el.value;
+  const unitLbl = ({lb:'/ lb', bunch:'/ bunch', each:'each'})[el.value] || '';
+  const unitEl = document.getElementById('pc-ret-unit-' + idx);
+  if(unitEl) unitEl.textContent = unitLbl;
+  pcSaveLast();
+}
 function pcSetRetail(idx, val){
   if(!PC_LAST_MATCHED) return;
   const line = PC_LAST_MATCHED.lines[idx];
