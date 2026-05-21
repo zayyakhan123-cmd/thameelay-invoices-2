@@ -6932,13 +6932,22 @@ function pcParseSize(str){
   if(!str) return {qty:1, unit:null};
   const s = str.toUpperCase().trim();
   let m;
+  // Multiplicative N1 X N2 unit — checked before single-token LB so that
+  // "40X1LB" doesn't match the bare "1LB" branch (which would return qty=1).
+  m = s.match(/(\d+(?:\.\d+)?)\s*X\s*(\d+(?:\.\d+)?)\s*(LBS?|#)/);
+  if(m) return {qty: parseFloat(m[1]) * parseFloat(m[2]), unit:'lb'};
+  // N1 X N2 weight-per-pack (G/GR/KG/OZ) → item sold per pack, N1 is case count.
+  m = s.match(/(\d+(?:\.\d+)?)\s*X\s*(\d+(?:\.\d+)?)\s*(?:GR?\b|GRAMS?\b|KGS?\b|OZ\b)/);
+  if(m) return {qty: parseFloat(m[1]), unit:'each'};
+  // Single-token weight
   m = s.match(/(\d+(?:\.\d+)?)\s*LBS?\b/);
   if(m) return {qty:parseFloat(m[1]), unit:'lb'};
   m = s.match(/(\d+(?:\.\d+)?)\s*OZ\b/);
   if(m) return {qty:parseFloat(m[1]), unit:'oz'};
   m = s.match(/(\d+(?:\.\d+)?)\s*KGS?\b/);
   if(m) return {qty:parseFloat(m[1]), unit:'kg'};
-  m = s.match(/(\d+)\s*(?:COUNTS?|PIECES?|PC\b|CT\b|EA(?:CH)?\b)/);
+  // Count tokens — includes PK/PKS/PACK/PACKS/BAG/BAGS for produce pack formats
+  m = s.match(/(\d+)\s*(?:COUNTS?|PIECES?|PKS?\b|PACKS?\b|BAGS?\b|PC\b|CT\b|EA(?:CH)?\b)/);
   if(m) return {qty:parseFloat(m[1]), unit:'each'};
   m = s.match(/(\d+)\s*(?:BUNCHE?S?|BCH)\b/);
   if(m) return {qty:parseFloat(m[1]), unit:'bunch'};
