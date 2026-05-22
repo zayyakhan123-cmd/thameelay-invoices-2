@@ -97,7 +97,13 @@
       /* Without blur masking, semi-transparent layers let scroll content bleed through.
          Bump to near-solid on mobile only. */
       .nav-scrolled { background:rgba(10,14,26,0.96); }
-      .glass-strong { background:linear-gradient(180deg,rgba(15,20,36,0.96) 0%,rgba(10,14,26,0.96) 100%); }
+      .glass-strong { background:rgb(10,14,26); }
+      /* iOS Safari "freezes" GPU compositing layers created by overflow:hidden +
+         complex radial-gradient backgrounds, causing stale ghost content during scroll.
+         Replace the complex gradient with a flat colour and force a clean compositing
+         boundary via transform so the layer invalidates correctly on scroll. */
+      .mesh-hero { background:#0a0e1a; }
+      #top { -webkit-transform:translateZ(0); transform:translateZ(0); }
     }
   </style>
 </head>
