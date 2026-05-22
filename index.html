@@ -87,6 +87,14 @@
     .reveal.in { opacity:1; transform:translateY(0); }
     .nav-scrolled { backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); background:rgba(10,14,26,0.7); border-bottom:1px solid rgba(255,255,255,0.06); }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; } }
+    @media (max-width:1024px) {
+      /* iOS Safari renders backdrop-filter on fixed/scrolling elements as frozen
+         ghost layers during scroll. Backgrounds are opaque enough without it. */
+      .glass, .glass-strong, .nav-scrolled { backdrop-filter:none; -webkit-backdrop-filter:none; }
+      /* Large filter:blur() halos with negative insets trigger compositing bugs
+         near overflow:hidden boundaries on iOS Safari. Purely decorative — safe to drop. */
+      .blur-3xl { filter:none; }
+    }
   </style>
 </head>
 <body class="font-sans antialiased">
