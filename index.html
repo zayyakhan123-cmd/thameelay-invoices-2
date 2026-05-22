@@ -94,6 +94,10 @@
       /* Large filter:blur() halos with negative insets trigger compositing bugs
          near overflow:hidden boundaries on iOS Safari. Purely decorative — safe to drop. */
       .blur-3xl { filter:none; }
+      /* Without blur masking, semi-transparent layers let scroll content bleed through.
+         Bump to near-solid on mobile only. */
+      .nav-scrolled { background:rgba(10,14,26,0.96); }
+      .glass-strong { background:linear-gradient(180deg,rgba(15,20,36,0.96) 0%,rgba(10,14,26,0.96) 100%); }
     }
   </style>
 </head>
