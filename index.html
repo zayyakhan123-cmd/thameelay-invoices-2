@@ -104,6 +104,10 @@
          boundary via transform so the layer invalidates correctly on scroll. */
       .mesh-hero { background:#0a0e1a; }
       #top { -webkit-transform:translateZ(0); transform:translateZ(0); }
+      /* mask-image on the absolute inset-0 grid-bg overlay inside #top bleeds onto
+         sibling compositing layers on iOS Safari, fading the product preview table.
+         Disable the mask on mobile where overflow:hidden triggers the bug. */
+      #top .grid-bg { mask-image:none; -webkit-mask-image:none; }
     }
   </style>
 </head>
