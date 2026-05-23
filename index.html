@@ -120,6 +120,10 @@
          to avoid the stacking-context side-effects that caused the ghost-tile and
          the opacity double-multiply bugs. */
       #top { overflow:clip; }
+      /* TEMPORARY DIAGNOSTIC: hide fixed nav on mobile entirely.
+         If the blur artifact disappears, the nav is the source.
+         If it persists, look elsewhere. Either way, revert and design the real fix. */
+      #nav-header { display:none !important; }
       /* grid-bg has opacity:0.55 and is absolute inset-0 inside #top.
          Inside a GPU compositing layer iOS Safari double-applies the opacity
          (0.55 × 0.55 ≈ 0.30), making the product-preview text appear at ~30%.
