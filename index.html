@@ -98,16 +98,22 @@
          Bump to near-solid on mobile only. */
       .nav-scrolled { background:rgba(10,14,26,0.96); }
       .glass-strong { background:rgb(10,14,26); }
-      /* iOS Safari "freezes" GPU compositing layers created by overflow:hidden +
-         complex radial-gradient backgrounds, causing stale ghost content during scroll.
-         Replace the complex gradient with a flat colour and force a clean compositing
-         boundary via transform so the layer invalidates correctly on scroll. */
+      /* Stale row-ghost fix: replace complex radial-gradient with flat colour so
+         iOS Safari doesn't freeze the section as a GPU texture during scroll.
+         That flat background IS the load-bearing fix; the translateZ(0) below was
+         belt-and-suspenders that caused two new bugs once the real fix landed. */
       .mesh-hero { background:#0a0e1a; }
-      #top { -webkit-transform:translateZ(0); transform:translateZ(0); }
-      /* mask-image on the absolute inset-0 grid-bg overlay inside #top bleeds onto
-         sibling compositing layers on iOS Safari, fading the product preview table.
-         Disable the mask on mobile where overflow:hidden triggers the bug. */
-      #top .grid-bg { mask-image:none; -webkit-mask-image:none; }
+      /* overflow:clip provides the same paint-containment as overflow:hidden without
+         creating a scroll container or promoting #top to a GPU compositing layer.
+         Using clip (Safari 16+, universal on current iOS devices) rather than hidden
+         to avoid the stacking-context side-effects that caused the ghost-tile and
+         the opacity double-multiply bugs. */
+      #top { overflow:clip; }
+      /* grid-bg has opacity:0.55 and is absolute inset-0 inside #top.
+         Inside a GPU compositing layer iOS Safari double-applies the opacity
+         (0.55 × 0.55 ≈ 0.30), making the product-preview text appear at ~30%.
+         Hide it on mobile — purely decorative, no content loss. */
+      #top .grid-bg { display:none; }
     }
   </style>
 </head>
