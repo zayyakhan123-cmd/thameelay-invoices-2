@@ -91,9 +91,20 @@
       /* iOS Safari renders backdrop-filter on fixed/scrolling elements as frozen
          ghost layers during scroll. Backgrounds are opaque enough without it. */
       .glass, .glass-strong, .nav-scrolled { backdrop-filter:none; -webkit-backdrop-filter:none; }
-      /* Large filter:blur() halos with negative insets trigger compositing bugs
-         near overflow:hidden boundaries on iOS Safari. Purely decorative — safe to drop. */
-      .blur-3xl { filter:none; }
+      /* Large filter:blur() halos trigger iOS Safari paint-clip bug during scroll.
+         !important required — Tailwind CDN injects its rules after this <style>
+         block, so equal-specificity rules without !important get overridden. */
+      .blur-3xl { filter:none !important; display:none; }
+      /* row-in and price-badge are infinite looping animations that start at
+         opacity:0. The prefers-reduced-motion guard (animation-duration:0.001ms,
+         iteration-count:1) freezes them at frame 0 → opacity:0.
+         Force final state on mobile; these are decorative hero animations. */
+      .row-in,.row-in.delay-1,.row-in.delay-2,.row-in.delay-3,.row-in.delay-4,.row-in.delay-5 {
+        opacity:1 !important; transform:none !important; animation:none !important;
+      }
+      .price-badge,.price-badge-pulse {
+        opacity:1 !important; transform:none !important; animation:none !important;
+      }
       /* Without blur masking, semi-transparent layers let scroll content bleed through.
          Bump to near-solid on mobile only. */
       .nav-scrolled { background:rgba(10,14,26,0.96); }
