@@ -120,10 +120,11 @@
          to avoid the stacking-context side-effects that caused the ghost-tile and
          the opacity double-multiply bugs. */
       #top { overflow:clip; }
-      /* Confirmed source of persistent mobile blur artifact (diagnostic commit e482d65).
-         Even at 0.96 opacity iOS Safari compositing leaked scroll content through the
-         fixed nav. Fully opaque hex, no backdrop-filter, no alpha. */
-      #nav-header { background:#0a0e1a !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+      /* iOS Safari has a documented compositing bug with position:fixed elements
+         during scroll — background opacity doesn't fix it (confirmed via prior attempts).
+         Make the nav non-fixed on mobile so it scrolls with the page.
+         Standard mobile pattern (Stripe, Linear, Notion). Hamburger still works. */
+      #nav-header { position:static !important; background:#0a0e1a !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
       .nav-scrolled { background:#0a0e1a !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
       /* grid-bg has opacity:0.55 and is absolute inset-0 inside #top.
          Inside a GPU compositing layer iOS Safari double-applies the opacity
