@@ -786,5 +786,96 @@
     }
   });
 </script>
+
+<script>
+(function(){
+  if (!location.search.includes('debug=1')) return;
+  const style = document.createElement('style');
+  style.textContent = `
+    [data-debug] {
+      outline: 2px solid red !important;
+      position: relative;
+    }
+    [data-debug]::before {
+      content: attr(data-debug);
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: rgba(255,0,0,0.9);
+      color: white;
+      font-family: monospace;
+      font-size: 10px;
+      padding: 2px 4px;
+      z-index: 99999;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+    #debug-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.92);
+      color: lime;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 8px;
+      z-index: 999999;
+      max-height: 30vh;
+      overflow: auto;
+      border-top: 2px solid red;
+    }
+  `;
+  document.head.appendChild(style);
+
+  function annotate() {
+    document.querySelectorAll('*').forEach(el => {
+      const cs = getComputedStyle(el);
+      const flags = [];
+      const op = parseFloat(cs.opacity);
+      if (op < 1) flags.push('op:' + cs.opacity);
+      if (cs.transform !== 'none') flags.push('tr:' + cs.transform.slice(0, 18));
+      if (cs.filter !== 'none') flags.push('fi:' + cs.filter.slice(0, 18));
+      if (cs.backdropFilter && cs.backdropFilter !== 'none') flags.push('bd:' + cs.backdropFilter.slice(0, 18));
+      if (cs.position === 'fixed' || cs.position === 'sticky') flags.push('po:' + cs.position);
+      if (cs.maskImage && cs.maskImage !== 'none') flags.push('mask:yes');
+      if (cs.mixBlendMode !== 'normal') flags.push('bl:' + cs.mixBlendMode);
+      if (cs.willChange !== 'auto') flags.push('wc:' + cs.willChange.slice(0, 14));
+      if (flags.length) {
+        const tag = el.tagName.toLowerCase();
+        const id = el.id ? '#' + el.id : '';
+        const cls = el.className && typeof el.className === 'string' ? '.' + el.className.split(' ').slice(0, 2).join('.') : '';
+        el.dataset.debug = (tag + id + cls).slice(0, 30) + ' | ' + flags.join(' ');
+      }
+    });
+  }
+
+  function buildPanel() {
+    const panel = document.createElement('div');
+    panel.id = 'debug-panel';
+    const update = () => {
+      const scrollY = window.scrollY;
+      const vh = window.innerHeight;
+      const items = [];
+      document.querySelectorAll('[data-debug]').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom > 0 && rect.top < vh) {
+          items.push('y:' + Math.round(rect.top) + ' ' + el.dataset.debug);
+        }
+      });
+      panel.innerHTML = 'scroll:' + Math.round(scrollY) + 'px | viewport elements:<br>' + items.slice(0, 12).join('<br>');
+    };
+    document.body.appendChild(panel);
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  }
+
+  // Wait for layout to settle
+  setTimeout(() => { annotate(); buildPanel(); }, 500);
+})();
+</script>
 </body>
 </html>
