@@ -1991,6 +1991,7 @@ function resolveSuggestedRetail(item, vendor){
 function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function normV(v){return (v||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20);}
+function normalizeVendor(v){if(!v)return '';return String(v).trim().toLowerCase().replace(/[^a-z0-9]/g,'');}
 
 // ═══════════ HTML/JS ESCAPING ═══════════
 // esc(s): safe for HTML text content AND inside double-quoted attributes (e.g. value="${esc(x)}").
@@ -3568,17 +3569,22 @@ function renderVendors(){
   if(!hist.length){show('vnd-empty',true);show('vnd-content',false);return;}
   show('vnd-empty',false);show('vnd-content',true);
   const V={};
+  // normVtoNk: maps normV (20-char DB key prefix) → full normalizeVendor key in V.
+  // Needed because DB keys use normV (truncated) but V is keyed by normalizeVendor (full).
+  const normVtoNk={};
   hist.forEach(inv=>{
-    if(!V[inv.vendor])V[inv.vendor]={name:inv.vendor,invs:[],spend:0,items:new Set(),up:0,dn:0};
-    const v=V[inv.vendor];v.invs.push(inv);v.spend+=inv.total||0;
+    const nk=normalizeVendor(inv.vendor);
+    if(!V[nk])V[nk]={name:inv.vendor,lastDate:'',invs:[],spend:0,items:new Set(),up:0,dn:0};
+    if(inv.date>V[nk].lastDate){V[nk].name=inv.vendor;V[nk].lastDate=inv.date;}
+    normVtoNk[normV(inv.vendor)]=nk;
+    const v=V[nk];v.invs.push(inv);v.spend+=inv.total||0;
     inv.items.forEach(i=>v.items.add(i.item));
   });
-  const n2f={};Object.keys(V).forEach(name=>{n2f[normV(name)]=name;});
   Object.keys(db).forEach(key=>{
-    const vk=key.split('|')[0];const full=n2f[vk];if(!full)return;
+    const vk=key.split('|')[0];const nk=normVtoNk[vk];if(!nk)return;
     const ents=db[key].filter(e=>e.unitCost>0);if(ents.length<2)return;
     const diff=ents[ents.length-1].unitCost-ents[0].unitCost;
-    if(diff>0.001)V[full].up++; else if(diff<-0.001)V[full].dn++;
+    if(diff>0.001)V[nk].up++; else if(diff<-0.001)V[nk].dn++;
   });
   document.getElementById('vnd-list').innerHTML=Object.values(V).map(v=>{
     const avg=v.invs.length?v.spend/v.invs.length:0;
@@ -3682,9 +3688,10 @@ function vendorItemsForProduct(productId){
 
 // Cache: keyed by vendor name. Invalidated on saveHist() — see _VENDOR_ITEMS_CACHE near _CACHE.
 function vendorBuildItems(vendorName){
-  if(_VENDOR_ITEMS_CACHE[vendorName]) return _VENDOR_ITEMS_CACHE[vendorName];
+  const cacheKey = normalizeVendor(vendorName);
+  if(_VENDOR_ITEMS_CACHE[cacheKey]) return _VENDOR_ITEMS_CACHE[cacheKey];
   const hist = loadHist();
-  const invs = hist.filter(inv => inv.vendor === vendorName);
+  const invs = hist.filter(inv => normalizeVendor(inv.vendor) === cacheKey);
   const byItem = {};
   invs.forEach(inv => {
     (inv.items||[]).forEach(i => {
@@ -3720,7 +3727,7 @@ function vendorBuildItems(vendorName){
     const pct = e.firstCost > 0 ? (diff / e.firstCost * 100) : 0;
     return {...e, costDiff: diff, costPct: pct};
   }).sort((a,b) => b.totalSpend - a.totalSpend);
-  _VENDOR_ITEMS_CACHE[vendorName] = result;
+  _VENDOR_ITEMS_CACHE[cacheKey] = result;
   return result;
 }
 // Compute auto-retail and margin for a vendor item using the latest cost and the
@@ -3770,7 +3777,8 @@ async function vendorRecomputeSoldBy(){
   const vendorName = document.getElementById('vnd-modal').dataset.vendor;
   if(!vendorName) return;
   const hist = loadHist();
-  const matches = hist.filter(h => h.vendor === vendorName);
+  const nk = normalizeVendor(vendorName);
+  const matches = hist.filter(h => normalizeVendor(h.vendor) === nk);
   if(!matches.length){ showToast('warn', 'No saved invoices for this vendor'); return; }
   if(!confirm(`Recompute sold-by for ${matches.length} saved invoice${matches.length===1?'':'s'} from ${vendorName}? Unit costs may change for bulk-weight items.`)) return;
   matches.forEach(inv => { classifyInvoice(inv); });
@@ -6759,10 +6767,10 @@ function pcSaveToHist(inv, lines){
 function pcFindPriorCost(catalogId, vendor, currentInvNo){
   if(!catalogId) return null;
   const hist = pcLoadHist();
-  const v = (vendor||'').toLowerCase().trim();
+  const v = normalizeVendor(vendor);
   // 1. Same vendor, same item — prefer most recent that ISN'T the current invoice
   const sameVendor = hist
-    .filter(h => (h.vendor||'').toLowerCase().trim() === v && h.invoiceNo !== currentInvNo)
+    .filter(h => normalizeVendor(h.vendor) === v && h.invoiceNo !== currentInvNo)
     .map(h => ({h, line: h.lines.find(l=>l.catalogId===catalogId)}))
     .filter(x => x.line && x.line.cost > 0)
     .sort((a,b)=> new Date(b.h.date) - new Date(a.h.date));
