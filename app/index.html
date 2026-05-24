@@ -940,7 +940,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div class="tbl-search">
           <div class="tbl-search-input"><input type="text" placeholder="Search items..." id="db-search" oninput="dbSearchDebounced()"></div>
           <button class="tbl-btn"><i class="ti ti-filter" style="margin-right:6px"></i>Filters</button>
-          <button class="tbl-btn"><i class="ti ti-download" style="margin-right:6px"></i>Export</button>
+          <button class="tbl-btn" id="db-export-open-btn" onclick="openExportPanel()"><i class="ti ti-download" style="margin-right:6px"></i>Export</button>
         </div>
       </div>
       <div class="db-bulk" id="db-bulk-bar" style="display:none">
@@ -3083,6 +3083,9 @@ async function extractInvoice(file, onStep){
 function loadInvoice(inv){
   if(!inv.docType)inv.docType='invoice';
   classifyInvoice(inv);
+  // Items without a vendor item number get a stable derived key so APPROVALS
+  // doesn't collapse them all into APPROVALS[""].
+  inv.items.forEach(i => { if(!i.item) i.item = normV(i.desc); });
   INV=inv;
   const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=inv.vendor+' #'+inv.invoiceNo+' · '+inv.date;
   const vk=normV(inv.vendor);
@@ -5289,9 +5292,11 @@ document.addEventListener('click', e => {
   const wrap = document.getElementById('exp-menu-wrap');
   if(wrap && !wrap.contains(e.target)) closeExportMenu();
   const panel = document.getElementById('export-panel');
+  const dbExportBtn = document.getElementById('db-export-open-btn');
   if(panel && panel.classList.contains('open')
      && !panel.contains(e.target)
-     && (!wrap || !wrap.contains(e.target))){
+     && (!wrap || !wrap.contains(e.target))
+     && !(dbExportBtn && dbExportBtn.contains(e.target))){
     closeExportPanel();
   }
 });
