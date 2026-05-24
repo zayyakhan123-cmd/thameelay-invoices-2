@@ -3119,7 +3119,8 @@ function reloadInv(vendor,invoiceNo,date){
   const h=date
     ? hist.find(h=>h.vendor===vendor&&h.invoiceNo===invoiceNo&&normDate(h.date)===normDate(date))
     : hist.find(h=>h.vendor===vendor&&h.invoiceNo===invoiceNo);
-  if(h)loadInvoice(h);
+  if(h) loadInvoice(h);
+  else showToast('warn','Invoice not found in history');
 }
 
 // ═══════════ VERIFY PAGE ═══════════
