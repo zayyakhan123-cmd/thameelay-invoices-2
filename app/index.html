@@ -1991,6 +1991,7 @@ function resolveSuggestedRetail(item, vendor){
 function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function normV(v){return (v||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20);}
+function normDate(d){if(!d)return d;if(/^\d{4}-\d{2}-\d{2}/.test(d))return d.slice(0,10);const m=d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;return d;}
 function normalizeVendor(v){if(!v)return '';return String(v).trim().toLowerCase().replace(/[^a-z0-9]/g,'');}
 
 // ═══════════ HTML/JS ESCAPING ═══════════
@@ -2788,7 +2789,7 @@ async function processSingleFile(file){
 function saveCurrentInvoiceToHistory(){
   if(!INV) return;
   const hist=loadHist();
-  const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor);
+  const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor&&normDate(h.date)===normDate(INV.date));
   if(idx>=0) hist.splice(idx,1);
   hist.unshift({...INV, savedAt:new Date().toISOString()});
   saveHist(hist);
@@ -2852,11 +2853,12 @@ async function processQueue(){
       const pdfPromise = readFileAsDataUrl(FILE_QUEUE[i].file);
       const inv=await extractInvoice(FILE_QUEUE[i].file);
       inv._uploadedAs = FILE_QUEUE[i].name;
+      inv.date = normDate(inv.date);
       attachPdfDataUrl(inv, await pdfPromise);
       classifyInvoice(inv);
       FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=inv;
       const {saved,skipped}=saveInvoiceToDB(inv);
-      const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===inv.invoiceNo&&h.vendor===inv.vendor);
+      const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===inv.invoiceNo&&h.vendor===inv.vendor&&normDate(h.date)===normDate(inv.date));
       if(idx>=0)hist.splice(idx,1);hist.unshift({...inv,savedAt:new Date().toISOString()});saveHist(hist);
       const vk=normV(inv.vendor);
       const ups=inv.items.filter(it=>it._rt===RT.PURCHASED&&it.qty>0).filter(it=>detectChange(it,vk,inv.invoiceNo,inv.date).status==='increase').length;
@@ -2882,7 +2884,7 @@ async function processQueue(){
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         ${r.ups>0?`<span class="tag tr">▲ ${r.ups} increase${r.ups!==1?'s':''}</span>`:'<span class="tag tg">No increases</span>'}
-        <button onclick="reloadInv('${escJs(r.inv.vendor)}','${escJs(r.inv.invoiceNo)}')" style="font-size:11px;padding:4px 10px">Review →</button>
+        <button onclick="reloadInv('${escJs(r.inv.vendor)}','${escJs(r.inv.invoiceNo)}','${escJs(r.inv.date)}')" style="font-size:11px;padding:4px 10px">Review →</button>
       </div>
     </div>`).join('');
   if(done.length){INV=done[0].inv;const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=INV.vendor+' #'+INV.invoiceNo+' · '+INV.date;}
@@ -3082,6 +3084,7 @@ async function extractInvoice(file, onStep){
 // ═══════════ LOAD INVOICE ═══════════
 function loadInvoice(inv){
   if(!inv.docType)inv.docType='invoice';
+  inv.date = normDate(inv.date);
   classifyInvoice(inv);
   // Items without a vendor item number get a stable derived key so APPROVALS
   // doesn't collapse them all into APPROVALS[""].
@@ -3100,8 +3103,11 @@ function loadInvoice(inv){
   goTo('dashboard');
 }
 
-function reloadInv(vendor,invoiceNo){
-  const h=loadHist().find(h=>h.vendor===vendor&&h.invoiceNo===invoiceNo);
+function reloadInv(vendor,invoiceNo,date){
+  const hist=loadHist();
+  const h=date
+    ? hist.find(h=>h.vendor===vendor&&h.invoiceNo===invoiceNo&&normDate(h.date)===normDate(date))
+    : hist.find(h=>h.vendor===vendor&&h.invoiceNo===invoiceNo);
   if(h)loadInvoice(h);
 }
 
@@ -3404,7 +3410,7 @@ function downloadHistoryCSV(idx){
 function finalizeAndSave(silent){
   if(!INV){alert('No invoice.');return;}
   const {saved,skipped}=saveInvoiceToDB(INV);
-  const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor);
+  const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor&&normDate(h.date)===normDate(INV.date));
   if(idx>=0)hist.splice(idx,1);
   const _ar={};Object.entries(APPROVALS).forEach(([k,v])=>{if(v&&v.retailPrice!=null)_ar[k]=v.retailPrice;});
   hist.unshift({...INV,_approvedRetails:_ar,savedAt:new Date().toISOString()});saveHist(hist);
@@ -4151,7 +4157,7 @@ function renderHistory(){
     const purch=inv.items?inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0):[];
     const oos=inv.items?inv.items.filter(i=>i._rt===RT.OOS).length:0;
     const newCt=inv.items?inv.items.filter(i=>i._isNew&&i._rt===RT.PURCHASED).length:0;
-    return `<div class="hcard" onclick="reloadInv('${escJs(inv.vendor)}','${escJs(inv.invoiceNo)}')">
+    return `<div class="hcard" onclick="reloadInv('${escJs(inv.vendor)}','${escJs(inv.invoiceNo)}','${escJs(inv.date)}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-weight:700;font-size:14px">${esc(inv.vendor)} — #${esc(inv.invoiceNo)}</div>
