@@ -38,8 +38,10 @@ create table if not exists invoices (
   total           numeric(12,2),
   items           jsonb not null default '[]'::jsonb,
   saved_at        timestamptz not null default now(),
-  -- Same (vendor, invoice_no) means it's a re-upload; we keep one row per pair per tenant.
-  unique (tenant_id, vendor, invoice_no)
+  -- Same (vendor, invoice_no, date) means it's a re-upload; we keep one row per triple per tenant.
+  -- Date is included so that order confirmations reusing the same invoice_no (e.g. MI10125) on
+  -- different dates are stored as separate rows.
+  unique (tenant_id, vendor, invoice_no, date)
 );
 create index if not exists invoices_tenant_idx     on invoices(tenant_id);
 create index if not exists invoices_tenant_vendor  on invoices(tenant_id, vendor);

@@ -2136,7 +2136,10 @@ async function cloudInit(){
   document.body.classList.add('cloud-active');
   document.body.classList.add('app-locked');
   try{
-    const mod = await import('https://esm.sh/@supabase/supabase-js@2');
+    // Try primary CDN (esm.sh), fall back to jsdelivr if it's down.
+    const mod = await import('https://esm.sh/@supabase/supabase-js@2').catch(() =>
+      import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
+
     _supabase = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: { session } } = await _supabase.auth.getSession();
     _USER = session?.user || null;
@@ -2362,7 +2365,7 @@ async function cloudUpsertInvoices(){
     items: inv.items || [],
     saved_at: inv.savedAt || new Date().toISOString(),
   }));
-  await _supabase.from('invoices').upsert(rows, { onConflict: 'tenant_id,vendor,invoice_no' });
+  await _supabase.from('invoices').upsert(rows, { onConflict: 'tenant_id,vendor,invoice_no,date' });
 }
 async function cloudReplacePriceObs(){
   // Wipe + reinsert. Price DB is bounded by # invoices × items per invoice; for
@@ -2927,15 +2930,21 @@ async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, sy
   if(_USER && _supabase){
     const { data: { session } } = await _supabase.auth.getSession();
     if(!session) throw new Error('not_authenticated');
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-        'apikey': SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify(body)
-    });
+    const _aiCtrl = new AbortController();
+    const _aiTimeout = setTimeout(() => _aiCtrl.abort(), 120000);
+    let resp;
+    try {
+      resp = await fetch(`${SUPABASE_URL}/functions/v1/ai`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(body),
+        signal: _aiCtrl.signal,
+      });
+    } finally { clearTimeout(_aiTimeout); }
     const text = await resp.text();
     let data;
     try { data = JSON.parse(text); }
