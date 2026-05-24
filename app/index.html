@@ -4622,7 +4622,7 @@ function findBestHistoryMatch(item, currentVendorKey, currentInvNo, currentInvDa
   
   // 1. EXACT: same vendor + same item number (most reliable)
   const exactKey = currentVendorKey + '|' + item.item;
-  const exactHist = (db[exactKey]||[]).filter(isPrior);
+  const exactHist = (db[exactKey]||[]).filter(isPrior).sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(exactHist.length) {
     return {
       entry: exactHist[exactHist.length-1],
