@@ -15,20 +15,23 @@ Or ask: "run smoke tests", "verify the push", "did anything break"
 ## Steps
 
 1. Install deps if needed: `npm install` (only first time or after package.json changes)
-2. Install browser if needed: `npx playwright install webkit`
-3. Run: `TEST_EMAIL=zayyakhan2.2@gmail.com TEST_PASSWORD=$PW npx playwright test tests/smoke.spec.js`
+2. Install browser if needed: `npx playwright install chromium`
+3. Run tests:
+   - **Normal (headless, ~8s):** `npm test`
+   - **First time / session expired:** `HEADED=1 npm test` — Chrome opens, user signs in once, session saved to `tests/.auth.json`
 
-**Never hardcode TEST_PASSWORD** — ask the user to set it or use a saved env var.
+**Never hardcode credentials.** The saved session in `tests/.auth.json` handles auth automatically after the first run.
 
 ## What the tests check
 - App loads at /app with correct title
 - Sign-in works and cloudPullAll returns > 0 invoices
-- Dashboard vendor summary renders
+- Dashboard renders
 - Upload Invoices page reachable via nav
-- Price Tracker page reachable via nav
+- Price Tracker page (`#pg-tracker`) reachable via nav
 
 ## On failure
-1. Re-run with `--headed` to watch: `npm run test:headed`
-2. Check Vercel deployment status (vercel.com dashboard or `vercel ls`)
-3. Check Supabase is up (fslrqqaplwfyqemdumfz.supabase.co)
-4. Check browser console for CDN / auth errors
+1. Re-run headed to watch: `HEADED=1 npm test`
+2. If session expired, delete `tests/.auth.json` then re-run with `HEADED=1`
+3. Check Vercel deployment status (vercel.com dashboard or `vercel ls`)
+4. Check Supabase is up (fslrqqaplwfyqemdumfz.supabase.co)
+5. Check browser console for CDN / auth errors
