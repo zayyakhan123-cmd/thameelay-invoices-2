@@ -3005,6 +3005,8 @@ IMAGES: If the input is an image (a scan or photo), read all visible text includ
 
 DOCUMENT: Read the header to identify the document type and extract the document number and date. Set docType to one of: "invoice", "sales_order", "purchase_order", "packing_slip", "wip", "pro_forma", or "bill".
 
+VENDOR vs CUSTOMER: vendor = the SELLER/SUPPLIER who created the document (company letterhead, "From:", "Ship From", or the organization sending the invoice/order). customer = the BUYER (appears under "Bill to:", "Ship to:", "Sold to:", or customer account codes like "MI10125 - Thameelay Market"). Never put the buyer name in vendor. If vendor is unclear, use the company name from the document header or letterhead.
+
 FOR EACH LINE ITEM extract ALL of these fields:
 - item: the item/product number (e.g. "12006", "503000")
 - desc: full product description, remove asterisks but keep all words
