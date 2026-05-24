@@ -2211,7 +2211,8 @@ async function loginSubmit(ev){
   }
   const isSignup = _LOGIN_MODE === 'signup';
   const origLabel = isSignup ? 'Create account' : 'Sign in';
-  btn.disabled = true; btn.textContent = isSignup ? 'Creating…' : 'Signing in…';
+  const loadingLabel = isSignup ? 'Creating…' : 'Signing in…';
+  btn.disabled = true; btn.textContent = loadingLabel;
   msg.className = 'login-msg'; msg.textContent = '';
   try{
     if(isSignup){
@@ -2220,25 +2221,60 @@ async function loginSubmit(ev){
         msg.className = 'login-msg success';
         msg.textContent = 'Account created. Check your email to confirm before signing in.';
       } else {
+        // Session returned immediately — verify it actually persisted before showing success.
+        const { data: sd } = await _supabase.auth.getSession();
+        if(!sd?.session){
+          msg.className = 'login-msg error';
+          msg.textContent = "Account created but your session couldn’t be saved. This usually means browser storage is full or blocked. Try clearing your browser’s site data for trackaisle.com, or use a different browser.";
+          return;
+        }
+        btn.textContent = 'Success!';
         msg.className = 'login-msg success';
         msg.textContent = 'Account created. Signing you in…';
       }
     } else {
       await cloudSignIn(email, password);
+      // signInWithPassword returns 200 even when localStorage is corrupted/blocked,
+      // so the session may not actually be stored. Verify before declaring success.
+      const { data: sd } = await _supabase.auth.getSession();
+      if(!sd?.session){
+        msg.className = 'login-msg error';
+        msg.textContent = "Sign-in succeeded but your session couldn’t be saved. This usually means browser storage is full or blocked. Try clearing your browser’s site data for trackaisle.com, or use a different browser.";
+        return;
+      }
+      btn.textContent = 'Success!';
       // onAuthStateChange handles unlocking the gate.
     }
   }catch(e){
-    const emailNotConfirmed = e?.code === 'email_not_confirmed'
-      || /email\s+not\s+confirmed/i.test(e?.message || '');
-    if(emailNotConfirmed){
+    const code = e?.code || '';
+    const raw = e?.message || '';
+    let friendly;
+    if(/invalid_credentials/i.test(code) || /invalid login/i.test(raw)){
+      friendly = 'Email or password is incorrect.';
+    } else if(/email_not_confirmed/i.test(code) || /email.*not.*confirm/i.test(raw)){
       msg.className = 'login-msg success';
       msg.textContent = 'Please check your email to confirm your account before signing in.';
+      return;
+    } else if(/over_request_rate_limit/i.test(code) || /rate.?limit/i.test(raw)){
+      friendly = 'Too many attempts. Please wait a moment and try again.';
+    } else if(/user_already_exists/i.test(code)){
+      friendly = 'An account with this email already exists. Try signing in instead.';
+    } else if(/weak_password/i.test(code)){
+      friendly = 'Password is too short. Use at least 6 characters.';
+    } else if(/user_not_found/i.test(code)){
+      friendly = 'No account found with that email. Try signing up instead.';
+    } else if(/failed to fetch|networkerror|network/i.test(raw)){
+      friendly = 'Connection error. Check your internet and try again.';
     } else {
-      msg.className = 'login-msg error';
-      msg.textContent = e.message || (isSignup ? 'Sign-up failed. Please try again.' : 'Sign-in failed. Please try again.');
+      friendly = raw || (isSignup ? 'Sign-up failed. Please try again.' : 'Sign-in failed. Please try again.');
     }
+    msg.className = 'login-msg error';
+    msg.textContent = friendly;
   }finally{
-    btn.disabled = false; btn.textContent = origLabel;
+    btn.disabled = false;
+    // Only reset button label if still showing the loading text —
+    // don't clobber "Success!" which the user needs to see briefly.
+    if(btn.textContent === loadingLabel) btn.textContent = origLabel;
   }
 }
 
