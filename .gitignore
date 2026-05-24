@@ -1,2 +1,8 @@
 supabase/.temp/
 .DS_Store
+node_modules/
+.playwright-cli/
+.claude/settings.local.json
+test-results/
+playwright-report/
+tests/.auth.json
