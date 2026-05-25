@@ -112,6 +112,9 @@ test('account settings: save and reload persists profile fields', async () => {
   await page.getByRole('navigation').getByText('Account Settings').click();
   await expect(page.locator('#pg-account-settings')).toBeVisible({ timeout: 8000 });
 
+  // Wait for renderSettings to load data from Supabase (email field fills first)
+  await expect(page.locator('#s-email')).not.toHaveValue('', { timeout: 10000 });
+
   // Verify the saved name reloaded from Supabase
   await expect(page.locator('#s-display-name')).toHaveValue(testName, { timeout: 8000 });
   console.log(`  ✓ display_name persisted after reload`);

@@ -7862,7 +7862,13 @@ function sMsg(id, text, type){
 }
 
 async function renderSettings(){
-  if(!_USER) return;
+  if(!_supabase) return;
+  // Wait up to 6s for Supabase auth to restore session after page load
+  if(!_USER){
+    let waited = 0;
+    while(!_USER && waited < 6000){ await new Promise(r=>setTimeout(r,200)); waited+=200; }
+    if(!_USER) return;
+  }
   const { data, error } = await _supabase
     .from('user_profiles')
     .select('*')
@@ -7948,16 +7954,17 @@ async function sUploadAvatar(input){
 }
 
 async function sSaveProfile(){
-  if(!_USER) return;
+  if(!_USER || !_supabase) return;
   const btn = document.getElementById('s-profile-save');
   btn.disabled = true;
-  const { error } = await _supabase
+  const { error, count } = await _supabase
     .from('user_profiles')
     .update({
       display_name: document.getElementById('s-display-name').value.trim() || null,
       phone:        document.getElementById('s-phone').value.trim() || null,
     })
-    .eq('user_id', _USER.id);
+    .eq('user_id', _USER.id)
+    .select();
   btn.disabled = false;
   if(error) sMsg('s-profile-msg', 'Save failed: ' + error.message, 'err');
   else       sMsg('s-profile-msg', 'Profile saved.', 'ok');
