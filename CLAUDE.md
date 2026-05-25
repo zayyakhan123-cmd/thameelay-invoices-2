@@ -51,3 +51,5 @@ always `'calculated'`. The branch is wired so that if/when the AI prompt
 is extended to emit a retail suggestion, only `resolveSuggestedRetail`
 needs to learn about it; the rendering and read chain are already in
 place.
+When debugging any issue, follow the protocol in DEBUGGING.md.
+Do not skip steps. Gather evidence before making code changes.

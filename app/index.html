@@ -761,15 +761,36 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .toast-link{color:var(--c1);text-decoration:underline;cursor:pointer;margin-left:4px}
 
 /* ── SETTINGS PAGE ─────────────────────────────────────────────────────── */
-.settings-wrap{max-width:720px;margin:0 auto;padding:0 0 48px}
-.settings-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0}
-.stab{padding:8px 16px;border-radius:6px 6px 0 0;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border:none;background:transparent;transition:color .15s,background .15s;margin-bottom:-1px;border-bottom:2px solid transparent}
-.stab:hover{color:var(--text);background:var(--bg4)}
-.stab.on{color:var(--c1);border-bottom:2px solid var(--c1);background:transparent}
-.stab-panel{display:none}
-.stab-panel.on{display:block}
-.settings-section{margin-bottom:24px}
-.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+/* Outer shell */
+.settings-wrap{display:flex;height:100%;min-height:calc(100vh - 64px);align-items:flex-start}
+/* Left sidebar */
+.settings-sidebar{width:192px;flex-shrink:0;padding:28px 12px;position:sticky;top:64px;border-right:1px solid var(--border)}
+.settings-sidebar-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:color .15s,background .15s;white-space:nowrap}
+.settings-sidebar-item:hover{color:var(--text);background:var(--bg4)}
+.settings-sidebar-item.on{color:var(--text);background:var(--bg4)}
+.settings-sidebar-item .sico{font-size:16px;flex-shrink:0}
+.settings-sidebar-sep{height:1px;background:var(--border);margin:8px 4px}
+/* Main content */
+.settings-main{flex:1;min-width:0;padding:32px 36px 56px;max-width:680px}
+.settings-section-head{margin-bottom:24px}
+.settings-section-title{font-size:20px;font-weight:700;color:var(--text);margin:0 0 4px}
+.settings-section-desc{font-size:13px;color:var(--text3);margin:0}
+/* Panels */
+.stab-panel{display:none;flex-direction:column;gap:16px}
+.stab-panel.on{display:flex}
+/* Cards */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rxl);padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.settings-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.settings-card-title{font-size:14px;font-weight:600;color:var(--text)}
+.settings-card-meta{font-size:12px;color:var(--text3);margin-top:2px}
+/* Badges */
+.s-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.s-badge-neutral{background:var(--bg4);color:var(--text3)}
+.s-badge-warn{background:rgba(234,179,8,.14);color:#eab308}
+.s-badge-success{background:rgba(16,185,129,.14);color:var(--green)}
+.s-badge-info{background:var(--c1l);color:var(--c1)}
+.s-badge-pro{background:rgba(139,92,246,.14);color:#a78bfa}
+/* Form fields */
 .settings-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .settings-row.full{grid-template-columns:1fr}
 .settings-row.triple{grid-template-columns:1fr 1fr 1fr}
@@ -779,19 +800,26 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .sfield input:focus,.sfield select:focus{outline:none;border-color:var(--c1)}
 .sfield input[readonly]{opacity:.55;cursor:default}
 .settings-save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
-.sbtn{padding:8px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
-.sbtn-primary{background:var(--c1);color:#fff}
+/* Buttons */
+.sbtn{padding:7px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,background .15s}
+.sbtn-primary{background:var(--c1);color:#000}
 .sbtn-primary:hover{opacity:.85}
 .sbtn-ghost{background:transparent;border:1px solid var(--border);color:var(--text3)}
 .sbtn-ghost:hover{background:var(--bg4);color:var(--text)}
 .sbtn-danger{background:var(--red);color:#fff}
 .sbtn-danger:hover{opacity:.85}
+.sbtn-sm{padding:5px 12px;font-size:12px}
 .sbtn:disabled{opacity:.4;cursor:default}
+/* Avatar */
 .avatar-row{display:flex;align-items:center;gap:16px}
-.avatar-circle{width:64px;height:64px;border-radius:50%;background:var(--c1);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative}
+.avatar-circle{width:64px;height:64px;border-radius:50%;background:var(--c1);color:#000;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative}
 .avatar-circle img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0}
 .avatar-upload-wrap{display:flex;flex-direction:column;gap:4px}
 .avatar-hint{font-size:11px;color:var(--text3)}
+/* Password strength */
+.pw-strength-bar{height:3px;border-radius:2px;margin-top:6px;transition:width .25s,background .25s}
+.pw-strength-label{font-size:11px;margin-top:3px}
+/* Toggles */
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bg4)}
 .toggle-row:last-child{border-bottom:none}
 .toggle-info{display:flex;flex-direction:column;gap:2px}
@@ -803,20 +831,36 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .tgl-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
 .tgl input:checked+.tgl-slider{background:var(--c1)}
 .tgl input:checked+.tgl-slider:before{transform:translateX(16px)}
-.billing-plan-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg4);color:var(--text3)}
-.billing-plan-badge.pro{background:rgba(99,102,241,.15);color:#818cf8}
+/* Billing */
 .billing-stat{display:flex;flex-direction:column;gap:2px}
 .billing-stat-val{font-size:22px;font-weight:700;color:var(--text)}
 .billing-stat-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
 .billing-stats-row{display:flex;gap:32px;padding:16px 0;border-bottom:1px solid var(--bg4);border-top:1px solid var(--bg4);margin:4px 0}
+.billing-usage-bar{height:6px;border-radius:3px;background:var(--bg4);margin-top:8px;overflow:hidden}
+.billing-usage-fill{height:100%;border-radius:3px;background:var(--c1);transition:width .4s}
+/* Sessions */
+.session-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.session-row:last-child{border-bottom:none}
+.session-icon{width:34px;height:34px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text3);flex-shrink:0}
+.session-info{flex:1;min-width:0}
+.session-device{font-size:13px;font-weight:500;color:var(--text)}
+.session-detail{font-size:11px;color:var(--text3);margin-top:1px}
+/* Activity */
+.activity-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg4);gap:12px}
+.activity-row:last-child{border-bottom:none}
+.activity-evt{font-size:13px;color:var(--text)}
+.activity-time{font-size:11px;color:var(--text3);white-space:nowrap}
+/* Danger zone */
 .danger-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--bg4)}
 .danger-item:last-child{border-bottom:none}
 .danger-info{display:flex;flex-direction:column;gap:3px}
 .danger-title{font-size:13px;font-weight:600;color:var(--text)}
 .danger-sub{font-size:11px;color:var(--text3)}
+/* Messages */
 .settings-msg{font-size:12px;padding:8px 12px;border-radius:6px;display:none}
-.settings-msg.ok{background:rgba(34,197,94,.12);color:#4ade80;display:block}
-.settings-msg.err{background:rgba(239,68,68,.12);color:#f87171;display:block}
+.settings-msg.ok{background:rgba(16,185,129,.12);color:var(--green);display:block}
+.settings-msg.err{background:rgba(244,63,94,.12);color:var(--red);display:block}
+.settings-msg.info{background:var(--c1l);color:var(--c1);display:block}
 </style>
 </head>
 <body>
@@ -1713,218 +1757,436 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <div class="pg" id="pg-account-settings">
   <div class="settings-wrap">
 
-    <!-- Tab bar -->
-    <div class="settings-tabs">
-      <button class="stab on" data-stab="profile" onclick="sTabSwitch(this)">Profile</button>
-      <button class="stab" data-stab="business" onclick="sTabSwitch(this)">Business Info</button>
-      <button class="stab" data-stab="security" onclick="sTabSwitch(this)">Security</button>
-      <button class="stab" data-stab="billing" onclick="sTabSwitch(this)">Billing</button>
-      <button class="stab" data-stab="notifications" onclick="sTabSwitch(this)">Notifications</button>
-      <button class="stab" data-stab="danger" onclick="sTabSwitch(this)">Danger Zone</button>
-    </div>
+    <!-- ── Left Sidebar ── -->
+    <nav class="settings-sidebar">
+      <button class="settings-sidebar-item on" data-stab="profile" onclick="sTabSwitch(this)">
+        <i class="sico ti ti-user"></i>Profile
+      </button>
+      <button class="settings-sidebar-item" data-stab="business" onclick="sTabSwitch(this)">
+        <i class="sico ti ti-building"></i>Business Info
+      </button>
+      <div class="settings-sidebar-sep"></div>
+      <button class="settings-sidebar-item" data-stab="security" onclick="sTabSwitch(this)">
+        <i class="sico ti ti-shield-lock"></i>Security
+      </button>
+      <button class="settings-sidebar-item" data-stab="billing" onclick="sTabSwitch(this)">
+        <i class="sico ti ti-credit-card"></i>Billing
+      </button>
+      <button class="settings-sidebar-item" data-stab="notifications" onclick="sTabSwitch(this)">
+        <i class="sico ti ti-bell"></i>Notifications
+      </button>
+      <div class="settings-sidebar-sep"></div>
+      <button class="settings-sidebar-item" data-stab="danger" onclick="sTabSwitch(this)">
+        <i class="sico ti ti-alert-triangle"></i>Danger Zone
+      </button>
+    </nav>
 
-    <!-- ── Profile ── -->
-    <div class="stab-panel on" id="stab-profile">
-      <div class="settings-card">
-        <div class="avatar-row">
-          <div class="avatar-circle" id="s-avatar-circle">
-            <span id="s-avatar-initials"></span>
-            <img id="s-avatar-img" src="" alt="" style="display:none">
+    <!-- ── Main Content ── -->
+    <div class="settings-main">
+
+      <!-- ── Profile ── -->
+      <div class="stab-panel on" id="stab-profile">
+        <div class="settings-section-head">
+          <div class="settings-section-title">Profile</div>
+          <div class="settings-section-desc">Your personal information and public-facing name.</div>
+        </div>
+
+        <!-- Avatar card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Photo</div>
+              <div class="settings-card-meta">Shown next to your name in the app</div>
+            </div>
           </div>
-          <div class="avatar-upload-wrap">
-            <button class="sbtn sbtn-ghost" onclick="document.getElementById('s-avatar-input').click()">Upload Photo</button>
-            <input type="file" id="s-avatar-input" accept="image/*" style="display:none" onchange="sUploadAvatar(this)">
-            <span class="avatar-hint">JPG, PNG or GIF · max 2 MB</span>
+          <div class="avatar-row">
+            <div class="avatar-circle" id="s-avatar-circle">
+              <span id="s-avatar-initials"></span>
+              <img id="s-avatar-img" src="" alt="" style="display:none">
+            </div>
+            <div class="avatar-upload-wrap">
+              <button class="sbtn sbtn-ghost" onclick="document.getElementById('s-avatar-input').click()">Upload Photo</button>
+              <input type="file" id="s-avatar-input" accept="image/*" style="display:none" onchange="sUploadAvatar(this)">
+              <span class="avatar-hint">JPG, PNG or GIF · max 2 MB</span>
+            </div>
           </div>
         </div>
-        <div class="settings-row">
-          <div class="sfield">
-            <label>Display Name</label>
-            <input type="text" id="s-display-name" placeholder="Your name">
+
+        <!-- Identity card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Identity</div>
+              <div class="settings-card-meta">How you appear to vendors and in reports</div>
+            </div>
           </div>
-          <div class="sfield">
-            <label>Phone</label>
-            <input type="tel" id="s-phone" placeholder="+1 (555) 000-0000">
+          <div class="settings-row">
+            <div class="sfield">
+              <label>Display Name</label>
+              <input type="text" id="s-display-name" placeholder="Your name">
+            </div>
+            <div class="sfield">
+              <label>Phone</label>
+              <input type="tel" id="s-phone" placeholder="+1 (555) 000-0000">
+            </div>
+          </div>
+          <div id="s-profile-msg" class="settings-msg"></div>
+          <div class="settings-save-row">
+            <button class="sbtn sbtn-primary" id="s-profile-save" onclick="sSaveProfile()">Save Changes</button>
           </div>
         </div>
-        <div class="settings-row full">
+
+        <!-- Contact card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Email Address</div>
+              <div class="settings-card-meta">Your sign-in email — contact support to change it</div>
+            </div>
+          </div>
           <div class="sfield">
             <label>Email</label>
             <input type="email" id="s-email" readonly>
           </div>
         </div>
-        <div id="s-profile-msg" class="settings-msg"></div>
-        <div class="settings-save-row">
-          <button class="sbtn sbtn-primary" id="s-profile-save" onclick="sSaveProfile()">Save Changes</button>
-        </div>
       </div>
-    </div>
 
-    <!-- ── Business Info ── -->
-    <div class="stab-panel" id="stab-business">
-      <div class="settings-card">
-        <div class="settings-row">
-          <div class="sfield">
-            <label>Business Name</label>
-            <input type="text" id="s-biz-name" placeholder="My Restaurant LLC">
+      <!-- ── Business Info ── -->
+      <div class="stab-panel" id="stab-business">
+        <div class="settings-section-head">
+          <div class="settings-section-title">Business Info</div>
+          <div class="settings-section-desc">Used on exports, reports, and invoices you generate.</div>
+        </div>
+
+        <!-- Company card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Company</div>
+              <div class="settings-card-meta">Name and business type</div>
+            </div>
           </div>
-          <div class="sfield">
-            <label>Business Type</label>
-            <select id="s-biz-type">
-              <option value="">— select —</option>
-              <option value="restaurant">Restaurant</option>
-              <option value="cafe">Café / Coffee Shop</option>
-              <option value="bakery">Bakery</option>
-              <option value="catering">Catering</option>
-              <option value="grocery">Grocery / Market</option>
-              <option value="other">Other</option>
-            </select>
+          <div class="settings-row">
+            <div class="sfield">
+              <label>Business Name</label>
+              <input type="text" id="s-biz-name" placeholder="My Restaurant LLC">
+            </div>
+            <div class="sfield">
+              <label>Business Type</label>
+              <select id="s-biz-type">
+                <option value="">— select —</option>
+                <option value="restaurant">Restaurant</option>
+                <option value="cafe">Café / Coffee Shop</option>
+                <option value="bakery">Bakery</option>
+                <option value="catering">Catering</option>
+                <option value="grocery">Grocery / Market</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
           </div>
         </div>
-        <div class="settings-row full">
-          <div class="sfield">
-            <label>Street Address</label>
-            <input type="text" id="s-biz-street" placeholder="123 Main St">
+
+        <!-- Address card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Address</div>
+              <div class="settings-card-meta">Your business location</div>
+            </div>
+          </div>
+          <div class="settings-row full">
+            <div class="sfield">
+              <label>Street Address</label>
+              <input type="text" id="s-biz-street" placeholder="123 Main St">
+            </div>
+          </div>
+          <div class="settings-row triple">
+            <div class="sfield">
+              <label>City</label>
+              <input type="text" id="s-biz-city" placeholder="City">
+            </div>
+            <div class="sfield">
+              <label>State</label>
+              <input type="text" id="s-biz-state" placeholder="CA">
+            </div>
+            <div class="sfield">
+              <label>ZIP</label>
+              <input type="text" id="s-biz-zip" placeholder="90210">
+            </div>
           </div>
         </div>
-        <div class="settings-row triple">
-          <div class="sfield">
-            <label>City</label>
-            <input type="text" id="s-biz-city" placeholder="City">
+
+        <!-- Tax card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Tax</div>
+              <div class="settings-card-meta">Used on generated documents</div>
+            </div>
           </div>
-          <div class="sfield">
-            <label>State</label>
-            <input type="text" id="s-biz-state" placeholder="CA">
-          </div>
-          <div class="sfield">
-            <label>ZIP</label>
-            <input type="text" id="s-biz-zip" placeholder="90210">
-          </div>
-        </div>
-        <div class="settings-row full">
-          <div class="sfield">
+          <div class="sfield" style="max-width:280px">
             <label>Tax ID / EIN</label>
             <input type="text" id="s-tax-id" placeholder="12-3456789">
           </div>
-        </div>
-        <div id="s-biz-msg" class="settings-msg"></div>
-        <div class="settings-save-row">
-          <button class="sbtn sbtn-primary" onclick="sSaveBusiness()">Save Changes</button>
+          <div id="s-biz-msg" class="settings-msg"></div>
+          <div class="settings-save-row">
+            <button class="sbtn sbtn-primary" onclick="sSaveBusiness()">Save Changes</button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- ── Security ── -->
-    <div class="stab-panel" id="stab-security">
-      <div class="settings-card">
-        <div class="settings-row full">
-          <div class="sfield">
-            <label>Current Password</label>
-            <input type="password" id="s-cur-pw" placeholder="Current password" autocomplete="current-password">
+      <!-- ── Security ── -->
+      <div class="stab-panel" id="stab-security">
+        <div class="settings-section-head">
+          <div class="settings-section-title">Security</div>
+          <div class="settings-section-desc">Manage your password, two-factor authentication, and account sessions.</div>
+        </div>
+
+        <!-- Password card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Password</div>
+              <div class="settings-card-meta" id="s-pw-last-changed">—</div>
+            </div>
+            <span class="s-badge s-badge-warn" id="s-pw-age-badge" style="display:none">Consider updating</span>
+          </div>
+          <div class="settings-row full">
+            <div class="sfield">
+              <label>Current Password</label>
+              <input type="password" id="s-cur-pw" placeholder="Current password" autocomplete="current-password">
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="sfield">
+              <label>New Password</label>
+              <input type="password" id="s-new-pw" placeholder="New password" autocomplete="new-password" oninput="sPwStrength(this.value)">
+              <div class="pw-strength-bar" id="s-pw-bar" style="width:0%;background:var(--border)"></div>
+              <div class="pw-strength-label" id="s-pw-label" style="color:var(--text3)"></div>
+            </div>
+            <div class="sfield">
+              <label>Confirm New Password</label>
+              <input type="password" id="s-conf-pw" placeholder="Confirm new password" autocomplete="new-password">
+            </div>
+          </div>
+          <div id="s-sec-msg" class="settings-msg"></div>
+          <div class="settings-save-row">
+            <button class="sbtn sbtn-primary" onclick="sChangePassword()">Update Password</button>
           </div>
         </div>
-        <div class="settings-row">
-          <div class="sfield">
-            <label>New Password</label>
-            <input type="password" id="s-new-pw" placeholder="New password" autocomplete="new-password">
-          </div>
-          <div class="sfield">
-            <label>Confirm New Password</label>
-            <input type="password" id="s-conf-pw" placeholder="Confirm new password" autocomplete="new-password">
+
+        <!-- 2FA card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--c1l);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--c1);flex-shrink:0"><i class="ti ti-shield-check"></i></div>
+              <div>
+                <div class="settings-card-title">Two-Factor Authentication</div>
+                <div class="settings-card-meta">Add an extra layer of security to your account</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="s-badge s-badge-neutral">Not enabled</span>
+              <span class="s-badge s-badge-neutral">Coming soon</span>
+            </div>
           </div>
         </div>
-        <div id="s-sec-msg" class="settings-msg"></div>
-        <div class="settings-save-row">
-          <button class="sbtn sbtn-primary" onclick="sChangePassword()">Update Password</button>
+
+        <!-- Sessions card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Active Sessions</div>
+              <div class="settings-card-meta">Devices currently signed in to your account</div>
+            </div>
+          </div>
+          <div id="s-sessions-list">
+            <div class="session-row">
+              <div class="session-icon"><i class="ti ti-device-laptop"></i></div>
+              <div class="session-info">
+                <div class="session-device">This device</div>
+                <div class="session-detail">Current browser · Active now</div>
+              </div>
+              <span class="s-badge s-badge-success">This device</span>
+            </div>
+          </div>
+          <div class="settings-save-row" style="margin-top:0">
+            <button class="sbtn sbtn-ghost sbtn-sm" onclick="sSignOutOtherSessions()">Sign out of all other sessions</button>
+          </div>
+        </div>
+
+        <!-- Recent activity card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Recent Activity</div>
+              <div class="settings-card-meta">Last security events on your account</div>
+            </div>
+          </div>
+          <div id="s-activity-list">
+            <div class="activity-row">
+              <span class="activity-evt">Signed in</span>
+              <span class="activity-time" id="s-last-signin">—</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- ── Billing ── -->
-    <div class="stab-panel" id="stab-billing">
-      <div class="settings-card">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span class="billing-plan-badge" id="s-plan-badge">Free</span>
-          <span id="s-plan-label" style="font-size:13px;color:var(--text3)">You're on the free plan</span>
+      <!-- ── Billing ── -->
+      <div class="stab-panel" id="stab-billing">
+        <div class="settings-section-head">
+          <div class="settings-section-title">Billing</div>
+          <div class="settings-section-desc">Your plan, usage, and payment details.</div>
         </div>
-        <div class="billing-stats-row">
-          <div class="billing-stat">
-            <div class="billing-stat-val" id="s-inv-used">—</div>
-            <div class="billing-stat-lbl">Invoices Used</div>
+
+        <!-- Plan card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Current Plan</div>
+              <div class="settings-card-meta" id="s-plan-label">You're on the free plan</div>
+            </div>
+            <span class="s-badge s-badge-neutral" id="s-plan-badge">Free</span>
           </div>
-          <div class="billing-stat">
-            <div class="billing-stat-val" id="s-inv-limit">—</div>
-            <div class="billing-stat-lbl">Invoice Limit</div>
+          <div class="billing-stats-row">
+            <div class="billing-stat">
+              <div class="billing-stat-val" id="s-inv-used">—</div>
+              <div class="billing-stat-lbl">Invoices Used</div>
+            </div>
+            <div class="billing-stat">
+              <div class="billing-stat-val" id="s-inv-limit">—</div>
+              <div class="billing-stat-lbl">Invoice Limit</div>
+            </div>
+            <div class="billing-stat">
+              <div class="billing-stat-val" id="s-billing-renews">—</div>
+              <div class="billing-stat-lbl">Renews</div>
+            </div>
           </div>
-          <div class="billing-stat">
-            <div class="billing-stat-val" id="s-billing-renews">—</div>
-            <div class="billing-stat-lbl">Renews</div>
+          <div style="font-size:12px;color:var(--text3)" id="s-billing-note"></div>
+          <div class="settings-save-row">
+            <button class="sbtn sbtn-primary" id="s-billing-btn" onclick="sOpenBillingPortal()">Manage Billing</button>
           </div>
         </div>
-        <div style="font-size:12px;color:var(--text3)" id="s-billing-note"></div>
-        <div class="settings-save-row">
-          <button class="sbtn sbtn-primary" id="s-billing-btn" onclick="sOpenBillingPortal()">Manage Billing</button>
+
+        <!-- Usage card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Usage</div>
+              <div class="settings-card-meta">Invoice processing this billing period</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:4px">
+            <span id="s-usage-label">0 of 100 invoices</span>
+            <span id="s-usage-pct">0%</span>
+          </div>
+          <div class="billing-usage-bar">
+            <div class="billing-usage-fill" id="s-usage-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Payment method card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Payment Method</div>
+              <div class="settings-card-meta">Managed securely via Stripe</div>
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--text3)">No payment method on file. Add one by upgrading your plan.</div>
         </div>
       </div>
-    </div>
 
-    <!-- ── Notifications ── -->
-    <div class="stab-panel" id="stab-notifications">
-      <div class="settings-card">
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-label">Extraction Failures</span>
-            <span class="toggle-sub">Alert me when invoice AI extraction fails</span>
-          </div>
-          <label class="tgl">
-            <input type="checkbox" id="s-notif-fail" onchange="sSaveNotifs()">
-            <span class="tgl-slider"></span>
-          </label>
+      <!-- ── Notifications ── -->
+      <div class="stab-panel" id="stab-notifications">
+        <div class="settings-section-head">
+          <div class="settings-section-title">Notifications</div>
+          <div class="settings-section-desc">Choose what you're notified about and how.</div>
         </div>
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-label">Weekly Summary</span>
-            <span class="toggle-sub">Email me a weekly digest of price changes</span>
+
+        <!-- Extraction alerts card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Invoice Processing</div>
+              <div class="settings-card-meta">Alerts about AI extraction and uploads</div>
+            </div>
           </div>
-          <label class="tgl">
-            <input type="checkbox" id="s-notif-weekly" onchange="sSaveNotifs()">
-            <span class="tgl-slider"></span>
-          </label>
-        </div>
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-label">Usage Alerts</span>
-            <span class="toggle-sub">Notify me when nearing my invoice limit</span>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Extraction Failures</span>
+              <span class="toggle-sub">Alert me when invoice AI extraction fails</span>
+            </div>
+            <label class="tgl">
+              <input type="checkbox" id="s-notif-fail" onchange="sSaveNotifs()">
+              <span class="tgl-slider"></span>
+            </label>
           </div>
-          <label class="tgl">
-            <input type="checkbox" id="s-notif-usage" onchange="sSaveNotifs()">
-            <span class="tgl-slider"></span>
-          </label>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Usage Alerts</span>
+              <span class="toggle-sub">Notify me when nearing my invoice limit</span>
+            </div>
+            <label class="tgl">
+              <input type="checkbox" id="s-notif-usage" onchange="sSaveNotifs()">
+              <span class="tgl-slider"></span>
+            </label>
+          </div>
         </div>
-        <div id="s-notif-msg" class="settings-msg"></div>
+
+        <!-- Digests card -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <div class="settings-card-title">Digests &amp; Reports</div>
+              <div class="settings-card-meta">Scheduled summaries sent to your email</div>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Weekly Summary</span>
+              <span class="toggle-sub">Email me a weekly digest of price changes</span>
+            </div>
+            <label class="tgl">
+              <input type="checkbox" id="s-notif-weekly" onchange="sSaveNotifs()">
+              <span class="tgl-slider"></span>
+            </label>
+          </div>
+          <div id="s-notif-msg" class="settings-msg"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- ── Danger Zone ── -->
-    <div class="stab-panel" id="stab-danger">
-      <div class="settings-card">
-        <div class="danger-item">
-          <div class="danger-info">
-            <span class="danger-title">Export All Data</span>
-            <span class="danger-sub">Download all your invoices and price data as JSON</span>
-          </div>
-          <button class="sbtn sbtn-ghost" onclick="sExportData()">Export JSON</button>
+      <!-- ── Danger Zone ── -->
+      <div class="stab-panel" id="stab-danger">
+        <div class="settings-section-head">
+          <div class="settings-section-title">Danger Zone</div>
+          <div class="settings-section-desc">Irreversible actions — proceed with caution.</div>
         </div>
-        <div class="danger-item">
-          <div class="danger-info">
-            <span class="danger-title">Delete Account</span>
-            <span class="danger-sub">Permanently delete your account and all data. This cannot be undone.</span>
+
+        <!-- Export card -->
+        <div class="settings-card">
+          <div class="danger-item" style="padding:0;border:none">
+            <div class="danger-info">
+              <span class="danger-title">Export All Data</span>
+              <span class="danger-sub">Download all your invoices and price history as JSON</span>
+            </div>
+            <button class="sbtn sbtn-ghost" onclick="sExportData()">Export JSON</button>
           </div>
-          <button class="sbtn sbtn-danger" onclick="sConfirmDeleteAccount()">Delete Account</button>
+        </div>
+
+        <!-- Delete card -->
+        <div class="settings-card" style="border-color:rgba(244,63,94,.2)">
+          <div class="danger-item" style="padding:0;border:none">
+            <div class="danger-info">
+              <span class="danger-title">Delete Account</span>
+              <span class="danger-sub">Permanently erase your account and all data. This cannot be undone.</span>
+            </div>
+            <button class="sbtn sbtn-danger" onclick="sConfirmDeleteAccount()">Delete Account</button>
+          </div>
         </div>
       </div>
-    </div>
 
+    </div><!-- /.settings-main -->
   </div><!-- /.settings-wrap -->
 </div><!-- /#pg-account-settings -->
 
@@ -7846,11 +8108,39 @@ toggleDemoButtons(_showDemo);
 let _sPro = null; // cached profile
 
 function sTabSwitch(btn){
-  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.settings-sidebar-item').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('on'));
   btn.classList.add('on');
   const panel = document.getElementById('stab-'+btn.dataset.stab);
   if(panel) panel.classList.add('on');
+}
+
+function sPwStrength(val){
+  const bar = document.getElementById('s-pw-bar');
+  const lbl = document.getElementById('s-pw-label');
+  if(!bar || !lbl) return;
+  let score = 0;
+  if(val.length >= 8)  score++;
+  if(val.length >= 12) score++;
+  if(/[A-Z]/.test(val)) score++;
+  if(/[0-9]/.test(val)) score++;
+  if(/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { pct: 0,   color: 'var(--border2)', label: '' },
+    { pct: 20,  color: 'var(--red)',     label: 'Very weak' },
+    { pct: 40,  color: '#f97316',        label: 'Weak' },
+    { pct: 60,  color: '#eab308',        label: 'Fair' },
+    { pct: 80,  color: 'var(--green)',   label: 'Strong' },
+    { pct: 100, color: 'var(--green)',   label: 'Very strong' },
+  ];
+  const lvl = levels[score];
+  bar.style.width = lvl.pct + '%';
+  bar.style.background = lvl.color;
+  lbl.textContent = lvl.label;
+}
+
+function sSignOutOtherSessions(){
+  sMsg('s-sec-msg', 'Session management coming soon.', 'info');
 }
 
 function sMsg(id, text, type){
@@ -7894,22 +8184,57 @@ async function renderSettings(){
   document.getElementById('s-notif-weekly').checked = !!data.notif_weekly_summary;
   document.getElementById('s-notif-usage').checked = data.notif_usage_alert !== false;
 
+  // Security tab — password age badge
+  const lastSignIn = _USER.last_sign_in_at ? new Date(_USER.last_sign_in_at) : null;
+  const pwLastEl  = document.getElementById('s-pw-last-changed');
+  const pwBadgeEl = document.getElementById('s-pw-age-badge');
+  if(pwLastEl) pwLastEl.textContent = lastSignIn ? 'Last sign-in: ' + lastSignIn.toLocaleDateString() : '';
+  if(pwBadgeEl){
+    const daysSince = lastSignIn ? Math.floor((Date.now() - lastSignIn) / 86400000) : 0;
+    if(daysSince > 90){
+      pwBadgeEl.textContent = 'Consider updating';
+      pwBadgeEl.className = 's-badge s-badge-warn';
+      pwBadgeEl.style.display = '';
+    } else {
+      pwBadgeEl.style.display = 'none';
+    }
+  }
+  // Recent activity — last sign-in row
+  const lastSignInEl = document.getElementById('s-last-signin');
+  if(lastSignInEl) lastSignInEl.textContent = lastSignIn ? lastSignIn.toLocaleString() : '—';
+
   // Billing tab
   const plan = data.subscription_plan || 'free';
   const badge = document.getElementById('s-plan-badge');
   badge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
-  badge.className = 'billing-plan-badge' + (plan !== 'free' ? ' pro' : '');
+  badge.className = 's-badge ' + (plan !== 'free' ? 's-badge-pro' : 's-badge-neutral');
   document.getElementById('s-plan-label').textContent =
     plan === 'free' ? "You're on the free plan" : `Active ${plan} subscription`;
   const invs = JSON.parse(localStorage.getItem('tm_h3') || '[]');
-  document.getElementById('s-inv-used').textContent = invs.length;
-  document.getElementById('s-inv-limit').textContent = data.invoice_limit || 100;
+  const invLimit = data.invoice_limit || 100;
+  const invUsed  = invs.length;
+  const usagePct = Math.min(100, Math.round(invUsed / invLimit * 100));
+  const usageLblEl  = document.getElementById('s-usage-label');
+  const usageFillEl = document.getElementById('s-usage-fill');
+  const usagePctEl  = document.getElementById('s-usage-pct');
+  if(usageLblEl)  usageLblEl.textContent  = `${invUsed} of ${invLimit} invoices used`;
+  if(usagePctEl)  usagePctEl.textContent  = usagePct + '%';
+  if(usageFillEl){
+    usageFillEl.style.width = usagePct + '%';
+    usageFillEl.style.background = usagePct >= 90 ? 'var(--red)' : usagePct >= 70 ? '#eab308' : 'var(--c1)';
+  }
+  // Legacy elements (may not exist in new HTML, guard with ?.)
+  const invUsedEl  = document.getElementById('s-inv-used');
+  const invLimitEl = document.getElementById('s-inv-limit');
+  if(invUsedEl)  invUsedEl.textContent  = invUsed;
+  if(invLimitEl) invLimitEl.textContent = invLimit;
   const renews = data.billing_period_end
     ? new Date(data.billing_period_end).toLocaleDateString()
     : '—';
-  document.getElementById('s-billing-renews').textContent = renews;
+  const renewsEl = document.getElementById('s-billing-renews');
+  if(renewsEl) renewsEl.textContent = renews;
   const note = document.getElementById('s-billing-note');
-  note.textContent = plan === 'free'
+  if(note) note.textContent = plan === 'free'
     ? 'Upgrade to Pro for unlimited invoices and price history.'
     : '';
 }
