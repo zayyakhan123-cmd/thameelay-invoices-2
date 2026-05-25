@@ -7862,13 +7862,10 @@ function sMsg(id, text, type){
 }
 
 async function renderSettings(){
-  if(!_supabase) return;
-  // Wait up to 6s for Supabase auth to restore session after page load
-  if(!_USER){
-    let waited = 0;
-    while(!_USER && waited < 6000){ await new Promise(r=>setTimeout(r,200)); waited+=200; }
-    if(!_USER) return;
-  }
+  // Wait up to 8s for both _supabase client and _USER session to be ready
+  let waited = 0;
+  while((!_supabase || !_USER) && waited < 8000){ await new Promise(r=>setTimeout(r,200)); waited+=200; }
+  if(!_supabase || !_USER) return;
   const { data, error } = await _supabase
     .from('user_profiles')
     .select('*')

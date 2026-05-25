@@ -108,6 +108,16 @@ test('account settings: save and reload persists profile fields', async () => {
   if (msgText && msgText.includes('blocked')) throw new Error('Save was RLS-blocked: ' + msgText);
   console.log(`  ✓ Saved display_name="${testName}"`);
 
+  // Directly query Supabase to verify the save actually landed in the DB
+  const dbValue = await page.evaluate(async () => {
+    const uid = window._USER?.id;
+    if (!uid) return null;
+    const { data } = await window._supabase.from('user_profiles').select('display_name').eq('user_id', uid).single();
+    return data?.display_name ?? null;
+  });
+  console.log(`  DB display_name after save: "${dbValue}"`);
+  expect(dbValue).toBe(testName);
+
   // Reload the page and navigate back to settings
   await page.reload();
   await page.waitForTimeout(2000);
