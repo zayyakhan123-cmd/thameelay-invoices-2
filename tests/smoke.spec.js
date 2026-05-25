@@ -88,3 +88,31 @@ test('price tracker page is reachable via nav', async () => {
   // Wait for the tracker page section to be visible (SPA — other pages stay in DOM hidden)
   await expect(page.locator('#pg-tracker')).toBeVisible({ timeout: 8000 });
 });
+
+test('account settings: save and reload persists profile fields', async () => {
+  // Navigate to Account Settings
+  await page.getByRole('navigation').getByText('Account Settings').click();
+  await expect(page.locator('#pg-account-settings')).toBeVisible({ timeout: 8000 });
+
+  // Use a unique test value so we can confirm it round-trips
+  const testName = `SmokeTest ${Date.now()}`;
+
+  // Fill display name and save
+  const nameInput = page.locator('#s-display-name');
+  await nameInput.fill(testName);
+  await page.locator('#s-profile-save').click();
+
+  // Wait for success message
+  await expect(page.locator('#s-profile-msg')).toHaveText('Profile saved.', { timeout: 8000 });
+  console.log(`  ✓ Saved display_name="${testName}"`);
+
+  // Reload the page and navigate back to settings
+  await page.reload();
+  await page.waitForTimeout(2000);
+  await page.getByRole('navigation').getByText('Account Settings').click();
+  await expect(page.locator('#pg-account-settings')).toBeVisible({ timeout: 8000 });
+
+  // Verify the saved name reloaded from Supabase
+  await expect(page.locator('#s-display-name')).toHaveValue(testName, { timeout: 8000 });
+  console.log(`  ✓ display_name persisted after reload`);
+});

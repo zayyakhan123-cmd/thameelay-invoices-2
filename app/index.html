@@ -7863,7 +7863,7 @@ function sMsg(id, text, type){
 
 async function renderSettings(){
   if(!_USER) return;
-  const { data, error } = await _SB
+  const { data, error } = await _supabase
     .from('user_profiles')
     .select('*')
     .eq('user_id', _USER.id)
@@ -7934,10 +7934,10 @@ async function sUploadAvatar(input){
   }
   const ext  = file.name.split('.').pop();
   const path = `${_USER.id}.${ext}`;
-  const { error: upErr } = await _SB.storage.from('avatars').upload(path, file, { upsert: true });
+  const { error: upErr } = await _supabase.storage.from('avatars').upload(path, file, { upsert: true });
   if(upErr){ sMsg('s-profile-msg', 'Upload failed: ' + upErr.message, 'err'); return; }
-  const { data: { publicUrl } } = _SB.storage.from('avatars').getPublicUrl(path);
-  const { error: updErr } = await _SB
+  const { data: { publicUrl } } = _supabase.storage.from('avatars').getPublicUrl(path);
+  const { error: updErr } = await _supabase
     .from('user_profiles')
     .update({ avatar_url: publicUrl })
     .eq('user_id', _USER.id);
@@ -7951,7 +7951,7 @@ async function sSaveProfile(){
   if(!_USER) return;
   const btn = document.getElementById('s-profile-save');
   btn.disabled = true;
-  const { error } = await _SB
+  const { error } = await _supabase
     .from('user_profiles')
     .update({
       display_name: document.getElementById('s-display-name').value.trim() || null,
@@ -7965,7 +7965,7 @@ async function sSaveProfile(){
 
 async function sSaveBusiness(){
   if(!_USER) return;
-  const { error } = await _SB
+  const { error } = await _supabase
     .from('user_profiles')
     .update({
       business_name:   document.getElementById('s-biz-name').value.trim() || null,
@@ -7989,11 +7989,11 @@ async function sChangePassword(){
   if(nw !== conf){ sMsg('s-sec-msg', 'New passwords do not match.', 'err'); return; }
   if(nw.length < 8){ sMsg('s-sec-msg', 'Password must be at least 8 characters.', 'err'); return; }
   // Re-authenticate first to verify current password
-  const { error: reErr } = await _SB.auth.signInWithPassword({
+  const { error: reErr } = await _supabase.auth.signInWithPassword({
     email: _USER.email, password: cur
   });
   if(reErr){ sMsg('s-sec-msg', 'Current password is incorrect.', 'err'); return; }
-  const { error } = await _SB.auth.updateUser({ password: nw });
+  const { error } = await _supabase.auth.updateUser({ password: nw });
   if(error) sMsg('s-sec-msg', 'Update failed: ' + error.message, 'err');
   else {
     sMsg('s-sec-msg', 'Password updated successfully.', 'ok');
@@ -8003,7 +8003,7 @@ async function sChangePassword(){
 
 async function sSaveNotifs(){
   if(!_USER) return;
-  const { error } = await _SB
+  const { error } = await _supabase
     .from('user_profiles')
     .update({
       notif_extraction_fail: document.getElementById('s-notif-fail').checked,
@@ -8020,9 +8020,9 @@ async function sOpenBillingPortal(){
   btn.disabled = true;
   btn.textContent = 'Redirecting…';
   try {
-    const { data: { session } } = await _SB.auth.getSession();
+    const { data: { session } } = await _supabase.auth.getSession();
     const resp = await fetch(
-      `${_SB.supabaseUrl}/functions/v1/stripe-portal`,
+      `${SUPABASE_URL}/functions/v1/stripe-portal`,
       {
         method: 'POST',
         headers: {
@@ -8063,9 +8063,9 @@ async function sConfirmDeleteAccount(){
   if(!again) return;
 
   try {
-    const { data: { session } } = await _SB.auth.getSession();
+    const { data: { session } } = await _supabase.auth.getSession();
     const resp = await fetch(
-      `${_SB.supabaseUrl}/functions/v1/delete-account`,
+      `${SUPABASE_URL}/functions/v1/delete-account`,
       {
         method: 'POST',
         headers: {
@@ -8077,7 +8077,7 @@ async function sConfirmDeleteAccount(){
     const body = await resp.json();
     if(body.deleted){
       localStorage.clear();
-      await _SB.auth.signOut();
+      await _supabase.auth.signOut();
       window.location.reload();
     } else {
       throw new Error(body.error || 'Deletion failed');
