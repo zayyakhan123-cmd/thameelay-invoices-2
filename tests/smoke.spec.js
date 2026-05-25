@@ -119,8 +119,8 @@ test('account settings: save and reload persists profile fields', async () => {
   await expect(page.locator('#s-email')).not.toHaveValue('', { timeout: 8000 });
   const inSessionValue = await page.locator('#s-display-name').inputValue();
   console.log(`  In-session value after nav-away-and-back: "${inSessionValue}"`);
-  const settingsLog = consoleLogs.find(l => l.includes('[settings-save]'));
-  if (settingsLog) console.log(`  Browser: ${settingsLog}`);
+  const settingsLogs = consoleLogs.filter(l => l.includes('[settings-'));
+  settingsLogs.forEach(l => console.log(`  Browser: ${l}`));
   // If save worked, in-session value should match
   expect(inSessionValue).toBe(testName);
 

@@ -7871,7 +7871,8 @@ async function renderSettings(){
     .select('*')
     .eq('user_id', _USER.id)
     .single();
-  if(error || !data) return;
+  if(error || !data){ console.log('[settings-render] fetch failed:', error?.message, !data); return; }
+  console.log('[settings-render] display_name=' + data.display_name + ' keys=' + Object.keys(data).join(','));
   _sPro = data;
 
   // Profile tab
