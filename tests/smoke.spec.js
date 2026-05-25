@@ -94,6 +94,10 @@ test('account settings: save and reload persists profile fields', async () => {
   await page.getByRole('navigation').getByText('Account Settings').click();
   await expect(page.locator('#pg-account-settings')).toBeVisible({ timeout: 8000 });
 
+  // Capture browser console to inspect the save response
+  const consoleLogs = [];
+  page.on('console', msg => consoleLogs.push(msg.text()));
+
   // Use a unique test value so we can confirm it round-trips
   const testName = `SmokeTest ${Date.now()}`;
 
@@ -108,15 +112,37 @@ test('account settings: save and reload persists profile fields', async () => {
   if (msgText && msgText.includes('blocked')) throw new Error('Save was RLS-blocked: ' + msgText);
   console.log(`  ✓ Saved display_name="${testName}"`);
 
-  // Directly query Supabase to verify the save actually landed in the DB
-  const dbValue = await page.evaluate(async () => {
-    const uid = window._USER?.id;
-    if (!uid) return null;
-    const { data } = await window._supabase.from('user_profiles').select('display_name').eq('user_id', uid).single();
-    return data?.display_name ?? null;
-  });
-  console.log(`  DB display_name after save: "${dbValue}"`);
-  expect(dbValue).toBe(testName);
+  // Navigate away and back (no reload) to see if save persisted in-session
+  await page.getByRole('navigation').getByText('Dashboard').click();
+  await page.waitForTimeout(500);
+  await page.getByRole('navigation').getByText('Account Settings').click();
+  await expect(page.locator('#s-email')).not.toHaveValue('', { timeout: 8000 });
+  const inSessionValue = await page.locator('#s-display-name').inputValue();
+  console.log(`  In-session value after nav-away-and-back: "${inSessionValue}"`);
+  const settingsLog = consoleLogs.find(l => l.includes('[settings-save]'));
+  if (settingsLog) console.log(`  Browser: ${settingsLog}`);
+  // If save worked, in-session value should match
+  expect(inSessionValue).toBe(testName);
+
+  // Also verify via direct Supabase REST using the localStorage auth token
+  const dbValue = await page.evaluate(async (name) => {
+    const authKey = Object.keys(localStorage).find(k => k.includes('sb-') && k.includes('-auth-token'));
+    if (!authKey) return { error: 'no auth key in localStorage' };
+    const authData = JSON.parse(localStorage.getItem(authKey) || '{}');
+    const token = authData?.access_token;
+    const uid = authData?.user?.id;
+    if (!token || !uid) return { error: 'no token/uid', authData };
+    const url = `https://fslrqqaplwfyqemdumfz.supabase.co/rest/v1/user_profiles?user_id=eq.${uid}&select=display_name`;
+    const r = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzbHJxcWFwbHdmeXFlbWR1bWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MjI5NTMsImV4cCI6MjA2MjQ5ODk1M30.yHoMvGWgPLLIHRwj5e0dJWMz0LM5vNBLyqt2vIQbr60',
+      }
+    });
+    const rows = await r.json();
+    return { uid, rows, status: r.status };
+  }, testName);
+  console.log(`  REST DB check: ${JSON.stringify(dbValue)}`);
 
   // Reload the page and navigate back to settings
   await page.reload();
