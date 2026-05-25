@@ -759,6 +759,64 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .pc-manual-ac-thumb{width:22px;height:22px;border-radius:4px;background:var(--bg3);object-fit:cover;flex-shrink:0}
 .pc-manual-ac-empty{padding:8px;font-size:11px;color:var(--text3);text-align:center}
 .toast-link{color:var(--c1);text-decoration:underline;cursor:pointer;margin-left:4px}
+
+/* ── SETTINGS PAGE ─────────────────────────────────────────────────────── */
+.settings-wrap{max-width:720px;margin:0 auto;padding:0 0 48px}
+.settings-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0}
+.stab{padding:8px 16px;border-radius:6px 6px 0 0;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border:none;background:transparent;transition:color .15s,background .15s;margin-bottom:-1px;border-bottom:2px solid transparent}
+.stab:hover{color:var(--text);background:var(--bg4)}
+.stab.on{color:var(--c1);border-bottom:2px solid var(--c1);background:transparent}
+.stab-panel{display:none}
+.stab-panel.on{display:block}
+.settings-section{margin-bottom:24px}
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.settings-row.full{grid-template-columns:1fr}
+.settings-row.triple{grid-template-columns:1fr 1fr 1fr}
+.sfield{display:flex;flex-direction:column;gap:4px}
+.sfield label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.sfield input,.sfield select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;width:100%;box-sizing:border-box;transition:border-color .15s}
+.sfield input:focus,.sfield select:focus{outline:none;border-color:var(--c1)}
+.sfield input[readonly]{opacity:.55;cursor:default}
+.settings-save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.sbtn{padding:8px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+.sbtn-primary{background:var(--c1);color:#fff}
+.sbtn-primary:hover{opacity:.85}
+.sbtn-ghost{background:transparent;border:1px solid var(--border);color:var(--text3)}
+.sbtn-ghost:hover{background:var(--bg4);color:var(--text)}
+.sbtn-danger{background:var(--red);color:#fff}
+.sbtn-danger:hover{opacity:.85}
+.sbtn:disabled{opacity:.4;cursor:default}
+.avatar-row{display:flex;align-items:center;gap:16px}
+.avatar-circle{width:64px;height:64px;border-radius:50%;background:var(--c1);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative}
+.avatar-circle img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0}
+.avatar-upload-wrap{display:flex;flex-direction:column;gap:4px}
+.avatar-hint{font-size:11px;color:var(--text3)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-info{display:flex;flex-direction:column;gap:2px}
+.toggle-label{font-size:13px;font-weight:500;color:var(--text)}
+.toggle-sub{font-size:11px;color:var(--text3)}
+.tgl{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-slider{position:absolute;inset:0;background:var(--border);border-radius:20px;transition:.2s;cursor:pointer}
+.tgl-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.tgl input:checked+.tgl-slider{background:var(--c1)}
+.tgl input:checked+.tgl-slider:before{transform:translateX(16px)}
+.billing-plan-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg4);color:var(--text3)}
+.billing-plan-badge.pro{background:rgba(99,102,241,.15);color:#818cf8}
+.billing-stat{display:flex;flex-direction:column;gap:2px}
+.billing-stat-val{font-size:22px;font-weight:700;color:var(--text)}
+.billing-stat-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.billing-stats-row{display:flex;gap:32px;padding:16px 0;border-bottom:1px solid var(--bg4);border-top:1px solid var(--bg4);margin:4px 0}
+.danger-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--bg4)}
+.danger-item:last-child{border-bottom:none}
+.danger-info{display:flex;flex-direction:column;gap:3px}
+.danger-title{font-size:13px;font-weight:600;color:var(--text)}
+.danger-sub{font-size:11px;color:var(--text3)}
+.settings-msg{font-size:12px;padding:8px 12px;border-radius:6px;display:none}
+.settings-msg.ok{background:rgba(34,197,94,.12);color:#4ade80;display:block}
+.settings-msg.err{background:rgba(239,68,68,.12);color:#f87171;display:block}
 </style>
 </head>
 <body>
@@ -823,6 +881,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <a data-pg="history"><i class="sico ti ti-folder"></i>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
   </div>
   <div class="sg"><div class="slabel">Settings</div>
+    <a data-pg="account-settings"><i class="sico ti ti-user-cog"></i>Account Settings</a>
     <a data-pg="api-settings" data-cloud-hide><i class="sico ti ti-key"></i>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
     <a data-pg="pricing"><i class="sico ti ti-adjustments-horizontal"></i>Pricing Rules</a>
     <a data-pg="calc"><i class="sico ti ti-calculator"></i>Margin Calculator</a>
@@ -1649,6 +1708,226 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div>
   </div>
 </div>
+
+<!-- ACCOUNT SETTINGS -->
+<div class="pg" id="pg-account-settings">
+  <div id="page-title" style="display:none"></div>
+  <div class="settings-wrap">
+
+    <!-- Tab bar -->
+    <div class="settings-tabs">
+      <button class="stab on" data-stab="profile" onclick="sTabSwitch(this)">Profile</button>
+      <button class="stab" data-stab="business" onclick="sTabSwitch(this)">Business Info</button>
+      <button class="stab" data-stab="security" onclick="sTabSwitch(this)">Security</button>
+      <button class="stab" data-stab="billing" onclick="sTabSwitch(this)">Billing</button>
+      <button class="stab" data-stab="notifications" onclick="sTabSwitch(this)">Notifications</button>
+      <button class="stab" data-stab="danger" onclick="sTabSwitch(this)">Danger Zone</button>
+    </div>
+
+    <!-- ── Profile ── -->
+    <div class="stab-panel on" id="stab-profile">
+      <div class="settings-card">
+        <div class="avatar-row">
+          <div class="avatar-circle" id="s-avatar-circle">
+            <span id="s-avatar-initials"></span>
+            <img id="s-avatar-img" src="" alt="" style="display:none">
+          </div>
+          <div class="avatar-upload-wrap">
+            <button class="sbtn sbtn-ghost" onclick="document.getElementById('s-avatar-input').click()">Upload Photo</button>
+            <input type="file" id="s-avatar-input" accept="image/*" style="display:none" onchange="sUploadAvatar(this)">
+            <span class="avatar-hint">JPG, PNG or GIF · max 2 MB</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="sfield">
+            <label>Display Name</label>
+            <input type="text" id="s-display-name" placeholder="Your name">
+          </div>
+          <div class="sfield">
+            <label>Phone</label>
+            <input type="tel" id="s-phone" placeholder="+1 (555) 000-0000">
+          </div>
+        </div>
+        <div class="settings-row full">
+          <div class="sfield">
+            <label>Email</label>
+            <input type="email" id="s-email" readonly>
+          </div>
+        </div>
+        <div id="s-profile-msg" class="settings-msg"></div>
+        <div class="settings-save-row">
+          <button class="sbtn sbtn-primary" id="s-profile-save" onclick="sSaveProfile()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Business Info ── -->
+    <div class="stab-panel" id="stab-business">
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="sfield">
+            <label>Business Name</label>
+            <input type="text" id="s-biz-name" placeholder="My Restaurant LLC">
+          </div>
+          <div class="sfield">
+            <label>Business Type</label>
+            <select id="s-biz-type">
+              <option value="">— select —</option>
+              <option value="restaurant">Restaurant</option>
+              <option value="cafe">Café / Coffee Shop</option>
+              <option value="bakery">Bakery</option>
+              <option value="catering">Catering</option>
+              <option value="grocery">Grocery / Market</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-row full">
+          <div class="sfield">
+            <label>Street Address</label>
+            <input type="text" id="s-biz-street" placeholder="123 Main St">
+          </div>
+        </div>
+        <div class="settings-row triple">
+          <div class="sfield">
+            <label>City</label>
+            <input type="text" id="s-biz-city" placeholder="City">
+          </div>
+          <div class="sfield">
+            <label>State</label>
+            <input type="text" id="s-biz-state" placeholder="CA">
+          </div>
+          <div class="sfield">
+            <label>ZIP</label>
+            <input type="text" id="s-biz-zip" placeholder="90210">
+          </div>
+        </div>
+        <div class="settings-row full">
+          <div class="sfield">
+            <label>Tax ID / EIN</label>
+            <input type="text" id="s-tax-id" placeholder="12-3456789">
+          </div>
+        </div>
+        <div id="s-biz-msg" class="settings-msg"></div>
+        <div class="settings-save-row">
+          <button class="sbtn sbtn-primary" onclick="sSaveBusiness()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Security ── -->
+    <div class="stab-panel" id="stab-security">
+      <div class="settings-card">
+        <div class="settings-row full">
+          <div class="sfield">
+            <label>Current Password</label>
+            <input type="password" id="s-cur-pw" placeholder="Current password" autocomplete="current-password">
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="sfield">
+            <label>New Password</label>
+            <input type="password" id="s-new-pw" placeholder="New password" autocomplete="new-password">
+          </div>
+          <div class="sfield">
+            <label>Confirm New Password</label>
+            <input type="password" id="s-conf-pw" placeholder="Confirm new password" autocomplete="new-password">
+          </div>
+        </div>
+        <div id="s-sec-msg" class="settings-msg"></div>
+        <div class="settings-save-row">
+          <button class="sbtn sbtn-primary" onclick="sChangePassword()">Update Password</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Billing ── -->
+    <div class="stab-panel" id="stab-billing">
+      <div class="settings-card">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="billing-plan-badge" id="s-plan-badge">Free</span>
+          <span id="s-plan-label" style="font-size:13px;color:var(--text3)">You're on the free plan</span>
+        </div>
+        <div class="billing-stats-row">
+          <div class="billing-stat">
+            <div class="billing-stat-val" id="s-inv-used">—</div>
+            <div class="billing-stat-lbl">Invoices Used</div>
+          </div>
+          <div class="billing-stat">
+            <div class="billing-stat-val" id="s-inv-limit">—</div>
+            <div class="billing-stat-lbl">Invoice Limit</div>
+          </div>
+          <div class="billing-stat">
+            <div class="billing-stat-val" id="s-billing-renews">—</div>
+            <div class="billing-stat-lbl">Renews</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text3)" id="s-billing-note"></div>
+        <div class="settings-save-row">
+          <button class="sbtn sbtn-primary" id="s-billing-btn" onclick="sOpenBillingPortal()">Manage Billing</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Notifications ── -->
+    <div class="stab-panel" id="stab-notifications">
+      <div class="settings-card">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Extraction Failures</span>
+            <span class="toggle-sub">Alert me when invoice AI extraction fails</span>
+          </div>
+          <label class="tgl">
+            <input type="checkbox" id="s-notif-fail" onchange="sSaveNotifs()">
+            <span class="tgl-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Weekly Summary</span>
+            <span class="toggle-sub">Email me a weekly digest of price changes</span>
+          </div>
+          <label class="tgl">
+            <input type="checkbox" id="s-notif-weekly" onchange="sSaveNotifs()">
+            <span class="tgl-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Usage Alerts</span>
+            <span class="toggle-sub">Notify me when nearing my invoice limit</span>
+          </div>
+          <label class="tgl">
+            <input type="checkbox" id="s-notif-usage" onchange="sSaveNotifs()">
+            <span class="tgl-slider"></span>
+          </label>
+        </div>
+        <div id="s-notif-msg" class="settings-msg"></div>
+      </div>
+    </div>
+
+    <!-- ── Danger Zone ── -->
+    <div class="stab-panel" id="stab-danger">
+      <div class="settings-card">
+        <div class="danger-item">
+          <div class="danger-info">
+            <span class="danger-title">Export All Data</span>
+            <span class="danger-sub">Download all your invoices and price data as JSON</span>
+          </div>
+          <button class="sbtn sbtn-ghost" onclick="sExportData()">Export JSON</button>
+        </div>
+        <div class="danger-item">
+          <div class="danger-info">
+            <span class="danger-title">Delete Account</span>
+            <span class="danger-sub">Permanently delete your account and all data. This cannot be undone.</span>
+          </div>
+          <button class="sbtn sbtn-danger" onclick="sConfirmDeleteAccount()">Delete Account</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.settings-wrap -->
+</div><!-- /#pg-account-settings -->
 
 </main>
 </div>
@@ -2660,6 +2939,7 @@ function goTo(id){
   if(id==='history')renderHistory();
   if(id==='pricing')renderTargets();
   if(id==='produce')pcOpenPage();
+  if(id==='account-settings')renderSettings();
   if(id==='export'){
     renderExportSettings(document.getElementById('exp-page-settings'));
     renderExportSummary(document.getElementById('exp-page-summary'));
@@ -7562,6 +7842,251 @@ const _showDemo = localStorage.getItem('tm_show_demo') === '1';
 const _demoCb = document.getElementById('show-demo-toggle');
 if(_demoCb){ _demoCb.checked = _showDemo; }
 toggleDemoButtons(_showDemo);
+
+// ═══════════ ACCOUNT SETTINGS ═══════════
+let _sPro = null; // cached profile
+
+function sTabSwitch(btn){
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  const panel = document.getElementById('stab-'+btn.dataset.stab);
+  if(panel) panel.classList.add('on');
+}
+
+function sMsg(id, text, type){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = text;
+  el.className = 'settings-msg ' + type;
+  if(type === 'ok') setTimeout(()=>{ el.className='settings-msg'; el.textContent=''; }, 3000);
+}
+
+async function renderSettings(){
+  if(!_USER) return;
+  const { data, error } = await _SB
+    .from('user_profiles')
+    .select('*')
+    .eq('user_id', _USER.id)
+    .single();
+  if(error || !data) return;
+  _sPro = data;
+
+  // Profile tab
+  document.getElementById('s-email').value = _USER.email || '';
+  document.getElementById('s-display-name').value = data.display_name || '';
+  document.getElementById('s-phone').value = data.phone || '';
+  sRenderAvatar(data);
+
+  // Business tab
+  document.getElementById('s-biz-name').value = data.business_name || '';
+  document.getElementById('s-biz-type').value = data.business_type || '';
+  document.getElementById('s-biz-street').value = data.business_street || '';
+  document.getElementById('s-biz-city').value = data.business_city || '';
+  document.getElementById('s-biz-state').value = data.business_state || '';
+  document.getElementById('s-biz-zip').value = data.business_zip || '';
+  document.getElementById('s-tax-id').value = data.tax_id || '';
+
+  // Notifications tab
+  document.getElementById('s-notif-fail').checked = data.notif_extraction_fail !== false;
+  document.getElementById('s-notif-weekly').checked = !!data.notif_weekly_summary;
+  document.getElementById('s-notif-usage').checked = data.notif_usage_alert !== false;
+
+  // Billing tab
+  const plan = data.subscription_plan || 'free';
+  const badge = document.getElementById('s-plan-badge');
+  badge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+  badge.className = 'billing-plan-badge' + (plan !== 'free' ? ' pro' : '');
+  document.getElementById('s-plan-label').textContent =
+    plan === 'free' ? "You're on the free plan" : `Active ${plan} subscription`;
+  const invs = JSON.parse(localStorage.getItem('tm_h3') || '[]');
+  document.getElementById('s-inv-used').textContent = invs.length;
+  document.getElementById('s-inv-limit').textContent = data.invoice_limit || 100;
+  const renews = data.billing_period_end
+    ? new Date(data.billing_period_end).toLocaleDateString()
+    : '—';
+  document.getElementById('s-billing-renews').textContent = renews;
+  const note = document.getElementById('s-billing-note');
+  note.textContent = plan === 'free'
+    ? 'Upgrade to Pro for unlimited invoices and price history.'
+    : '';
+}
+
+function sRenderAvatar(profile){
+  const initEl = document.getElementById('s-avatar-initials');
+  const imgEl  = document.getElementById('s-avatar-img');
+  const name   = profile.display_name || _USER?.email || '';
+  const initials = name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase() || '?';
+  initEl.textContent = initials;
+  if(profile.avatar_url){
+    imgEl.src = profile.avatar_url;
+    imgEl.style.display = '';
+  } else {
+    imgEl.style.display = 'none';
+  }
+}
+
+async function sUploadAvatar(input){
+  const file = input.files[0];
+  if(!file || !_USER) return;
+  if(file.size > 2 * 1024 * 1024){
+    sMsg('s-profile-msg', 'Image must be under 2 MB.', 'err');
+    return;
+  }
+  const ext  = file.name.split('.').pop();
+  const path = `${_USER.id}.${ext}`;
+  const { error: upErr } = await _SB.storage.from('avatars').upload(path, file, { upsert: true });
+  if(upErr){ sMsg('s-profile-msg', 'Upload failed: ' + upErr.message, 'err'); return; }
+  const { data: { publicUrl } } = _SB.storage.from('avatars').getPublicUrl(path);
+  const { error: updErr } = await _SB
+    .from('user_profiles')
+    .update({ avatar_url: publicUrl })
+    .eq('user_id', _USER.id);
+  if(updErr){ sMsg('s-profile-msg', 'Saved upload but failed to update profile.', 'err'); return; }
+  if(_sPro) _sPro.avatar_url = publicUrl;
+  sRenderAvatar(_sPro || { avatar_url: publicUrl });
+  sMsg('s-profile-msg', 'Photo updated.', 'ok');
+}
+
+async function sSaveProfile(){
+  if(!_USER) return;
+  const btn = document.getElementById('s-profile-save');
+  btn.disabled = true;
+  const { error } = await _SB
+    .from('user_profiles')
+    .update({
+      display_name: document.getElementById('s-display-name').value.trim() || null,
+      phone:        document.getElementById('s-phone').value.trim() || null,
+    })
+    .eq('user_id', _USER.id);
+  btn.disabled = false;
+  if(error) sMsg('s-profile-msg', 'Save failed: ' + error.message, 'err');
+  else       sMsg('s-profile-msg', 'Profile saved.', 'ok');
+}
+
+async function sSaveBusiness(){
+  if(!_USER) return;
+  const { error } = await _SB
+    .from('user_profiles')
+    .update({
+      business_name:   document.getElementById('s-biz-name').value.trim() || null,
+      business_type:   document.getElementById('s-biz-type').value || null,
+      business_street: document.getElementById('s-biz-street').value.trim() || null,
+      business_city:   document.getElementById('s-biz-city').value.trim() || null,
+      business_state:  document.getElementById('s-biz-state').value.trim() || null,
+      business_zip:    document.getElementById('s-biz-zip').value.trim() || null,
+      tax_id:          document.getElementById('s-tax-id').value.trim() || null,
+    })
+    .eq('user_id', _USER.id);
+  if(error) sMsg('s-biz-msg', 'Save failed: ' + error.message, 'err');
+  else       sMsg('s-biz-msg', 'Business info saved.', 'ok');
+}
+
+async function sChangePassword(){
+  const cur  = document.getElementById('s-cur-pw').value;
+  const nw   = document.getElementById('s-new-pw').value;
+  const conf = document.getElementById('s-conf-pw').value;
+  if(!cur || !nw){ sMsg('s-sec-msg', 'Fill in all password fields.', 'err'); return; }
+  if(nw !== conf){ sMsg('s-sec-msg', 'New passwords do not match.', 'err'); return; }
+  if(nw.length < 8){ sMsg('s-sec-msg', 'Password must be at least 8 characters.', 'err'); return; }
+  // Re-authenticate first to verify current password
+  const { error: reErr } = await _SB.auth.signInWithPassword({
+    email: _USER.email, password: cur
+  });
+  if(reErr){ sMsg('s-sec-msg', 'Current password is incorrect.', 'err'); return; }
+  const { error } = await _SB.auth.updateUser({ password: nw });
+  if(error) sMsg('s-sec-msg', 'Update failed: ' + error.message, 'err');
+  else {
+    sMsg('s-sec-msg', 'Password updated successfully.', 'ok');
+    ['s-cur-pw','s-new-pw','s-conf-pw'].forEach(id=>document.getElementById(id).value='');
+  }
+}
+
+async function sSaveNotifs(){
+  if(!_USER) return;
+  const { error } = await _SB
+    .from('user_profiles')
+    .update({
+      notif_extraction_fail: document.getElementById('s-notif-fail').checked,
+      notif_weekly_summary:  document.getElementById('s-notif-weekly').checked,
+      notif_usage_alert:     document.getElementById('s-notif-usage').checked,
+    })
+    .eq('user_id', _USER.id);
+  if(error) sMsg('s-notif-msg', 'Save failed: ' + error.message, 'err');
+  else       sMsg('s-notif-msg', 'Preferences saved.', 'ok');
+}
+
+async function sOpenBillingPortal(){
+  const btn = document.getElementById('s-billing-btn');
+  btn.disabled = true;
+  btn.textContent = 'Redirecting…';
+  try {
+    const { data: { session } } = await _SB.auth.getSession();
+    const resp = await fetch(
+      `${_SB.supabaseUrl}/functions/v1/stripe-portal`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      }
+    );
+    const body = await resp.json();
+    if(body.url) window.location.href = body.url;
+    else throw new Error(body.error || 'No portal URL returned');
+  } catch(e) {
+    showToast('Billing portal error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Manage Billing';
+  }
+}
+
+function sExportData(){
+  const invs  = localStorage.getItem('tm_h3') || '[]';
+  const price = localStorage.getItem('tm_p3') || '{}';
+  const blob  = new Blob([JSON.stringify({ invoices: JSON.parse(invs), priceHistory: JSON.parse(price) }, null, 2)],
+    { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a   = Object.assign(document.createElement('a'), {
+    href: url, download: `thameelay-export-${new Date().toISOString().slice(0,10)}.json`
+  });
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+async function sConfirmDeleteAccount(){
+  const confirmed = window.confirm(
+    'Delete your account?\n\nThis will permanently erase all your invoices, price history, and settings. This cannot be undone.'
+  );
+  if(!confirmed) return;
+  const again = window.confirm('Are you absolutely sure? Type OK to confirm.\n\n(Click OK to delete, Cancel to go back.)');
+  if(!again) return;
+
+  try {
+    const { data: { session } } = await _SB.auth.getSession();
+    const resp = await fetch(
+      `${_SB.supabaseUrl}/functions/v1/delete-account`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      }
+    );
+    const body = await resp.json();
+    if(body.deleted){
+      localStorage.clear();
+      await _SB.auth.signOut();
+      window.location.reload();
+    } else {
+      throw new Error(body.error || 'Deletion failed');
+    }
+  } catch(e) {
+    showToast('Delete failed: ' + e.message, 'error');
+  }
+}
 </script>
 </body>
 </html>
