@@ -7957,7 +7957,7 @@ async function sSaveProfile(){
   if(!_USER || !_supabase) return;
   const btn = document.getElementById('s-profile-save');
   btn.disabled = true;
-  const { error, count } = await _supabase
+  const { data, error } = await _supabase
     .from('user_profiles')
     .update({
       display_name: document.getElementById('s-display-name').value.trim() || null,
@@ -7966,8 +7966,9 @@ async function sSaveProfile(){
     .eq('user_id', _USER.id)
     .select();
   btn.disabled = false;
-  if(error) sMsg('s-profile-msg', 'Save failed: ' + error.message, 'err');
-  else       sMsg('s-profile-msg', 'Profile saved.', 'ok');
+  if(error)               sMsg('s-profile-msg', 'Save failed: ' + error.message, 'err');
+  else if(!data?.length)  sMsg('s-profile-msg', 'Save blocked — check account permissions.', 'err');
+  else                    sMsg('s-profile-msg', 'Profile saved.', 'ok');
 }
 
 async function sSaveBusiness(){

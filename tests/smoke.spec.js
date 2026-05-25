@@ -102,8 +102,10 @@ test('account settings: save and reload persists profile fields', async () => {
   await nameInput.fill(testName);
   await page.locator('#s-profile-save').click();
 
-  // Wait for success message
+  // Wait for success (not error) message
   await expect(page.locator('#s-profile-msg')).toHaveText('Profile saved.', { timeout: 8000 });
+  const msgText = await page.locator('#s-profile-msg').textContent();
+  if (msgText && msgText.includes('blocked')) throw new Error('Save was RLS-blocked: ' + msgText);
   console.log(`  ✓ Saved display_name="${testName}"`);
 
   // Reload the page and navigate back to settings
