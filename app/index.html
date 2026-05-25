@@ -2250,8 +2250,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
           </div>
           <div class="plan-billed" id="plan-billed-starter">Billed monthly</div>
         </div>
-        <div class="plan-invoices"><strong>35</strong> invoices / month</div>
-        <div class="plan-cpi">$1.69 per invoice</div>
+        <div class="plan-invoices"><strong>50</strong> invoices / month</div>
+        <div class="plan-cpi">$1.18 per invoice</div>
         <ul class="plan-features">
           <li><i class="ti ti-check"></i>AI-powered extraction</li>
           <li><i class="ti ti-check"></i>Price tracker</li>
@@ -2835,6 +2835,9 @@ async function cloudInit(){
         showToast('Checkout cancelled. Your plan was not changed.', 'info');
         history.replaceState({}, '', location.pathname);
         goTo('account-settings');
+      } else if(params.get('view') === 'plans'){
+        history.replaceState({}, '', location.pathname);
+        goTo('plans');
       }
     }
   }catch(e){

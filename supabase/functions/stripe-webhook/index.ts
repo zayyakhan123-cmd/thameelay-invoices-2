@@ -25,7 +25,7 @@ import Stripe from "https://esm.sh/stripe@14?target=deno";
 
 // Maps Stripe product metadata plan_name → monthly invoice limit
 const PLAN_LIMITS: Record<string, number> = {
-  starter: 35,
+  starter: 50,
   growth: 150,
   pro: 400,
 };
@@ -115,6 +115,7 @@ async function activatePlan(
     billing_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     invoice_limit: invoiceLimit,
     stripe_customer_id: customerId,
+    approved: true,
   };
 
   // Try to find user by client_reference_id first (most reliable on first checkout)

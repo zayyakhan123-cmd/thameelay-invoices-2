@@ -134,3 +134,60 @@ test('account settings: save and reload persists profile fields', async () => {
   await expect(page.locator('#s-display-name')).toHaveValue(testName, { timeout: 8000 });
   console.log(`  ✓ display_name persisted after reload`);
 });
+
+// ── Public page tests ─────────────────────────────────────────────────────
+
+test('landing page loads with pricing section and 3 plan cards', async () => {
+  await page.goto('/');
+  await expect(page.locator('section#pricing')).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('#price-starter')).toBeVisible();
+  await expect(page.locator('#price-growth')).toBeVisible();
+  await expect(page.locator('#price-pro')).toBeVisible();
+});
+
+test('pricing toggle switches to annual prices', async () => {
+  await page.goto('/');
+  await expect(page.locator('#price-starter')).toHaveText('$59', { timeout: 5000 });
+  await page.locator('#ptog-annual').click();
+  await expect(page.locator('#price-starter')).toHaveText('$53');
+  await expect(page.locator('#billed-starter')).toContainText('annually');
+});
+
+test('Get Starter CTA href points to /signup with plan params', async () => {
+  await page.goto('/');
+  const href = await page.locator('#cta-starter').getAttribute('href');
+  expect(href).toContain('/signup?plan=starter');
+  expect(href).toContain('interval=monthly');
+});
+
+test('/signup shows plan badge when plan param present', async () => {
+  await page.goto('/signup?plan=starter&interval=monthly');
+  await expect(page.locator('#plan-badge')).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('#plan-badge-text')).toContainText(/starter/i);
+});
+
+test('/signup loads without plan badge when no params', async () => {
+  await page.goto('/signup');
+  await expect(page.locator('#plan-badge')).toBeHidden({ timeout: 5000 });
+});
+
+test('/signin page loads with email and password fields', async () => {
+  await page.goto('/signin');
+  await expect(page.locator('#signin-form')).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('input[type="email"]')).toBeVisible();
+  await expect(page.locator('input[type="password"]')).toBeVisible();
+});
+
+test('/forgot-password shows success after email submit', async () => {
+  await page.goto('/forgot-password');
+  await expect(page.locator('#forgot-form')).toBeVisible({ timeout: 8000 });
+  await page.locator('#email').fill('smoke-test@example.com');
+  await page.locator('#submit-btn').click();
+  await expect(page.locator('#form-msg.ok')).toBeVisible({ timeout: 8000 });
+});
+
+test('/signup form shows field errors on empty submit', async () => {
+  await page.goto('/signup');
+  await page.locator('#submit-btn').click();
+  await expect(page.locator('.field-error.show').first()).toBeVisible({ timeout: 5000 });
+});

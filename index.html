@@ -39,6 +39,10 @@
     .glass-strong { background:linear-gradient(180deg,rgba(15,20,36,0.85) 0%,rgba(10,14,26,0.85) 100%); border:1px solid rgba(148,163,184,0.16); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
     .feature-card { transition:transform 320ms cubic-bezier(0.2,0.7,0.2,1),border-color 320ms ease,box-shadow 320ms ease; }
     .feature-card:hover { transform:translateY(-4px); border-color:rgba(34,211,238,0.45); box-shadow:0 8px 32px -8px rgba(34,211,238,0.25),0 1px 0 rgba(34,211,238,0.15) inset; }
+    .pricing-card { transition:transform 280ms cubic-bezier(0.2,0.7,0.2,1),box-shadow 280ms ease; }
+    .pricing-card:hover { transform:translateY(-3px); }
+    .ptog-btn { cursor:pointer; border:none; background:transparent; color:#94a3b8; transition:all .15s; }
+    .ptog-active { background:rgba(255,255,255,0.08) !important; color:#f1f5f9 !important; border-radius:8px; }
     .btn-cyan { background:linear-gradient(180deg,#22d3ee 0%,#06b6d4 100%); color:#06212a; box-shadow:0 1px 0 rgba(255,255,255,0.35) inset,0 0 0 1px rgba(34,211,238,0.45),0 8px 30px -8px rgba(34,211,238,0.55); transition:box-shadow 220ms ease,transform 220ms ease,filter 220ms ease; }
     .btn-cyan:hover { box-shadow:0 1px 0 rgba(255,255,255,0.45) inset,0 0 0 1px rgba(34,211,238,0.65),0 14px 48px -10px rgba(34,211,238,0.85); filter:brightness(1.04); }
     .btn-cyan:disabled { opacity:0.7; cursor:default; }
@@ -148,9 +152,9 @@
       <a href="#how" class="text-[13.5px] font-medium text-slate-300 transition-colors hover:text-white">Product</a>
       <a href="#features" class="text-[13.5px] font-medium text-slate-300 transition-colors hover:text-white">Features</a>
       <a href="#pricing" class="text-[13.5px] font-medium text-slate-300 transition-colors hover:text-white">Pricing</a>
-      <a href="/app" class="text-[13.5px] font-medium text-slate-300 transition-colors hover:text-white">Login</a>
-      <a href="#waitlist" class="btn-cyan inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold">
-        Get early access
+      <a href="/signin" class="text-[13.5px] font-medium text-slate-300 transition-colors hover:text-white">Sign in</a>
+      <a href="/signup" class="btn-cyan inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold">
+        Get started
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13,6 19,12 13,18"/></svg>
       </a>
     </nav>
@@ -164,9 +168,9 @@
       <a href="#how" class="block rounded-xl px-4 py-3 text-sm font-medium text-slate-200 hover:bg-white/[0.04] hover:text-white">Product</a>
       <a href="#features" class="block rounded-xl px-4 py-3 text-sm font-medium text-slate-200 hover:bg-white/[0.04] hover:text-white">Features</a>
       <a href="#pricing" class="block rounded-xl px-4 py-3 text-sm font-medium text-slate-200 hover:bg-white/[0.04] hover:text-white">Pricing</a>
-      <a href="/app" class="block rounded-xl px-4 py-3 text-sm font-medium text-slate-200 hover:bg-white/[0.04] hover:text-white">Login</a>
-      <a href="#waitlist" class="btn-cyan mt-1 flex items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold">
-        Get early access
+      <a href="/signin" class="block rounded-xl px-4 py-3 text-sm font-medium text-slate-200 hover:bg-white/[0.04] hover:text-white">Sign in</a>
+      <a href="/signup" class="btn-cyan mt-1 flex items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold">
+        Get started
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13,6 19,12 13,18"/></svg>
       </a>
     </div>
@@ -193,12 +197,12 @@
         Track Aisle reads every vendor invoice the moment it arrives, flags the line items that moved, and lets you reprice — all before the next delivery rolls in.
       </p>
       <div class="mt-8 flex flex-wrap items-center gap-3">
-        <a href="#waitlist" class="btn-cyan inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold">
-          Get early access
+        <a href="#pricing" class="btn-cyan inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold">
+          Get started
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13,6 19,12 13,18"/></svg>
         </a>
-        <a href="#how" class="btn-ghost group inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-[14px] font-medium text-slate-200 hover:border-white/25 hover:bg-white/[0.03]">
-          See how it works
+        <a href="#pricing" class="btn-ghost group inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-[14px] font-medium text-slate-200 hover:border-white/25 hover:bg-white/[0.03]">
+          See pricing
           <span class="text-cyan-300 transition-transform group-hover:translate-x-0.5">→</span>
         </a>
       </div>
@@ -556,82 +560,151 @@
   </div>
 </section>
 
-<!-- FAQ / Pricing -->
-<div id="pricing"></div>
-<section id="faq" class="relative border-t border-white/[0.05] bg-ink-900 py-24 sm:py-28">
-  <div class="reveal mx-auto max-w-3xl px-5 sm:px-8">
-    <div class="mx-auto max-w-2xl text-center">
-      <p class="text-[12.5px] font-medium uppercase tracking-[0.18em] text-cyan-300">FAQ</p>
-      <h2 class="mt-3 text-balance text-[32px] font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-[40px]">Practical questions, practical answers.</h2>
-    </div>
-    <div class="mt-12 space-y-3">
-      <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
-        <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="true">
-          <span class="text-[15px] font-medium text-white">Does it work with my POS?</span>
-          <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-        </button>
-        <div class="faq-content open"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Track Aisle exports clean price updates as CSV, spreadsheet, or POS-ready import format. Direct integrations with Toast, Square, Clover, Lightspeed and others are on the roadmap.</p></div></div>
-      </div>
-      <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
-        <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
-          <span class="text-[15px] font-medium text-white">Can I review prices before anything changes?</span>
-          <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-        </button>
-        <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Yes. Track Aisle never changes a price without your approval. Every cost movement gets flagged for you to accept, adjust, or reject. Nothing pushes to your POS or spreadsheet until you say so.</p></div></div>
-      </div>
-      <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
-        <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
-          <span class="text-[15px] font-medium text-white">What if the AI gets it wrong?</span>
-          <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-        </button>
-        <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Every extracted item shows its confidence and the source pixels it came from. You can edit a line in one click, and the model learns your catalog over time so corrections rarely repeat.</p></div></div>
-      </div>
-      <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
-        <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
-          <span class="text-[15px] font-medium text-white">Is my invoice data private?</span>
-          <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-        </button>
-        <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Your data is yours. Invoices are encrypted in transit and at rest, never used to train shared models, and you can purge an invoice or your full account at any time.</p></div></div>
-      </div>
-      <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
-        <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
-          <span class="text-[15px] font-medium text-white">Do I need to upload every invoice manually?</span>
-          <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-        </button>
-        <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">No. Forward a vendor email to your Track Aisle inbox, drop a folder of PDFs, or connect Gmail/Outlook to auto-pull invoices. Photos from your phone work too.</p></div></div>
-      </div>
-      <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
-        <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
-          <span class="text-[15px] font-medium text-white">How much does it cost?</span>
-          <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-        </button>
-        <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Plans start at $39/month for a single location during beta, with volume-based tiers for groups. Beta access is free while we onboard the first 200 operators.</p></div></div>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- PRICING -->
+<section id="pricing" class="relative border-t border-white/[0.05] bg-ink-900 py-20 sm:py-28">
+  <div class="mx-auto max-w-6xl px-5 sm:px-8">
 
-<!-- WAITLIST CTA -->
-<section id="waitlist" class="relative overflow-hidden border-t border-white/[0.05] mesh-cta py-28 sm:py-32">
-  <div class="absolute inset-0 grid-bg opacity-30 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"></div>
-  <div class="absolute left-1/2 top-1/2 h-80 w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-3xl"></div>
-  <div class="relative mx-auto max-w-3xl px-5 text-center sm:px-8">
-    <h2 class="text-balance text-[40px] font-extrabold leading-[1.04] tracking-[-0.025em] text-white sm:text-[56px]">Stop bleeding margin to invisible price hikes.</h2>
-    <p class="mx-auto mt-5 max-w-xl text-[16px] leading-relaxed text-slate-300 sm:text-[18px]">Join the operators catching every vendor change the moment the invoice arrives.</p>
-    <div id="waitlist-form-wrap" class="mx-auto mt-9 max-w-sm">
-      <form id="waitlist-form" class="flex flex-col gap-3" novalidate>
-        <input type="email" id="wl-email" required placeholder="your@email.com" autocomplete="email"
-          class="w-full rounded-xl border border-white/15 bg-white/[0.07] px-4 py-3.5 text-[14px] text-white placeholder-slate-400 outline-none transition-all focus:border-cyan-400/60 focus:bg-white/[0.09]" />
-        <input type="text" id="wl-biz" placeholder="Your restaurant or store name (optional)" autocomplete="organization"
-          class="w-full rounded-xl border border-white/15 bg-white/[0.07] px-4 py-3.5 text-[14px] text-white placeholder-slate-400 outline-none transition-all focus:border-cyan-400/60 focus:bg-white/[0.09]" />
-        <button type="submit" id="wl-submit" class="btn-cyan mt-1 flex items-center justify-center gap-2 rounded-full px-7 py-4 text-[15px] font-semibold">
-          Get early access
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13,6 19,12 13,18"/></svg>
-        </button>
-        <p id="wl-error" class="hidden text-[13px] text-rose-400 text-center"></p>
-      </form>
+    <div class="reveal mx-auto max-w-2xl text-center mb-12">
+      <p class="text-[12.5px] font-medium uppercase tracking-[0.18em] text-cyan-300">Pricing</p>
+      <h2 class="mt-3 text-balance text-[32px] font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-[40px]">Simple, predictable pricing</h2>
+      <p class="mt-3 text-[16px] text-slate-400">Pick the plan that fits your business. Cancel anytime.</p>
     </div>
-    <p class="mt-4 text-[12.5px] text-slate-500">No credit card. Free during beta.</p>
+
+    <!-- Billing toggle -->
+    <div class="flex justify-center mb-10">
+      <div class="flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.04] p-1" role="group" aria-label="Billing interval">
+        <button id="ptog-monthly" onclick="setPricingInterval(false)" class="ptog-btn ptog-active px-4 py-2 rounded-lg text-[13px] font-medium" aria-pressed="true">Monthly</button>
+        <button id="ptog-annual" onclick="setPricingInterval(true)" class="ptog-btn px-4 py-2 rounded-lg text-[13px] font-medium" aria-pressed="false">
+          Annual <span class="ml-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400">Save 10%</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Plan cards -->
+    <div class="reveal grid gap-6 sm:grid-cols-3" id="pricing-cards">
+
+      <!-- Starter -->
+      <div class="pricing-card glass rounded-2xl p-7 flex flex-col gap-5">
+        <div>
+          <div class="text-[14px] font-semibold text-slate-300">Starter</div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span class="text-[38px] font-extrabold tracking-tight text-white" id="price-starter">$59</span>
+            <span class="text-[15px] text-slate-400" id="per-starter">/mo</span>
+          </div>
+          <div class="text-[12px] text-slate-500 mt-1" id="billed-starter">Billed monthly</div>
+          <div class="text-[13px] text-slate-400 mt-2">For solo operators getting started</div>
+        </div>
+        <ul class="flex flex-col gap-2.5 text-[13.5px] text-slate-300 flex-1">
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>50 invoices / month</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>AI invoice extraction</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>All reports</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Unlimited products &amp; vendors</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Email support</li>
+        </ul>
+        <a id="cta-starter" href="/signup?plan=starter&interval=monthly" class="btn-cyan flex items-center justify-center rounded-xl px-5 py-3 text-[14px] font-semibold transition">Get Starter</a>
+      </div>
+
+      <!-- Growth (featured) -->
+      <div class="pricing-card glass rounded-2xl p-7 flex flex-col gap-5 relative border-2 border-cyan-400/40" style="box-shadow:0 0 40px -8px rgba(34,211,238,0.18)">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <span class="rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 px-3.5 py-1 text-[11px] font-bold" style="color:#0a0e1a">Most Popular</span>
+        </div>
+        <div>
+          <div class="text-[14px] font-semibold text-slate-300">Growth</div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span class="text-[38px] font-extrabold tracking-tight text-white" id="price-growth">$179</span>
+            <span class="text-[15px] text-slate-400" id="per-growth">/mo</span>
+          </div>
+          <div class="text-[12px] text-slate-500 mt-1" id="billed-growth">Billed monthly</div>
+          <div class="text-[13px] text-slate-400 mt-2">For growing businesses</div>
+        </div>
+        <ul class="flex flex-col gap-2.5 text-[13.5px] text-slate-300 flex-1">
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Everything in Starter</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>150 invoices / month</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>POS sync</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Vendor price change alerts</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Up to 3 users</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Priority email support</li>
+        </ul>
+        <a id="cta-growth" href="/signup?plan=growth&interval=monthly" class="btn-cyan flex items-center justify-center rounded-xl px-5 py-3 text-[14px] font-semibold transition">Get Growth</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card glass rounded-2xl p-7 flex flex-col gap-5">
+        <div>
+          <div class="text-[14px] font-semibold text-slate-300">Pro</div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span class="text-[38px] font-extrabold tracking-tight text-white" id="price-pro">$399</span>
+            <span class="text-[15px] text-slate-400" id="per-pro">/mo</span>
+          </div>
+          <div class="text-[12px] text-slate-500 mt-1" id="billed-pro">Billed monthly</div>
+          <div class="text-[13px] text-slate-400 mt-2">For multi-location and growing teams</div>
+        </div>
+        <ul class="flex flex-col gap-2.5 text-[13.5px] text-slate-300 flex-1">
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Everything in Growth</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>400 invoices / month</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Multi-location support</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>SAML SSO</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>SCIM provisioning</li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>Dedicated support contact</li>
+        </ul>
+        <a id="cta-pro" href="/signup?plan=pro&interval=monthly" class="btn-cyan flex items-center justify-center rounded-xl px-5 py-3 text-[14px] font-semibold transition">Get Pro</a>
+      </div>
+
+    </div><!-- /pricing cards -->
+
+    <p class="text-center mt-6 text-[13px] text-slate-500">
+      Need more invoices? Each extra invoice over your plan limit is just <strong class="text-slate-300">$1.50</strong>.
+    </p>
+
+    <!-- FAQ -->
+    <div class="reveal mt-16 mx-auto max-w-2xl">
+      <h3 class="text-[22px] font-bold text-white mb-7 text-center">Common questions</h3>
+      <div class="space-y-3">
+
+        <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
+          <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
+            <span class="text-[15px] font-medium text-white">Can I switch plans later?</span>
+            <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Yes, anytime from your billing portal. Upgrades are prorated immediately; downgrades take effect at your next renewal.</p></div></div>
+        </div>
+
+        <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
+          <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
+            <span class="text-[15px] font-medium text-white">What happens if I exceed my invoice limit?</span>
+            <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">You're charged $1.50 per extra invoice. No service interruption — we'll never cut you off mid-month.</p></div></div>
+        </div>
+
+        <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
+          <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
+            <span class="text-[15px] font-medium text-white">Do you offer refunds?</span>
+            <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Annual plans are non-refundable. Monthly subscriptions can be canceled anytime and won't renew.</p></div></div>
+        </div>
+
+        <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
+          <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
+            <span class="text-[15px] font-medium text-white">What payment methods do you accept?</span>
+            <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">All major credit and debit cards via Stripe. We don't store your card details.</p></div></div>
+        </div>
+
+        <div class="faq-item glass overflow-hidden rounded-xl transition-all duration-300">
+          <button class="faq-btn flex w-full items-center justify-between gap-4 px-5 py-4 text-left" aria-expanded="false">
+            <span class="text-[15px] font-medium text-white">Is my data secure?</span>
+            <span class="faq-icon grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-slate-300 transition-all duration-300"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-content"><div><p class="px-5 pb-5 text-[14px] leading-relaxed text-slate-400">Yes. We use bank-level encryption and your data is stored in SOC 2 compliant infrastructure. Your invoice data is never used to train shared models.</p></div></div>
+        </div>
+
+      </div>
+    </div><!-- /FAQ -->
+
   </div>
 </section>
 </main>
@@ -653,15 +726,7 @@
   </div>
 </footer>
 
-<!-- Supabase JS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-  // Supabase client (anon key — waitlist table has anon INSERT policy)
-  const _sbClient = window.supabase.createClient(
-    'https://fslrqqaplwfyqemdumfz.supabase.co',
-    'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR'
-  );
-
   // ── Nav scroll effect ─────────────────────────────────────────
   const navHeader = document.getElementById('nav-header');
   function updateNav() {
@@ -768,42 +833,26 @@
     });
   });
 
-  // ── Waitlist form ─────────────────────────────────────────────
-  document.getElementById('waitlist-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('wl-email').value.trim();
-    const biz = document.getElementById('wl-biz').value.trim();
-    const errorEl = document.getElementById('wl-error');
-    const submitBtn = document.getElementById('wl-submit');
+  // ── Pricing interval toggle ────────────────────────────────────
+  const PRICING = {
+    starter: { monthly: '$59',   annual: '$53',    billedMonthly: 'Billed monthly', billedAnnual: '$637 billed annually', mPath: '/signup?plan=starter&interval=monthly', aPath: '/signup?plan=starter&interval=annual' },
+    growth:  { monthly: '$179',  annual: '$161',   billedMonthly: 'Billed monthly', billedAnnual: '$1,933 billed annually', mPath: '/signup?plan=growth&interval=monthly', aPath: '/signup?plan=growth&interval=annual' },
+    pro:     { monthly: '$399',  annual: '$359',   billedMonthly: 'Billed monthly', billedAnnual: '$4,309 billed annually', mPath: '/signup?plan=pro&interval=monthly', aPath: '/signup?plan=pro&interval=annual' },
+  };
 
-    // Client-side validation
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errorEl.textContent = 'Please enter a valid email address.';
-      errorEl.classList.remove('hidden');
-      return;
-    }
-    errorEl.classList.add('hidden');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4" stroke-dashoffset="10"/></svg>Sending…';
-
-    try {
-      const { error } = await _sbClient.from('waitlist').insert({ email, business_name: biz || null });
-      if (error) throw error;
-      document.getElementById('waitlist-form-wrap').innerHTML = `
-        <div class="py-4">
-          <div class="inline-flex items-center gap-2.5 rounded-full border border-cyan-400/30 bg-cyan-400/[0.08] px-6 py-3 text-[14px] font-medium text-cyan-300">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0"><polyline points="20,6 9,17 4,12"/></svg>
-            Thanks! We'll reach out within 24 hours.
-          </div>
-        </div>`;
-    } catch (err) {
-      console.error('Waitlist error:', err);
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = 'Get early access <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 inline-block ml-1"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13,6 19,12 13,18"/></svg>';
-      errorEl.textContent = 'Something went wrong. Please try again or email hello@trackaisle.com.';
-      errorEl.classList.remove('hidden');
-    }
-  });
+  function setPricingInterval(annual) {
+    document.getElementById('ptog-monthly').classList.toggle('ptog-active', !annual);
+    document.getElementById('ptog-monthly').setAttribute('aria-pressed', String(!annual));
+    document.getElementById('ptog-annual').classList.toggle('ptog-active', annual);
+    document.getElementById('ptog-annual').setAttribute('aria-pressed', String(annual));
+    ['starter','growth','pro'].forEach(function(plan) {
+      const p = PRICING[plan];
+      document.getElementById('price-' + plan).textContent = annual ? p.annual : p.monthly;
+      document.getElementById('per-' + plan).textContent = '/mo';
+      document.getElementById('billed-' + plan).textContent = annual ? p.billedAnnual : p.billedMonthly;
+      document.getElementById('cta-' + plan).href = annual ? p.aPath : p.mPath;
+    });
+  }
 </script>
 
 <script>

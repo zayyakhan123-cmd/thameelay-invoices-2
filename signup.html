@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sign up — Track Aisle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter','ui-sans-serif','system-ui','-apple-system','sans-serif'] },
+          colors: {
+            ink: { 950:'#070a13', 900:'#0a0e1a', 800:'#0f1424', 700:'#171c30', 600:'#1f253c' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *,::before,::after{box-sizing:border-box}
+    body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:100vh}
+    .logo-dot{background:radial-gradient(circle at 30% 30%,#67e8f9,#0891b2)}
+    .btn-cyan{background:linear-gradient(135deg,#22d3ee,#0891b2);color:#0a0e1a;font-weight:600}
+    .btn-cyan:hover{opacity:.9}
+    .btn-cyan:disabled{opacity:.5;cursor:not-allowed}
+    .auth-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:11px 14px;font-size:14px;color:#f1f5f9;outline:none;transition:border-color .15s}
+    .auth-input::placeholder{color:#64748b}
+    .auth-input:focus{border-color:rgba(34,211,238,.5);background:rgba(255,255,255,0.06)}
+    .auth-input.error{border-color:rgba(239,68,68,.5)}
+    .auth-card{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px 32px}
+    .field-error{font-size:12px;color:#f87171;margin-top:4px;display:none}
+    .field-error.show{display:block}
+    .form-msg{font-size:13px;padding:10px 14px;border-radius:8px;display:none}
+    .form-msg.err{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);display:block}
+    .pw-bar-wrap{height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:8px;overflow:hidden}
+    .pw-bar{height:100%;border-radius:2px;transition:width .3s,background .3s;width:0}
+    .plan-badge{display:none;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.25);border-radius:10px;padding:10px 16px;font-size:13px;color:#67e8f9;text-align:center}
+    .plan-badge.show{display:block}
+    .success-state{display:none;text-align:center;padding:24px 0}
+    .success-state.show{display:block}
+    .check-circle{width:56px;height:56px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<header class="flex items-center justify-between px-5 py-4 sm:px-10">
+  <a href="/" class="flex items-center gap-2.5">
+    <span class="logo-dot inline-block h-2.5 w-2.5 rounded-full"></span>
+    <span class="text-[15px] font-semibold tracking-tight text-white">Track Aisle</span>
+  </a>
+  <a href="/signin" class="text-[13.5px] font-medium text-slate-300 hover:text-white transition-colors">Sign in</a>
+</header>
+
+<!-- Main -->
+<main class="mx-auto max-w-md px-5 py-10 sm:py-14">
+
+  <!-- Plan badge -->
+  <div class="plan-badge mb-6" id="plan-badge">
+    <span class="font-medium text-slate-300">You're signing up for </span>
+    <strong id="plan-badge-text" class="text-cyan-300"></strong>
+    <span class="font-medium text-slate-300"> — </span>
+    <strong id="plan-badge-price" class="text-white"></strong>
+  </div>
+
+  <div class="auth-card">
+    <h1 class="text-[22px] font-bold text-white mb-1">Create your account</h1>
+    <p class="text-[14px] text-slate-400 mb-7">Start catching every vendor price change.</p>
+
+    <!-- Error message -->
+    <div class="form-msg err mb-5" id="form-error"></div>
+
+    <!-- Signup form -->
+    <form id="signup-form" novalidate>
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <input class="auth-input" id="first-name" type="text" placeholder="First name" autocomplete="given-name" />
+          <div class="field-error" id="err-first-name">Required</div>
+        </div>
+        <div>
+          <input class="auth-input" id="last-name" type="text" placeholder="Last name" autocomplete="family-name" />
+          <div class="field-error" id="err-last-name">Required</div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <input class="auth-input" id="business-name" type="text" placeholder="Business name" autocomplete="organization" />
+        <div class="field-error" id="err-business-name">Required</div>
+      </div>
+      <div class="mb-3">
+        <input class="auth-input" id="email" type="email" placeholder="Work email" autocomplete="email" />
+        <div class="field-error" id="err-email">Enter a valid email</div>
+      </div>
+      <div class="mb-5">
+        <input class="auth-input" id="password" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" oninput="onPwInput(this.value)" />
+        <div class="pw-bar-wrap mt-2"><div class="pw-bar" id="pw-bar"></div></div>
+        <div class="flex justify-between mt-1">
+          <span class="text-[11px] text-slate-500" id="pw-label"></span>
+        </div>
+        <div class="field-error" id="err-password">Must be at least 8 characters</div>
+      </div>
+      <button type="submit" class="btn-cyan w-full rounded-xl px-5 py-3 text-[14px] transition" id="submit-btn">
+        Create account
+      </button>
+    </form>
+
+    <!-- Success state -->
+    <div class="success-state" id="success-state">
+      <div class="check-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2 class="text-[20px] font-bold text-white mb-2">Check your email</h2>
+      <p class="text-[14px] text-slate-400 leading-relaxed">
+        We've sent a confirmation link to<br>
+        <strong class="text-white" id="confirm-email"></strong>
+      </p>
+      <p class="text-[13px] text-slate-500 mt-4">Click the link in the email to activate your account and continue to checkout.</p>
+    </div>
+  </div>
+
+  <p class="text-center mt-5 text-[13.5px] text-slate-400">
+    Already have an account? <a href="/signin" class="text-cyan-300 hover:text-cyan-200 font-medium">Sign in</a>
+  </p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL     = 'https://fslrqqaplwfyqemdumfz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const PLAN_LABELS = {
+  starter: 'Starter',
+  growth:  'Growth',
+  pro:     'Pro',
+};
+const PLAN_PRICES = {
+  starter: { monthly: '$59/mo', annual: '$637/yr' },
+  growth:  { monthly: '$179/mo', annual: '$1,933/yr' },
+  pro:     { monthly: '$399/mo', annual: '$4,309/yr' },
+};
+
+// Read URL params
+const params   = new URLSearchParams(location.search);
+const selPlan  = params.get('plan');
+const selIntvl = params.get('interval') || 'monthly';
+
+// Show plan badge
+if(selPlan && PLAN_LABELS[selPlan]){
+  document.getElementById('plan-badge').classList.add('show');
+  document.getElementById('plan-badge-text').textContent = PLAN_LABELS[selPlan];
+  document.getElementById('plan-badge-price').textContent = PLAN_PRICES[selPlan]?.[selIntvl] || '';
+  document.getElementById('submit-btn').textContent = 'Continue to checkout';
+}
+
+// Password strength
+function onPwInput(val){
+  const bar = document.getElementById('pw-bar');
+  const lbl = document.getElementById('pw-label');
+  let score = 0;
+  if(val.length >= 8)  score++;
+  if(val.length >= 12) score++;
+  if(/[A-Z]/.test(val)) score++;
+  if(/[0-9]/.test(val)) score++;
+  if(/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { w:'0%',   bg:'transparent',  txt:'' },
+    { w:'20%',  bg:'#f87171',      txt:'Very weak' },
+    { w:'40%',  bg:'#fb923c',      txt:'Weak' },
+    { w:'60%',  bg:'#fbbf24',      txt:'Fair' },
+    { w:'80%',  bg:'#34d399',      txt:'Strong' },
+    { w:'100%', bg:'#22d3ee',      txt:'Very strong' },
+  ];
+  const lvl = levels[score];
+  bar.style.width      = lvl.w;
+  bar.style.background = lvl.bg;
+  lbl.textContent      = lvl.txt;
+}
+
+// Form submit
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearErrors();
+
+  const firstName    = document.getElementById('first-name').value.trim();
+  const lastName     = document.getElementById('last-name').value.trim();
+  const businessName = document.getElementById('business-name').value.trim();
+  const email        = document.getElementById('email').value.trim();
+  const password     = document.getElementById('password').value;
+
+  let valid = true;
+  if(!firstName)                          { showFieldErr('first-name',    'Required'); valid=false; }
+  if(!lastName)                           { showFieldErr('last-name',     'Required'); valid=false; }
+  if(!businessName)                       { showFieldErr('business-name', 'Required'); valid=false; }
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+                                          { showFieldErr('email',         'Enter a valid email'); valid=false; }
+  if(password.length < 8)                { showFieldErr('password',      'Must be at least 8 characters'); valid=false; }
+  if(!valid) return;
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Creating account…';
+
+  const { error } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: 'https://www.trackaisle.com/auth/callback',
+      data: {
+        first_name:       firstName,
+        last_name:        lastName,
+        business_name:    businessName,
+        pending_plan:     selPlan     || null,
+        pending_interval: selIntvl    || null,
+      },
+    },
+  });
+
+  if(error){
+    showFormErr(error.message);
+    btn.disabled    = false;
+    btn.textContent = selPlan ? 'Continue to checkout' : 'Create account';
+    return;
+  }
+
+  // Show success
+  document.getElementById('signup-form').style.display  = 'none';
+  document.getElementById('confirm-email').textContent  = email;
+  document.getElementById('success-state').classList.add('show');
+});
+
+function showFieldErr(id, msg){
+  document.getElementById(id).classList.add('error');
+  const err = document.getElementById('err-' + id);
+  if(err){ err.textContent = msg; err.classList.add('show'); }
+}
+function clearErrors(){
+  document.querySelectorAll('.auth-input').forEach(el => el.classList.remove('error'));
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('show'));
+  const fe = document.getElementById('form-error');
+  fe.classList.remove('err'); fe.textContent = '';
+}
+function showFormErr(msg){
+  const el = document.getElementById('form-error');
+  el.textContent = msg; el.classList.add('err');
+}
+</script>
+</body>
+</html>

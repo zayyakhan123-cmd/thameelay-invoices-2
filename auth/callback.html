@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Activating your account — Track Aisle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *,::before,::after{box-sizing:border-box}
+    body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .wrap{text-align:center;max-width:380px;padding:0 20px}
+    .logo-dot{background:radial-gradient(circle at 30% 30%,#67e8f9,#0891b2)}
+    .spinner{width:36px;height:36px;border:3px solid rgba(34,211,238,.2);border-top-color:#22d3ee;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .status{font-size:14px;color:#94a3b8;margin-top:8px}
+    .err-card{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:14px;padding:24px;margin-top:20px;display:none}
+    .err-card.show{display:block}
+    .err-card h2{font-size:16px;font-weight:600;color:#f87171;margin:0 0 8px}
+    .err-card p{font-size:13px;color:#94a3b8;margin:0 0 16px}
+    .btn-ghost{display:inline-block;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:500;color:#cbd5e1;text-decoration:none;transition:.15s}
+    .btn-ghost:hover{border-color:rgba(255,255,255,.3);color:#fff}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:28px">
+    <span class="logo-dot inline-block" style="width:10px;height:10px;border-radius:50%"></span>
+    <span style="font-size:15px;font-weight:600;color:#fff">Track Aisle</span>
+  </div>
+
+  <div id="loading-state">
+    <div class="spinner"></div>
+    <h1 style="font-size:18px;font-weight:700;color:#fff;margin:0">Activating your account</h1>
+    <p class="status" id="status-text">Verifying your email…</p>
+  </div>
+
+  <div class="err-card" id="err-card">
+    <h2>Something went wrong</h2>
+    <p id="err-msg">The confirmation link may have expired. Please try again.</p>
+    <a href="/signup" class="btn-ghost">Back to sign up</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL      = 'https://fslrqqaplwfyqemdumfz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Stripe price IDs — publishable, safe to embed in frontend
+const STRIPE_PRICES = {
+  starter: { monthly: 'price_1Tb3KB84G1s14XC2K6Q5oT6n', annual: 'price_1Tb3MR84G1s14XC2g0Jy4l9S' },
+  growth:  { monthly: 'price_1Tb3PD84G1s14XC2jX7M3xET', annual: 'price_1Tb3Pc84G1s14XC2YifLlKQ2' },
+  pro:     { monthly: 'price_1Tb3R384G1s14XC2IEmI6ZZi',  annual: 'price_1Tb3RM84G1s14XC2EkMEvKTZ'  },
+};
+
+function setStatus(text){ document.getElementById('status-text').textContent = text; }
+function showError(msg){
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('err-msg').textContent = msg;
+  document.getElementById('err-card').classList.add('show');
+}
+
+(async () => {
+  try {
+    const params = new URLSearchParams(location.search);
+    const code   = params.get('code');
+    const type   = params.get('type');          // 'signup', 'recovery', etc.
+    const errDesc = params.get('error_description');
+
+    // Supabase can redirect with an error param
+    if(errDesc){
+      showError(errDesc);
+      return;
+    }
+
+    // --- Exchange code for session (PKCE flow) ---
+    if(code){
+      setStatus('Verifying your email…');
+      const { error: exchErr } = await sb.auth.exchangeCodeForSession(code);
+      if(exchErr){ showError(exchErr.message); return; }
+    } else {
+      // Implicit flow fallback — Supabase client picks up hash automatically
+      const { data: { session } } = await sb.auth.getSession();
+      if(!session){ showError('No session found. The link may have expired.'); return; }
+    }
+
+    // --- Get authenticated user ---
+    const { data: { user }, error: userErr } = await sb.auth.getUser();
+    if(userErr || !user){ showError('Could not retrieve your account.'); return; }
+
+    const meta = user.user_metadata || {};
+
+    // --- Write profile fields now that user is authenticated ---
+    setStatus('Setting up your account…');
+    const displayName = [meta.first_name, meta.last_name].filter(Boolean).join(' ') || null;
+    await sb.from('user_profiles').update({
+      first_name:       meta.first_name       || null,
+      last_name:        meta.last_name        || null,
+      display_name:     displayName,
+      business_name:    meta.business_name    || null,
+      pending_plan:     meta.pending_plan     || null,
+      pending_interval: meta.pending_interval || null,
+    }).eq('user_id', user.id);
+
+    // --- Route based on pending plan ---
+    const pendingPlan  = meta.pending_plan;
+    const pendingIntvl = meta.pending_interval || 'monthly';
+
+    if(pendingPlan && STRIPE_PRICES[pendingPlan]){
+      setStatus('Redirecting to checkout…');
+      const priceId = STRIPE_PRICES[pendingPlan][pendingIntvl] || STRIPE_PRICES[pendingPlan].monthly;
+
+      const { data: { session } } = await sb.auth.getSession();
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ price_id: priceId }),
+      });
+
+      if(!res.ok){
+        const body = await res.json().catch(() => ({}));
+        showError(body.error || 'Could not start checkout. Please try again.');
+        return;
+      }
+
+      const { url, error: checkoutErr } = await res.json();
+      if(checkoutErr || !url){
+        showError(checkoutErr || 'Could not get checkout URL.');
+        return;
+      }
+
+      window.location.href = url;
+      return;
+    }
+
+    // No pending plan — send to app, open plan picker
+    setStatus('Taking you to the app…');
+    window.location.href = '/app?view=plans';
+
+  } catch(err) {
+    console.error('Auth callback error:', err);
+    showError('An unexpected error occurred. Please try again.');
+  }
+})();
+</script>
+</body>
+</html>
