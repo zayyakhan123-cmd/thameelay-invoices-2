@@ -861,6 +861,35 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .settings-msg.ok{background:rgba(16,185,129,.12);color:var(--green);display:block}
 .settings-msg.err{background:rgba(244,63,94,.12);color:var(--red);display:block}
 .settings-msg.info{background:var(--c1l);color:var(--c1);display:block}
+/* ── PLANS PAGE ─────────────────────────────────────────────── */
+.plans-wrap{max-width:960px;margin:0 auto;padding:32px 24px 64px}
+.plans-back{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:32px;padding:0}
+.plans-back:hover{color:var(--text)}
+.plans-header{text-align:center;margin-bottom:40px}
+.plans-title{font-size:28px;font-weight:700;color:var(--text);margin:0 0 8px}
+.plans-sub{font-size:14px;color:var(--text3);margin:0 0 24px}
+.billing-toggle{display:inline-flex;background:var(--bg3);border-radius:8px;padding:4px;gap:2px}
+.btoggle-opt{background:none;border:none;padding:7px 18px;border-radius:6px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;transition:.15s}
+.btoggle-opt.on{background:var(--bg4);color:var(--text)}
+.btog-save{font-size:10px;font-weight:700;color:var(--green);margin-left:4px}
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:768px){.plans-grid{grid-template-columns:1fr}}
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2xl);padding:28px 24px;display:flex;flex-direction:column;gap:16px;position:relative}
+.plan-card-featured{border-color:var(--c1);box-shadow:0 0 0 1px var(--c1)}
+.plan-popular-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--c1);color:#0a0a0a;font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;white-space:nowrap}
+.plan-card-head{display:flex;flex-direction:column;gap:6px}
+.plan-name{font-size:15px;font-weight:700;color:var(--text)}
+.plan-price-wrap{display:flex;align-items:baseline;gap:3px}
+.plan-price{font-size:34px;font-weight:800;color:var(--text)}
+.plan-per{font-size:14px;color:var(--text3)}
+.plan-billed{font-size:11px;color:var(--text4)}
+.plan-invoices{font-size:13px;color:var(--text2)}
+.plan-cpi{font-size:11px;color:var(--text4)}
+.plan-features{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;flex:1}
+.plan-features li{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.plan-features .ti{color:var(--green);font-size:14px}
+.plan-cta{width:100%;justify-content:center;margin-top:auto}
+.plan-cta:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -2063,8 +2092,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
             </div>
           </div>
           <div style="font-size:12px;color:var(--text3)" id="s-billing-note"></div>
-          <div class="settings-save-row">
-            <button class="sbtn sbtn-primary" id="s-billing-btn" onclick="sOpenBillingPortal()">Manage Billing</button>
+          <div class="settings-save-row" style="gap:8px">
+            <button class="sbtn sbtn-primary" id="s-view-plans-btn" onclick="goTo('plans')" style="display:none">View Plans</button>
+            <button class="sbtn sbtn-ghost" id="s-billing-btn" onclick="sOpenBillingPortal()" style="display:none">Manage Billing</button>
           </div>
         </div>
 
@@ -2189,6 +2219,94 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div><!-- /.settings-main -->
   </div><!-- /.settings-wrap -->
 </div><!-- /#pg-account-settings -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     PLANS / UPGRADE PAGE
+═══════════════════════════════════════════════════════════════ -->
+<div class="pg" id="pg-plans">
+  <div class="plans-wrap">
+    <button class="plans-back" onclick="goTo('account-settings')">
+      <i class="ti ti-arrow-left"></i> Back to Account Settings
+    </button>
+
+    <div class="plans-header">
+      <h1 class="plans-title">Choose your plan</h1>
+      <p class="plans-sub">Upgrade, downgrade, or cancel anytime.</p>
+      <div class="billing-toggle">
+        <button class="btoggle-opt on" id="btog-monthly" onclick="sPlansToggle(false)">Monthly</button>
+        <button class="btoggle-opt" id="btog-annual" onclick="sPlansToggle(true)">Annual <span class="btog-save">Save 10%</span></button>
+      </div>
+    </div>
+
+    <div class="plans-grid">
+
+      <!-- Starter -->
+      <div class="plan-card" data-plan="starter">
+        <div class="plan-card-head">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price-wrap">
+            <span class="plan-price" id="plan-price-starter">$59</span>
+            <span class="plan-per">/mo</span>
+          </div>
+          <div class="plan-billed" id="plan-billed-starter">Billed monthly</div>
+        </div>
+        <div class="plan-invoices"><strong>35</strong> invoices / month</div>
+        <div class="plan-cpi">$1.69 per invoice</div>
+        <ul class="plan-features">
+          <li><i class="ti ti-check"></i>AI-powered extraction</li>
+          <li><i class="ti ti-check"></i>Price tracker</li>
+          <li><i class="ti ti-check"></i>Vendor insights</li>
+          <li><i class="ti ti-check"></i>Export to JSON / CSV</li>
+        </ul>
+        <button class="plan-cta sbtn sbtn-primary" id="plan-cta-starter" onclick="sStartCheckout('starter')">Upgrade to Starter</button>
+      </div>
+
+      <!-- Growth -->
+      <div class="plan-card plan-card-featured" data-plan="growth">
+        <div class="plan-popular-badge">Most Popular</div>
+        <div class="plan-card-head">
+          <div class="plan-name">Growth</div>
+          <div class="plan-price-wrap">
+            <span class="plan-price" id="plan-price-growth">$179</span>
+            <span class="plan-per">/mo</span>
+          </div>
+          <div class="plan-billed" id="plan-billed-growth">Billed monthly</div>
+        </div>
+        <div class="plan-invoices"><strong>150</strong> invoices / month</div>
+        <div class="plan-cpi">$1.19 per invoice</div>
+        <ul class="plan-features">
+          <li><i class="ti ti-check"></i>Everything in Starter</li>
+          <li><i class="ti ti-check"></i>Price alerts</li>
+          <li><i class="ti ti-check"></i>Produce matcher</li>
+          <li><i class="ti ti-check"></i>Advanced pricing rules</li>
+        </ul>
+        <button class="plan-cta sbtn sbtn-primary" id="plan-cta-growth" onclick="sStartCheckout('growth')">Upgrade to Growth</button>
+      </div>
+
+      <!-- Pro -->
+      <div class="plan-card" data-plan="pro">
+        <div class="plan-card-head">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price-wrap">
+            <span class="plan-price" id="plan-price-pro">$399</span>
+            <span class="plan-per">/mo</span>
+          </div>
+          <div class="plan-billed" id="plan-billed-pro">Billed monthly</div>
+        </div>
+        <div class="plan-invoices"><strong>400</strong> invoices / month</div>
+        <div class="plan-cpi">$1.00 per invoice</div>
+        <ul class="plan-features">
+          <li><i class="ti ti-check"></i>Everything in Growth</li>
+          <li><i class="ti ti-check"></i>Priority AI processing</li>
+          <li><i class="ti ti-check"></i>Dedicated support</li>
+          <li><i class="ti ti-check"></i>API access (coming soon)</li>
+        </ul>
+        <button class="plan-cta sbtn sbtn-primary" id="plan-cta-pro" onclick="sStartCheckout('pro')">Upgrade to Pro</button>
+      </div>
+
+    </div><!-- /.plans-grid -->
+  </div><!-- /.plans-wrap -->
+</div><!-- /#pg-plans -->
 
 </main>
 </div>
@@ -2707,6 +2825,17 @@ async function cloudInit(){
     if(_USER){
       await cloudPullAll();
       renderDashboard(); updateNavCounts();
+      // Handle Stripe checkout return
+      const params = new URLSearchParams(location.search);
+      if(params.get('checkout') === 'success'){
+        showToast('Subscription activated! Your plan has been updated.', 'success');
+        history.replaceState({}, '', location.pathname);
+        goTo('account-settings');
+      } else if(params.get('checkout') === 'cancel'){
+        showToast('Checkout cancelled. Your plan was not changed.', 'info');
+        history.replaceState({}, '', location.pathname);
+        goTo('account-settings');
+      }
     }
   }catch(e){
     console.warn('Cloud init failed (running in local-only mode):', e);
@@ -3201,6 +3330,7 @@ function goTo(id){
   if(id==='pricing')renderTargets();
   if(id==='produce')pcOpenPage();
   if(id==='account-settings')renderSettings();
+  if(id==='plans')renderPlanCards();
   if(id==='export'){
     renderExportSettings(document.getElementById('exp-page-settings'));
     renderExportSummary(document.getElementById('exp-page-summary'));
@@ -3278,8 +3408,30 @@ function routeFiles(files){
   }
 }
 
-function processFileList(files){
+async function checkMonthlyInvoiceLimit(){
+  if(!_supabase || !_USER) return true; // can't check — allow
+  const limit = _sPro?.invoice_limit ?? 10;
+  if(limit <= 0) return true; // no limit set
+  try{
+    const monthStart = new Date();
+    monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    const { count, error } = await _supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', _USER.id)
+      .gte('created_at', monthStart.toISOString());
+    if(error) return true; // on error, don't block the user
+    if(count >= limit){
+      showToast(`Monthly limit reached (${limit} invoices). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to process more.`, 'error');
+      return false;
+    }
+  } catch { return true; }
+  return true;
+}
+
+async function processFileList(files){
   if(!files.length) return;
+  if(!await checkMonthlyInvoiceLimit()) return;
   if(files.length===1) processSingleFile(files[0]); else addToQueue(files);
 }
 
@@ -8235,8 +8387,14 @@ async function renderSettings(){
   if(renewsEl) renewsEl.textContent = renews;
   const note = document.getElementById('s-billing-note');
   if(note) note.textContent = plan === 'free'
-    ? 'Upgrade to Pro for unlimited invoices and price history.'
+    ? 'Upgrade to process more invoices each month.'
     : '';
+
+  // Show the right CTA button based on plan
+  const viewPlansBtn = document.getElementById('s-view-plans-btn');
+  const manageBillingBtn = document.getElementById('s-billing-btn');
+  if(viewPlansBtn)    viewPlansBtn.style.display    = plan === 'free' ? '' : 'none';
+  if(manageBillingBtn) manageBillingBtn.style.display = plan !== 'free' ? '' : 'none';
 }
 
 function sRenderAvatar(profile){
@@ -8414,6 +8572,91 @@ async function sConfirmDeleteAccount(){
     }
   } catch(e) {
     showToast('Delete failed: ' + e.message, 'error');
+  }
+}
+
+// ── PLANS PAGE ────────────────────────────────────────────────
+
+// Price IDs from Stripe — fill in after creating products in Stripe Dashboard
+// These are publishable IDs, safe to include in frontend code.
+const STRIPE_PRICES = {
+  starter: { monthly: 'price_starter_monthly', annual: 'price_starter_annual' },
+  growth:  { monthly: 'price_growth_monthly',  annual: 'price_growth_annual'  },
+  pro:     { monthly: 'price_pro_monthly',      annual: 'price_pro_annual'     },
+};
+
+const PLAN_DATA = {
+  starter: { monthly: 59,    annual: 637,    monthlyEq: 53.10 },
+  growth:  { monthly: 179,   annual: 1933,   monthlyEq: 161.10 },
+  pro:     { monthly: 399,   annual: 4309,   monthlyEq: 359.10 },
+};
+
+let _plansAnnual = false;
+
+function sPlansToggle(annual){
+  _plansAnnual = annual;
+  document.getElementById('btog-monthly').classList.toggle('on', !annual);
+  document.getElementById('btog-annual').classList.toggle('on', annual);
+  renderPlanCards();
+}
+
+function renderPlanCards(){
+  const currentPlan = _sPro?.subscription_plan ?? 'free';
+  for(const [plan, prices] of Object.entries(PLAN_DATA)){
+    const priceEl  = document.getElementById('plan-price-' + plan);
+    const billedEl = document.getElementById('plan-billed-' + plan);
+    const ctaEl    = document.getElementById('plan-cta-' + plan);
+    if(!priceEl || !ctaEl) continue;
+
+    if(_plansAnnual){
+      priceEl.textContent  = '$' + prices.annual.toLocaleString();
+      billedEl.textContent = 'Billed annually ($' + prices.monthlyEq + '/mo)';
+      // Swap /mo to /yr
+      priceEl.nextElementSibling.textContent = '/yr';
+    } else {
+      priceEl.textContent  = '$' + prices.monthly;
+      billedEl.textContent = 'Billed monthly';
+      priceEl.nextElementSibling.textContent = '/mo';
+    }
+
+    // CTA state
+    if(currentPlan === plan){
+      ctaEl.textContent = 'Current Plan';
+      ctaEl.disabled    = true;
+    } else {
+      ctaEl.textContent = 'Upgrade to ' + plan.charAt(0).toUpperCase() + plan.slice(1);
+      ctaEl.disabled    = false;
+    }
+  }
+}
+
+async function sStartCheckout(plan){
+  const prices = STRIPE_PRICES[plan];
+  if(!prices){ showToast('Unknown plan', 'error'); return; }
+  const priceId = _plansAnnual ? prices.annual : prices.monthly;
+
+  const btn = document.getElementById('plan-cta-' + plan);
+  if(btn){ btn.textContent = 'Redirecting…'; btn.disabled = true; }
+
+  try {
+    const { data: { session } } = await _supabase.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ price_id: priceId }),
+    });
+    const body = await res.json();
+    if(body.url){
+      window.location.href = body.url;
+    } else {
+      throw new Error(body.error || 'No checkout URL returned');
+    }
+  } catch(e){
+    showToast('Checkout failed: ' + e.message, 'error');
+    renderPlanCards(); // restore button state
   }
 }
 </script>
