@@ -73,9 +73,9 @@ test('invoices loaded from Supabase', async () => {
 });
 
 test('dashboard renders', async () => {
-  // #page-title is the unique header title element
+  // #page-title is in the header; #pg-dashboard is the active page
   await expect(page.locator('#page-title')).toBeVisible({ timeout: 8000 });
-  await expect(page.locator('.pg:not([style*="none"])').first()).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('#pg-dashboard')).toBeVisible({ timeout: 8000 });
 });
 
 test('upload invoices page is reachable via nav', async () => {
