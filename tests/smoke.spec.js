@@ -191,3 +191,36 @@ test('/signup form shows field errors on empty submit', async () => {
   await page.locator('#submit-btn').click();
   await expect(page.locator('.field-error.show').first()).toBeVisible({ timeout: 5000 });
 });
+
+// ── Cross-user data isolation test ───────────────────────────────────────────
+// Regression test for the localStorage-bleed bug: stale data from a signed-out
+// user must never be visible to the next user who signs in.
+
+test('sign-out clears localStorage so no data bleeds to next user', async () => {
+  // Navigate back to app and confirm we are signed in with data
+  await page.goto('/app');
+  await page.waitForTimeout(3000);
+  const histBefore = await page.evaluate(() => localStorage.getItem('tm_h3'));
+  expect(histBefore).not.toBeNull();
+  const countBefore = JSON.parse(histBefore || '[]').length;
+  expect(countBefore).toBeGreaterThan(0);
+  console.log(`  ✓ Signed-in user has ${countBefore} invoices in localStorage`);
+
+  // Sign out via cloudSignOut() — same function the UI button calls
+  await page.evaluate(() => window.cloudSignOut && window.cloudSignOut());
+  await page.waitForTimeout(1500);
+
+  // Every SK.* key and tm_data_owner must now be null
+  const keysAfter = await page.evaluate(() => {
+    const keys = ['tm_h3','tm_p3','tm_a2','tm_v2','tm_m2','tm_pc_cat','tm_pc_map',
+                  'tm_pc_last','tm_pc_hist','tm_pc_rules','tm_prod_meta','tm_data_owner'];
+    return keys.filter(k => localStorage.getItem(k) !== null);
+  });
+  expect(keysAfter).toEqual([]);
+  console.log('  ✓ localStorage is empty after sign-out');
+
+  // App must be in locked/login state — no invoice data rendered
+  const hasInvoiceRows = await page.locator('.invoice-row, [data-invoice-id]').count();
+  expect(hasInvoiceRows).toBe(0);
+  console.log('  ✓ No invoice rows visible after sign-out');
+});

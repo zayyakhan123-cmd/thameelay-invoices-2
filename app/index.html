@@ -2701,6 +2701,11 @@ const SUPABASE_URL      = 'https://fslrqqaplwfyqemdumfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
 const CLOUD_ENABLED = SUPABASE_URL && !SUPABASE_URL.startsWith('__');
 
+// Legacy localStorage → cloud auto-migration. Disabled 2026-05-26 because all
+// new users are cloud-first and the feature created a data-isolation bug where
+// stale localStorage from a previous user could leak into a new account.
+const AUTO_MIGRATE_LEGACY_LOCAL = false;
+
 // ═══════════ FEATURE FLAGS ═══════════
 // Phase A side-by-side invoice editor.
 //   ?newedit=1 forces on, ?newedit=0 forces off (escape hatch — always wins
@@ -3155,7 +3160,7 @@ async function cloudPullAll(){
     const localHasData = (lsGet(SK.HIST) || []).length || (lsGet('tm_cats') || []).length;
     const dataOwner   = localStorage.getItem('tm_data_owner');
     const dataIsOurs  = !dataOwner || dataOwner === _USER.id;
-    if(cloudIsEmpty && localHasData && dataIsOurs){
+    if(AUTO_MIGRATE_LEGACY_LOCAL && cloudIsEmpty && localHasData && dataIsOurs){
       _CLOUD_PULLING = false;
       console.info('Cloud is empty; pushing local data up to your account…');
       // Mark all tables dirty and flush immediately (no debounce).
