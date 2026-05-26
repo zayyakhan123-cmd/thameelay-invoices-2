@@ -2972,6 +2972,12 @@ async function cloudSignUp(email, password){
 }
 async function cloudSignOut(){
   if(!_supabase) return;
+  // Wipe local data BEFORE signing out — ensures no stale data bleeds to the next user
+  // even if signOut() fails or the page is closed mid-flight.
+  Object.values(SK).forEach(k => localStorage.removeItem(k));
+  localStorage.removeItem('tm_data_owner');
+  try { sessionStorage.clear(); } catch(e) {}
+  invalidateCache();
   await _supabase.auth.signOut();
   _USER = null;
   _RETAIL_OVERRIDE.clear();
@@ -3141,19 +3147,32 @@ async function cloudPullAll(){
       _supabase.from('vendor_rules').select('*').eq('tenant_id', _USER.id),
       _supabase.from('product_meta').select('*').eq('tenant_id', _USER.id),
     ]);
-    // If cloud is completely empty and local has data, this is a first sign-in
-    // for a user who'd been using the app pre-cloud. Push localStorage up.
+    // If cloud is completely empty and local has data, this may be a first sign-in
+    // for a user who'd been using the app pre-cloud. Only push if the data was
+    // stamped with this user's ID, or if no stamp exists (legacy pre-cloud data).
+    // If a stamp exists for a DIFFERENT user, the data belongs to them — discard it.
     const cloudIsEmpty = !invoicesR.data?.length && !catsR.data?.length;
     const localHasData = (lsGet(SK.HIST) || []).length || (lsGet('tm_cats') || []).length;
-    if(cloudIsEmpty && localHasData){
+    const dataOwner   = localStorage.getItem('tm_data_owner');
+    const dataIsOurs  = !dataOwner || dataOwner === _USER.id;
+    if(cloudIsEmpty && localHasData && dataIsOurs){
       _CLOUD_PULLING = false;
       console.info('Cloud is empty; pushing local data up to your account…');
       // Mark all tables dirty and flush immediately (no debounce).
       Object.keys(CLOUD_PUSHERS).forEach(t => _DIRTY_TABLES.add(t));
+      localStorage.setItem('tm_data_owner', _USER.id);
       await cloudFlush();
       return;
     }
+    // Stale data from a different user was found — discard it silently.
+    if(localHasData && !dataIsOurs){
+      console.warn('localStorage belongs to a different user — discarding before hydrating.');
+      Object.values(SK).forEach(k => localStorage.removeItem(k));
+      invalidateCache();
+    }
     // Otherwise: cloud wins. Hydrate localStorage from cloud rows.
+    // Stamp with current user so the migration guard never mistakes this data for another user's.
+    localStorage.setItem('tm_data_owner', _USER.id);
     if(invoicesR.data){
       const hist = invoicesR.data.map(r => ({
         vendor: r.vendor, invoiceNo: r.invoice_no, date: r.date,
