@@ -223,4 +223,22 @@ test('sign-out clears localStorage so no data bleeds to next user', async () => 
   const hasInvoiceRows = await page.locator('.invoice-row, [data-invoice-id]').count();
   expect(hasInvoiceRows).toBe(0);
   console.log('  ✓ No invoice rows visible after sign-out');
+
+  // Re-authenticate so .auth.json is valid for the next test run.
+  // If credentials aren't available, delete the stale auth file so the next
+  // run prompts for manual sign-in rather than failing with an expired session.
+  if (EMAIL && PASSWORD) {
+    await page.goto('/app');
+    await page.waitForTimeout(1000);
+    await page.getByRole('textbox', { name: /email/i }).fill(EMAIL);
+    await page.getByRole('textbox', { name: /password/i }).fill(PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.waitForSelector('#page-title', { timeout: 30_000 });
+    await context.storageState({ path: AUTH_FILE });
+    console.log('  ✓ Re-authenticated and session saved');
+  } else {
+    // No credentials — remove stale auth file so next run starts fresh
+    if (fs.existsSync(AUTH_FILE)) fs.unlinkSync(AUTH_FILE);
+    console.log('  ✓ Removed stale auth file — next run will prompt for sign-in');
+  }
 });

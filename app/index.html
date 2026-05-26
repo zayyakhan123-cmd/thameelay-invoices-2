@@ -3490,15 +3490,28 @@ async function processSingleFile(file){
   startUploadProgress(file);
   const pdfPromise = readFileAsDataUrl(file); // run in parallel with extraction
   try{
-    const inv=await extractInvoice(file, setUploadStep);
-    if(inv){ inv._uploadedAs = file.name; attachPdfDataUrl(inv, await pdfPromise); }
+    const invs=await extractInvoice(file, setUploadStep);
+    const pdfDataUrl = await pdfPromise;
+    invs.forEach(inv => { inv._uploadedAs = file.name; attachPdfDataUrl(inv, pdfDataUrl); });
     setUploadStep('classifying');
     await new Promise(r=>setTimeout(r,200));
     finishUploadProgress(true);
-    loadInvoice(inv);
+    // For multi-invoice PDFs: classify and persist extras without rendering them
+    for(let k=1; k<invs.length; k++){
+      const inv=invs[k];
+      inv.date=normDate(inv.date); if(!inv.docType)inv.docType='invoice';
+      classifyInvoice(inv);
+      inv.items.forEach(i=>{if(!i.item)i.item=normV(i.desc);});
+      const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===inv.invoiceNo&&h.vendor===inv.vendor&&normDate(h.date)===normDate(inv.date));
+      if(idx>=0)hist.splice(idx,1);hist.unshift({...inv,savedAt:new Date().toISOString()});saveHist(hist);
+      saveInvoiceToDB(inv);
+    }
+    loadInvoice(invs[0]);
     saveCurrentInvoiceToHistory();
-    const cnt = inv && inv.items ? inv.items.filter(i=>i._rt===0||i._rt===RT.PURCHASED).length : 0;
-    showToast('success', `Invoice loaded — ${cnt} items ready to review below`);
+    const cnt = invs[0].items ? invs[0].items.filter(i=>i._rt===0||i._rt===RT.PURCHASED).length : 0;
+    showToast('success', invs.length > 1
+      ? `${invs.length} invoices extracted and saved — showing #${invs[0].invoiceNo} below`
+      : `Invoice loaded — ${cnt} items ready to review below`);
   }
   catch(err){
     if(err.message==='no_api_key'){ finishUploadProgress(false); show('dz-wrap',true); return; }
@@ -3574,19 +3587,22 @@ async function processQueue(){
     addLog(`[${i+1}/${total}] Extracting ${FILE_QUEUE[i].name}...`);
     try{
       const pdfPromise = readFileAsDataUrl(FILE_QUEUE[i].file);
-      const inv=await extractInvoice(FILE_QUEUE[i].file);
-      inv._uploadedAs = FILE_QUEUE[i].name;
-      inv.date = normDate(inv.date);
-      attachPdfDataUrl(inv, await pdfPromise);
-      classifyInvoice(inv);
-      FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=inv;
-      const {saved,skipped}=saveInvoiceToDB(inv);
-      const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===inv.invoiceNo&&h.vendor===inv.vendor&&normDate(h.date)===normDate(inv.date));
-      if(idx>=0)hist.splice(idx,1);hist.unshift({...inv,savedAt:new Date().toISOString()});saveHist(hist);
-      const vk=normV(inv.vendor);
-      const ups=inv.items.filter(it=>it._rt===RT.PURCHASED&&it.qty>0).filter(it=>detectChange(it,vk,inv.invoiceNo,inv.date).status==='increase').length;
-      results.push({inv,saved,skipped,ups});
-      addLog(`  ✅ ${inv.vendor} #${inv.invoiceNo} · ${inv.date} · ${saved} products · ${ups} increases`,'#10b981');
+      const invs=await extractInvoice(FILE_QUEUE[i].file);
+      const pdfDataUrl = await pdfPromise;
+      FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=invs[0];
+      for(const inv of invs){
+        inv._uploadedAs = FILE_QUEUE[i].name;
+        inv.date = normDate(inv.date); if(!inv.docType)inv.docType='invoice';
+        attachPdfDataUrl(inv, pdfDataUrl);
+        classifyInvoice(inv);
+        const {saved,skipped}=saveInvoiceToDB(inv);
+        const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===inv.invoiceNo&&h.vendor===inv.vendor&&normDate(h.date)===normDate(inv.date));
+        if(idx>=0)hist.splice(idx,1);hist.unshift({...inv,savedAt:new Date().toISOString()});saveHist(hist);
+        const vk=normV(inv.vendor);
+        const ups=inv.items.filter(it=>it._rt===RT.PURCHASED&&it.qty>0).filter(it=>detectChange(it,vk,inv.invoiceNo,inv.date).status==='increase').length;
+        results.push({inv,saved,skipped,ups});
+        addLog(`  ✅ ${inv.vendor} #${inv.invoiceNo} · ${inv.date} · ${saved} products · ${ups} increases`,'#10b981');
+      }
     }catch(err){
       FILE_QUEUE[i].status='error';
       addLog(`  ❌ ${FILE_QUEUE[i].name}: ${err.message}`,'#ef4444');
@@ -3714,10 +3730,29 @@ async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, sy
 }
 
 // Pull the first JSON object out of an AI response, tolerating ```json fences and prose.
+// Balanced-bracket parser: handles both {"single":"invoice"} and [{"multi":"invoice"},...]
+// responses. Finds the first { or [ and walks to its matching close bracket, ignoring
+// anything that comes after — so trailing AI commentary never causes JSON.parse to fail.
 function aiJson(text){
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}');
-  if(s < 0 || e < 0) throw new Error('No JSON in response: ' + cleaned.substring(0, 200));
+  const cleaned = text.replace(/```json\n?|```/g, '').trim();
+  let s = -1, open, close;
+  for(let i = 0; i < cleaned.length; i++){
+    if(cleaned[i] === '{' || cleaned[i] === '['){
+      s = i; open = cleaned[i]; close = open === '{' ? '}' : ']'; break;
+    }
+  }
+  if(s < 0) throw new Error('No JSON in response: ' + cleaned.substring(0, 200));
+  let depth = 0, inStr = false, esc = false, e = -1;
+  for(let i = s; i < cleaned.length; i++){
+    const ch = cleaned[i];
+    if(esc){ esc = false; continue; }
+    if(ch === '\\' && inStr){ esc = true; continue; }
+    if(ch === '"'){ inStr = !inStr; continue; }
+    if(inStr) continue;
+    if(ch === open) depth++;
+    else if(ch === close){ if(--depth === 0){ e = i; break; } }
+  }
+  if(e < 0) throw new Error('No complete JSON in response: ' + cleaned.substring(0, 200));
   return JSON.parse(cleaned.substring(s, e + 1));
 }
 
@@ -3808,8 +3843,10 @@ async function extractInvoice(file, onStep){
   });
   step('parsing');
   if(resp.stopReason === 'max_tokens') throw new Error('Response truncated — invoice has too many line items. Try splitting the PDF or raising max_tokens.');
-  const _inv = aiJson(resp.text);
-  trackUsage(_inv); return _inv;
+  const result = aiJson(resp.text);
+  const invList = Array.isArray(result) ? result : [result];
+  trackUsage({items: invList.flatMap(inv => inv.items || [])});
+  return invList;
 }
 
 // ═══════════ LOAD INVOICE ═══════════
@@ -7166,30 +7203,29 @@ async function pcProcessFiles(files){
       pcSetStep('extracting');
       const ext = (file.name.split('.').pop()||'').toLowerCase();
       const isSheet = ['xlsx','xls','csv'].includes(ext);
-      const inv = isSheet ? await pcExtractFromSheet(file) : await extractInvoice(file);
-      
-      // Debug: how many items did extraction find?
-      const extractedCount = (inv.items||[]).length;
-      console.log(`[ProduceMatcher] ${file.name}: extraction found ${extractedCount} items`);
-      
-      pcSetStep('matching');
-      const newLines = await pcExtractProduceLines(inv);
-      console.log(`[ProduceMatcher] ${file.name}: matcher kept ${newLines.length} lines (extracted ${extractedCount})`);
-      
-      // If we extracted way more than we kept, surface the gap
-      if(extractedCount > newLines.length + 2){
-        showToast('warn', `Extracted ${extractedCount} items but only ${newLines.length} matched. Check console for details.`, 8000);
+      const invs = isSheet ? [await pcExtractFromSheet(file)] : await extractInvoice(file);
+      for(const inv of invs){
+        // Debug: how many items did extraction find?
+        const extractedCount = (inv.items||[]).length;
+        console.log(`[ProduceMatcher] ${file.name} #${inv.invoiceNo||'?'}: extraction found ${extractedCount} items`);
+
+        pcSetStep('matching');
+        const newLines = await pcExtractProduceLines(inv);
+        console.log(`[ProduceMatcher] ${file.name} #${inv.invoiceNo||'?'}: matcher kept ${newLines.length} lines`);
+
+        if(extractedCount > newLines.length + 2){
+          showToast('warn', `Extracted ${extractedCount} items but only ${newLines.length} matched. Check console for details.`, 8000);
+        }
+        const vendor = (inv.vendor||'Unknown').trim();
+        newLines.forEach(l=>{
+          l._vendor = vendor;
+          l._invoiceNo = inv.invoiceNo || '';
+          l._invoiceDate = inv.date || '';
+        });
+        existing.push(...newLines);
+        pcSaveToHist(inv, newLines);
+        okCount++; totalNew += newLines.length;
       }
-      // Tag each line with the vendor + invoice it came from
-      const vendor = (inv.vendor||'Unknown').trim();
-      newLines.forEach(l=>{
-        l._vendor = vendor;
-        l._invoiceNo = inv.invoiceNo || '';
-        l._invoiceDate = inv.date || '';
-      });
-      existing.push(...newLines);
-      pcSaveToHist(inv, newLines);
-      okCount++; totalNew += newLines.length;
     } catch(err){
       failCount++;
       console.warn(`Failed to process ${file.name}:`, err);

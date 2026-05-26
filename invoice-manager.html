@@ -2838,11 +2838,30 @@ async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, sy
 }
 
 // Pull the first JSON object out of an AI response, tolerating ```json fences and prose.
+// Balanced-bracket parser: handles both {"single":"invoice"} and [{"multi":"invoice"},...]
+// responses. Finds the first { or [ and walks to its matching close bracket.
 function aiJson(text){
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}');
-  if(s < 0 || e < 0) throw new Error('No JSON in response: ' + cleaned.substring(0, 200));
-  return JSON.parse(cleaned.substring(s, e + 1));
+  const cleaned = text.replace(/```json\n?|```/g, '').trim();
+  let s = -1, open, close;
+  for(let i = 0; i < cleaned.length; i++){
+    if(cleaned[i] === '{' || cleaned[i] === '['){
+      s = i; open = cleaned[i]; close = open === '{' ? '}' : ']'; break;
+    }
+  }
+  if(s < 0) throw new Error('No JSON in response: ' + cleaned.substring(0, 200));
+  let depth = 0, inStr = false, esc = false, e = -1;
+  for(let i = s; i < cleaned.length; i++){
+    const ch = cleaned[i];
+    if(esc){ esc = false; continue; }
+    if(ch === '\\' && inStr){ esc = true; continue; }
+    if(ch === '"'){ inStr = !inStr; continue; }
+    if(inStr) continue;
+    if(ch === open) depth++;
+    else if(ch === close){ if(--depth === 0){ e = i; break; } }
+  }
+  if(e < 0) throw new Error('No complete JSON in response: ' + cleaned.substring(0, 200));
+  const result = JSON.parse(cleaned.substring(s, e + 1));
+  return Array.isArray(result) ? result[0] : result;
 }
 
 // AI extraction prompt is built dynamically so user-added categories are included.
