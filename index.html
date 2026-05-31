@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Track Aisle — Catch every vendor price hike before it hits your margin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%230a0e1a'/><circle cx='16' cy='16' r='8' fill='%2322d3ee'/><circle cx='16' cy='16' r='4' fill='%230a0e1a'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -41,8 +42,9 @@
     .feature-card:hover { transform:translateY(-4px); border-color:rgba(34,211,238,0.45); box-shadow:0 8px 32px -8px rgba(34,211,238,0.25),0 1px 0 rgba(34,211,238,0.15) inset; }
     .pricing-card { transition:transform 280ms cubic-bezier(0.2,0.7,0.2,1),box-shadow 280ms ease; }
     .pricing-card:hover { transform:translateY(-3px); }
-    .ptog-btn { cursor:pointer; border:none; background:transparent; color:#94a3b8; transition:all .15s; }
-    .ptog-active { background:rgba(255,255,255,0.08) !important; color:#f1f5f9 !important; border-radius:8px; }
+    .ptog-btn { cursor:pointer; border:none; background:transparent; color:#64748b; transition:all .2s; border-radius:8px; }
+    .ptog-btn:hover:not(.ptog-active) { color:#94a3b8; background:rgba(255,255,255,0.05); }
+    .ptog-active { background:rgba(34,211,238,0.12) !important; color:#22d3ee !important; border-radius:8px; box-shadow:0 0 0 1px rgba(34,211,238,0.25); font-weight:600; }
     .btn-cyan { background:linear-gradient(180deg,#22d3ee 0%,#06b6d4 100%); color:#06212a; box-shadow:0 1px 0 rgba(255,255,255,0.35) inset,0 0 0 1px rgba(34,211,238,0.45),0 8px 30px -8px rgba(34,211,238,0.55); transition:box-shadow 220ms ease,transform 220ms ease,filter 220ms ease; }
     .btn-cyan:hover { box-shadow:0 1px 0 rgba(255,255,255,0.45) inset,0 0 0 1px rgba(34,211,238,0.65),0 14px 48px -10px rgba(34,211,238,0.85); filter:brightness(1.04); }
     .btn-cyan:disabled { opacity:0.7; cursor:default; }

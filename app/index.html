@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Thameelay · Invoice Intelligence</title>
+<title>Track Aisle · Invoice Intelligence</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%230a0e1a'/><circle cx='16' cy='16' r='8' fill='%2322d3ee'/><circle cx='16' cy='16' r='4' fill='%230a0e1a'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -652,22 +653,29 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 body.app-locked > .app-wrap{display:none !important}
 .login-gate{display:none;position:fixed;inset:0;background:var(--bg);z-index:10000;align-items:center;justify-content:center;padding:24px;flex-direction:column}
+.login-gate::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 40% at 50% 0%,rgba(34,211,238,.06) 0%,transparent 70%);pointer-events:none}
 body.app-locked .login-gate{display:flex}
-.login-card{background:var(--surface);border-radius:14px;max-width:420px;width:100%;padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.35);text-align:center}
-.login-logo{font-size:40px;line-height:1;margin-bottom:8px}
-.login-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px}
-.login-sub{font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.5}
-.login-input{width:100%;padding:12px 14px;border:1px solid var(--border2);border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:12px;box-sizing:border-box}
-.login-input:focus{outline:none;border-color:var(--c1)}
-.login-btn{width:100%;padding:12px 14px;background:var(--c1);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
-.login-btn:hover{background:var(--c1d)}
-.login-btn:disabled{opacity:.6;cursor:not-allowed}
-.login-msg{font-size:12px;color:var(--text3);margin-top:14px;min-height:18px}
+.login-card{background:rgba(22,26,36,0.95);border:1px solid rgba(255,255,255,.1);border-radius:18px;max-width:420px;width:100%;padding:38px 34px;box-shadow:0 32px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04) inset;text-align:center;position:relative;z-index:1}
+.login-card::before{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,rgba(34,211,238,.04) 0%,transparent 55%);pointer-events:none}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px}
+.login-logo-dot{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#67e8f9,#0891b2);flex-shrink:0}
+.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.02em}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:26px;line-height:1.5}
+.login-input{width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.13);border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:10px;box-sizing:border-box;background:rgba(255,255,255,.07);color:var(--text);transition:border-color .15s,background .15s,box-shadow .15s}
+.login-input::placeholder{color:#4e596b}
+.login-input:focus{outline:none;border-color:rgba(34,211,238,.55);background:rgba(34,211,238,.04);box-shadow:0 0 0 3px rgba(34,211,238,.08)}
+.login-btn{width:100%;padding:12px 14px;background:linear-gradient(180deg,#22d3ee 0%,#06b6d4 100%);color:#042630;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:-.01em;box-shadow:0 0 20px -4px rgba(34,211,238,.35),inset 0 1px 0 rgba(255,255,255,.2);transition:filter .15s,transform .15s,box-shadow .15s}
+.login-btn:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 0 28px -4px rgba(34,211,238,.45),inset 0 1px 0 rgba(255,255,255,.2)}
+.login-btn:active{transform:translateY(0)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed;filter:none;transform:none}
+.login-msg{font-size:12px;color:var(--text3);margin-top:12px;min-height:18px}
 .login-msg.success{color:var(--green)}
 .login-msg.error{color:var(--red)}
-.login-foot{font-size:11px;color:var(--text4);margin-top:20px;line-height:1.5}
-.login-toggle{background:none;border:none;color:var(--c1);font-size:12px;cursor:pointer;margin-top:14px;font-family:inherit;text-decoration:underline;padding:4px}
-.login-toggle:hover{color:var(--c1d)}
+.login-foot{font-size:11px;color:var(--text4);margin-top:18px;line-height:1.5}
+.login-toggle{background:none;border:none;color:var(--c1);font-size:12px;cursor:pointer;margin-top:12px;font-family:inherit;padding:4px;opacity:.8}
+.login-toggle:hover{opacity:1}
+.login-forgot{font-size:11.5px;color:var(--text4);display:block;text-align:right;margin-top:4px;margin-bottom:8px;transition:color .15s}
+.login-forgot:hover{color:var(--c1)}
 .login-pending{display:none}
 body.pending-approval #login-pending{display:block}
 body.pending-approval #login-sub,
@@ -895,12 +903,18 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <body>
 <div class="login-gate" id="login-gate">
   <div class="login-card">
-    <div class="login-logo"><i class="ti ti-layout-dashboard"></i></div>
-    <div class="login-title">Thameelay</div>
-    <div id="login-sub" class="login-sub">Sign in with your email and password.</div>
+    <div class="login-logo">
+      <span class="login-logo-dot"></span>
+      <span style="font-size:16px;font-weight:700;color:#f1f5f9;letter-spacing:-.02em">Track Aisle</span>
+    </div>
+    <div id="login-sub" class="login-sub" style="margin-top:6px">Sign in to your account.</div>
     <form id="login-form" onsubmit="loginSubmit(event)" autocomplete="on">
-      <input id="login-email" class="login-input" type="email" placeholder="you@example.com" required autocomplete="email">
-      <input id="login-password" class="login-input" type="password" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <input id="login-email" class="login-input" type="email" placeholder="Email address" required autocomplete="email">
+      <div style="position:relative">
+        <input id="login-password" class="login-input" type="password" placeholder="Password" required autocomplete="current-password" minlength="6" style="margin-bottom:0">
+        <a href="/forgot-password" class="login-forgot" id="login-forgot-link">Forgot password?</a>
+      </div>
+      <div style="margin-bottom:4px"></div>
       <button id="login-btn" class="login-btn" type="submit">Sign in</button>
     </form>
     <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()">Don't have an account? Create one</button>
@@ -926,10 +940,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div class="h-icon-btn h-bell" title="Notifications"><i class="ti ti-bell"></i><span class="h-bell-cnt" id="bell-cnt">0</span></div>
     <div class="h-icon-btn" title="Help">?</div>
     <div class="h-user">
-      <div class="h-avatar">ZK</div>
+      <div class="h-avatar" id="h-avatar">?</div>
       <div>
-        <div class="h-uname">Zay Khan</div>
-        <div class="h-urole">Operations Manager</div>
+        <div class="h-uname" id="h-uname">—</div>
+        <div class="h-urole" id="h-urole">Track Aisle</div>
       </div>
     </div>
   </div>
@@ -2817,6 +2831,7 @@ async function cloudInit(){
       }
       cloudUpdateAuthUI();
       if(_USER && !wasUser){
+        updateHeaderUser(null); // populate from email immediately; profile loads async
         // Signed in. Pull cloud → local; if cloud is empty AND local has data, push it up first.
         await cloudPullAll();
         renderDashboard(); updateNavCounts();
@@ -2860,16 +2875,19 @@ function loginToggleMode(){
   const pwd = document.getElementById('login-password');
   const sub = document.getElementById('login-sub');
   const msg = document.getElementById('login-msg');
+  const forgotLink = document.getElementById('login-forgot-link');
   if(_LOGIN_MODE === 'signup'){
     btn.textContent = 'Create account';
     toggle.textContent = 'Already have an account? Sign in';
     pwd.autocomplete = 'new-password';
-    if(sub) sub.textContent = 'Create an account with your email and a password.';
+    if(sub) sub.textContent = 'Create an account to get started.';
+    if(forgotLink) forgotLink.style.display = 'none';
   } else {
     btn.textContent = 'Sign in';
     toggle.textContent = "Don't have an account? Create one";
     pwd.autocomplete = 'current-password';
-    if(sub) sub.textContent = 'Sign in with your email and password.';
+    if(sub) sub.textContent = 'Sign in to your account.';
+    if(forgotLink) forgotLink.style.display = '';
   }
   if(msg){ msg.className = 'login-msg'; msg.textContent = ''; }
 }
@@ -2991,6 +3009,20 @@ async function cloudSignOut(){
 function cloudPromptSignIn(){
   document.body.classList.add('app-locked');
 }
+function updateHeaderUser(profile){
+  const name = profile?.display_name || _USER?.email?.split('@')[0] || '—';
+  const biz  = profile?.business_name || 'Track Aisle';
+  const initials = name.split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase() || '?';
+  const avatarEl = document.getElementById('h-avatar');
+  const nameEl   = document.getElementById('h-uname');
+  const roleEl   = document.getElementById('h-urole');
+  const brandEl  = document.querySelector('.side-brand');
+  if(avatarEl) avatarEl.textContent = initials;
+  if(nameEl)   nameEl.textContent   = name;
+  if(roleEl)   roleEl.textContent   = biz;
+  if(brandEl)  brandEl.textContent  = biz;
+}
+
 function cloudUpdateAuthUI(){
   const el = document.getElementById('cloud-auth');
   if(!el) return;
@@ -8378,6 +8410,7 @@ async function renderSettings(){
     .single();
   if(error || !data) return;
   _sPro = data;
+  updateHeaderUser(data);
 
   // Profile tab
   document.getElementById('s-email').value = _USER.email || '';
