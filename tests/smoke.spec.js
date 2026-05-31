@@ -60,7 +60,7 @@ test.afterAll(async () => {
 });
 
 test('app loads with correct title', async () => {
-  await expect(page).toHaveTitle(/Thameelay/);
+  await expect(page).toHaveTitle(/Track Aisle/);
 });
 
 test('invoices loaded from Supabase', async () => {
