@@ -1642,6 +1642,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
             style="width:60px;padding:5px 8px;font-size:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);text-align:center"
             oninput="pcMarkupChanged(this.value,'results')" title="Retail markup % — updates all prices live">
           <button class="db-bulk-btn primary" onclick="pcAcceptAllHigh()"><i class="ti ti-check" style="margin-right:6px"></i>Accept all High</button>
+          <button class="db-bulk-btn" onclick="pcExportPDF()" title="Export a PDF price-tag sheet using the current markup"><i class="ti ti-file-type-pdf" style="margin-right:6px"></i>Export PDF</button>
           <button class="db-bulk-btn" onclick="pcResetMatches()"><i class="ti ti-rotate" style="margin-right:6px"></i>Reset</button>
         </div>
       </div>
