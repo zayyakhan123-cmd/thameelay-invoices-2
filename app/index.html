@@ -3586,6 +3586,8 @@ async function processSingleFile(file){
     showToast('success', invs.length > 1
       ? `${invs.length} invoices extracted and saved — showing #${invs[0].invoiceNo} below`
       : `Invoice loaded — ${cnt} items ready to review below`);
+    // Offer produce matching if any items look like produce (non-blocking, zero AI calls)
+    detectAndOfferProduceMatch(invs);
   }
   catch(err){
     if(err.message==='no_api_key'){ finishUploadProgress(false); show('dz-wrap',true); return; }
@@ -3606,6 +3608,76 @@ function saveCurrentInvoiceToHistory(){
   saveInvoiceToDB(INV);
   updateNavCounts();
   renderHistory();
+}
+
+// ── DUAL ROUTING — detect produce items in a freshly extracted invoice ────────
+// Runs entirely on local catalog scoring (zero extra AI calls). If ≥2 items
+// score ≥ 0.60 against the produce catalog, offer a one-click "Run Produce
+// Matcher" action toast. If accepted, pcExtractProduceLines() runs (1 AI call)
+// and the produce history + main Price Tracker are both updated.
+
+const _PRODUCE_DETECT_THRESHOLD = 0.60;
+const _PRODUCE_MIN_ITEMS = 2;
+
+function detectAndOfferProduceMatch(invs){
+  if(!invs || !invs.length) return;
+  if(typeof pcMatchLineLocal !== 'function' || typeof pcLoadCatalog !== 'function') return;
+  const cat = pcLoadCatalog();
+  if(!cat.length) return;
+
+  let produceCount = 0;
+  for(const inv of invs){
+    const items = (inv.items||[]).filter(i => i._rt === RT.PURCHASED && (i.qty||0) > 0);
+    for(const item of items){
+      const m = pcMatchLineLocal(item.desc);
+      if(m && m.score >= _PRODUCE_DETECT_THRESHOLD) produceCount++;
+    }
+  }
+
+  if(produceCount < _PRODUCE_MIN_ITEMS) return;
+
+  showToastAction(
+    'info',
+    `🌿 ${produceCount} produce item${produceCount>1?'s':''} detected`,
+    'Run Produce Matcher',
+    () => runDualRouteProduceMatch(invs),
+    0  // no auto-dismiss — user must act or close
+  );
+}
+
+async function runDualRouteProduceMatch(invs){
+  goTo('produce');
+  if(typeof pcSeed === 'function') pcSeed();
+  showToast('info', 'Matching produce items to catalog…');
+
+  let totalLines = 0;
+  for(const inv of invs){
+    try{
+      const lines = await pcExtractProduceLines(inv);
+      if(!lines.length) continue;
+      totalLines += lines.length;
+      // P5 cross-feed fires inside pcSaveToHist automatically
+      pcSaveToHist(inv, lines);
+      // Update the live results so user sees them on the Review Matches tab
+      const prevLines = (PC_LAST_MATCHED && PC_LAST_MATCHED.lines) ? PC_LAST_MATCHED.lines : [];
+      PC_LAST_MATCHED = {
+        lines: [...prevLines, ...lines],
+        when: new Date().toISOString(),
+        invoice: inv,
+      };
+      pcSaveLast();
+    }catch(e){
+      console.warn('Dual-route produce match failed for', inv.vendor, ':', e);
+    }
+  }
+
+  if(typeof pcRenderResults === 'function') pcRenderResults();
+  if(typeof pcUpdateNavCount === 'function') pcUpdateNavCount();
+  if(totalLines > 0){
+    showToast('success', `Produce Matcher: ${totalLines} item${totalLines>1?'s':''} matched — review prices below`);
+  } else {
+    showToast('warn', 'Produce Matcher: no catalog matches found for this invoice');
+  }
 }
 
 function loadDemo(){
@@ -3702,6 +3774,9 @@ async function processQueue(){
     </div>`).join('');
   if(done.length){INV=done[0].inv;const _hb=document.getElementById('hbadge');if(_hb)_hb.textContent=INV.vendor+' #'+INV.invoiceNo+' · '+INV.date;}
   updateNavCounts();
+  // Offer produce matching for all successfully processed invoices
+  const allInvs = done.map(r => r.inv).filter(Boolean);
+  detectAndOfferProduceMatch(allInvs);
 }
 
 function resetUpload(){
@@ -5261,6 +5336,26 @@ function showToast(kind, msg, dur){
   t.querySelector('.toast-x').onclick = ()=>{ t.classList.add('fade'); setTimeout(()=>t.remove(),300); };
   wrap.appendChild(t);
   setTimeout(()=>{ t.classList.add('fade'); setTimeout(()=>t.remove(),300); }, dur||4500);
+}
+
+// Like showToast but with an inline action button.
+// Pass dur=0 to disable auto-dismiss (user must act or close).
+function showToastAction(kind, msg, btnLabel, btnFn, dur){
+  const wrap = document.getElementById('toast-wrap');
+  if(!wrap) return;
+  const icoCls = {success:'ti-circle-check',error:'ti-alert-triangle',warn:'ti-bolt',info:'ti-info-circle'}[kind]||'ti-info-circle';
+  const t = document.createElement('div');
+  t.className = 'toast ' + (kind||'info');
+  t.style.maxWidth = '420px';
+  t.innerHTML = `<div class="toast-ico"><i class="ti ${icoCls}"></i></div>
+    <div class="toast-body">${esc(msg)}</div>
+    <button style="margin-left:4px;padding:4px 10px;border:1px solid currentColor;border-radius:5px;background:transparent;color:var(--c1);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;pointer-events:auto">${esc(btnLabel)}</button>
+    <div class="toast-x">×</div>`;
+  const dismiss = ()=>{ t.classList.add('fade'); setTimeout(()=>t.remove(),300); };
+  t.querySelector('.toast-x').onclick = dismiss;
+  t.querySelector('button').onclick = ()=>{ dismiss(); btnFn && btnFn(); };
+  wrap.appendChild(t);
+  if(dur !== 0) setTimeout(dismiss, dur || 10000);
 }
 
 // ── Upload progress (multi-step) ────────────────
