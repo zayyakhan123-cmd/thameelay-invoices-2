@@ -3063,6 +3063,7 @@ const CLOUD_PUSHERS = {
   product_links:   () => cloudReplaceProductLinks(),
   produce_catalog: () => cloudReplaceProduceCatalog(),
   produce_map:     () => cloudReplaceProduceMap(),
+  produce_hist:    () => cloudReplaceProduceHist(),
   vendor_rules:    () => cloudReplaceVendorRules(),
   product_meta:    () => cloudReplaceProductMeta(),
 };
@@ -3145,6 +3146,20 @@ async function cloudReplaceProduceCatalog(){
     data: c, // full object as escape hatch
   })));
 }
+async function cloudReplaceProduceHist(){
+  const hist = (typeof pcLoadHist === 'function') ? pcLoadHist() : [];
+  await _supabase.from('produce_hist').delete().eq('tenant_id', _USER.id);
+  if(hist.length){
+    await _supabase.from('produce_hist').insert(hist.map(h => ({
+      tenant_id:  _USER.id,
+      vendor:     h.inv?.vendor || h.vendor || '',
+      invoice_no: h.inv?.invoiceNo || h.invoiceNo || '',
+      inv_date:   h.inv?.date || h.date || null,
+      saved_at:   h.savedAt || new Date().toISOString(),
+      lines:      h.lines || [],
+    })));
+  }
+}
 async function cloudReplaceProduceMap(){
   const map = lsGet(SK.PC_MAP) || {};
   const rows = Object.entries(map).map(([invoice_text, catalog_id]) => ({
@@ -3178,7 +3193,7 @@ async function cloudPullAll(){
   if(!_USER || !_supabase) return;
   _CLOUD_PULLING = true;
   try {
-    const [invoicesR, obsR, catsR, productsR, linksR, pcCatR, pcMapR, rulesR, metaR] = await Promise.all([
+    const [invoicesR, obsR, catsR, productsR, linksR, pcCatR, pcMapR, pcHistR, rulesR, metaR] = await Promise.all([
       _supabase.from('invoices').select('*').eq('tenant_id', _USER.id).order('saved_at', { ascending: false }),
       _supabase.from('price_observations').select('*').eq('tenant_id', _USER.id),
       _supabase.from('categories').select('*').eq('tenant_id', _USER.id).order('sort_order'),
@@ -3186,6 +3201,7 @@ async function cloudPullAll(){
       _supabase.from('product_links').select('*').eq('tenant_id', _USER.id),
       _supabase.from('produce_catalog').select('*').eq('tenant_id', _USER.id),
       _supabase.from('produce_map').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('produce_hist').select('*').eq('tenant_id', _USER.id).order('saved_at', { ascending: false }),
       _supabase.from('vendor_rules').select('*').eq('tenant_id', _USER.id),
       _supabase.from('product_meta').select('*').eq('tenant_id', _USER.id),
     ]);
@@ -3268,6 +3284,17 @@ async function cloudPullAll(){
       const map = {};
       pcMapR.data.forEach(r => { map[r.invoice_text] = r.catalog_id; });
       lsSet(SK.PC_MAP, map);
+    }
+    if(pcHistR.data && pcHistR.data.length){
+      const hist = pcHistR.data.map(r => ({
+        inv:     { vendor: r.vendor, invoiceNo: r.invoice_no, date: r.inv_date },
+        vendor:  r.vendor,
+        invoiceNo: r.invoice_no,
+        date:    r.inv_date,
+        savedAt: r.saved_at,
+        lines:   r.lines || [],
+      }));
+      lsSet(SK.PC_HIST, hist);
     }
     if(rulesR.data){
       lsSet(SK.PC_RULES, rulesR.data.map(r => ({
@@ -7523,7 +7550,7 @@ function pcSaveLast(){
 
 // ── PRODUCE HISTORY (#5) + PRICE CHANGE DETECTION (#1) ──
 function pcLoadHist(){ return lsGet(SK.PC_HIST) || []; }
-function pcSaveHist(arr){ lsSet(SK.PC_HIST, arr); }
+function pcSaveHist(arr){ lsSet(SK.PC_HIST, arr); cloudMark('produce_hist'); }
 
 // ── VENDOR RULES (shipping/handling per vendor) ──
 function pcLoadRules(){ return lsGet(SK.PC_RULES) || pcDefaultRules(); }
