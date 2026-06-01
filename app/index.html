@@ -8252,6 +8252,31 @@ function pcSetRetail(idx, val){
   const v = parseFloat(val);
   line.retailOverride = (isNaN(v) || v<=0) ? null : v;
   pcSaveLast();
+  // Update just the input border + reset/auto label without a full re-render
+  const retEl = document.getElementById('pc-ret-input-' + idx);
+  if(retEl){
+    const isSet = line.retailOverride != null;
+    retEl.style.borderColor = isSet ? 'var(--c1)' : 'var(--border2)';
+    retEl.style.color       = isSet ? 'var(--c1d)' : 'var(--green)';
+    // Update the "reset / auto from $X" label next to the input
+    const next = retEl.nextElementSibling?.nextElementSibling; // unit span then label span
+    const labelEl = retEl.parentElement?.querySelector('span:last-child');
+    if(labelEl){
+      if(isSet){
+        labelEl.textContent = 'reset';
+        labelEl.style.cursor = 'pointer';
+        labelEl.style.textDecoration = 'underline';
+        labelEl.onclick = () => pcResetRetail(idx);
+      } else {
+        const effUnits = line.unitsOverride != null ? line.unitsOverride : (line.unitsPerCase || 1);
+        const effCost  = effUnits > 0 ? (line.caseCost || line.cost || 0) / effUnits : (line.cost || 0);
+        labelEl.textContent = 'auto from $' + pcRetailFor(effCost).toFixed(2);
+        labelEl.style.cursor = '';
+        labelEl.style.textDecoration = '';
+        labelEl.onclick = null;
+      }
+    }
+  }
 }
 function pcResetRetail(idx){
   if(!PC_LAST_MATCHED) return;
@@ -8361,20 +8386,40 @@ function pcMarkupChanged(val, source){
   const n = parseFloat(val);
   if(!Number.isFinite(n) || n < 0) return;
   _PC_MARKUP = n;
-  // Sync both inputs
+  // Sync sibling inputs
   const resultsEl = document.getElementById('pc-results-markup');
   const exportEl  = document.getElementById('pc-pdf-markup');
   if(resultsEl && source !== 'results') resultsEl.value = n;
   if(exportEl  && source !== 'export')  exportEl.value  = n;
-  // Live-recalc retail in results list
-  if(PC_LAST_MATCHED) pcRenderResults();
+  // Surgical update: only recalculate prices for rows where the user has NOT
+  // set a manual override. Calling pcRenderResults() here would destroy any
+  // price the user is currently typing before onchange ever fires.
+  pcSurgicalRetailUpdate();
 }
 
 function pcRoundChanged(val, source){
   _PC_ROUND = val || 'charm4';
   const exportEl = document.getElementById('pc-pdf-round');
   if(exportEl && source !== 'export') exportEl.value = _PC_ROUND;
-  if(PC_LAST_MATCHED) pcRenderResults();
+  pcSurgicalRetailUpdate();
+}
+
+// Update only the auto-calculated retail inputs — skip any row where the user
+// has set retailOverride. Never rebuilds DOM, so no in-progress edits are lost.
+function pcSurgicalRetailUpdate(){
+  if(!PC_LAST_MATCHED) return;
+  PC_LAST_MATCHED.lines.forEach((line, idx) => {
+    if(line.retailOverride != null) return; // user price — hands off
+    if(!line.catalogId) return;             // unmatched — no retail shown
+    const retEl = document.getElementById('pc-ret-input-' + idx);
+    if(!retEl) return;
+    // Recompute effective cost using stored size + any unit overrides
+    const _rp = pcParseSize(line.invoiceSize);
+    const parsedUnits = _rp.qty > 1 ? _rp.qty : (line.unitsPerCase || 1);
+    const effUnits = line.unitsOverride != null ? line.unitsOverride : parsedUnits;
+    const effCost  = effUnits > 0 ? (line.caseCost || line.cost || 0) / effUnits : (line.cost || 0);
+    retEl.value = pcRetailFor(effCost).toFixed(2);
+  });
 }
 
 function pcRetailFor(cost){
