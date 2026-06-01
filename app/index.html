@@ -1641,7 +1641,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
           <input id="pc-results-markup" type="number" step="1" min="0" max="500" value="50"
             style="width:60px;padding:5px 8px;font-size:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);text-align:center"
             oninput="pcMarkupChanged(this.value,'results')" title="Retail markup % — updates all prices live">
-          <button class="db-bulk-btn primary" onclick="pcAcceptAllHigh()"><i class="ti ti-check" style="margin-right:6px"></i>Accept all High</button>
+          <button class="db-bulk-btn primary" onclick="pcAcceptAll()" title="Save mappings for every matched item (all confidence levels)"><i class="ti ti-checks" style="margin-right:6px"></i>Accept All</button>
+          <button class="db-bulk-btn" onclick="pcAcceptAllHigh()" title="Save mappings for high-confidence matches only"><i class="ti ti-check" style="margin-right:6px"></i>High Only</button>
           <button class="db-bulk-btn" onclick="pcExportPDF()" title="Export a PDF price-tag sheet using the current markup"><i class="ti ti-file-type-pdf" style="margin-right:6px"></i>Export PDF</button>
           <button class="db-bulk-btn" onclick="pcResetMatches()"><i class="ti ti-rotate" style="margin-right:6px"></i>Reset</button>
         </div>
@@ -8303,7 +8304,21 @@ function pcAcceptAllHigh(){
     }
   }
   pcSaveMap(map); pcSaveLast(); pcRenderResults();
-  showToast('success', `🧠 Saved ${n} mappings`);
+  showToast('success', `🧠 Saved ${n} high-confidence mappings`);
+}
+
+function pcAcceptAll(){
+  if(!PC_LAST_MATCHED) return;
+  const map = pcLoadMap();
+  let n = 0;
+  for(const l of PC_LAST_MATCHED.lines){
+    if(l.catalogId){  // accept any line that has a catalog match, regardless of confidence
+      map[pcNormalize(l.invoiceText)] = l.catalogId;
+      l.remember = true; n++;
+    }
+  }
+  pcSaveMap(map); pcSaveLast(); pcRenderResults();
+  showToast('success', `🧠 Saved all ${n} mappings`);
 }
 async function pcResetMatches(){
   if(!confirm('Re-run matching from scratch? Saved manual mappings will still apply.')) return;
