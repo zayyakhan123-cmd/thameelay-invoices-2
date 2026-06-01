@@ -7638,6 +7638,49 @@ function pcSaveToHist(inv, lines){
   // Keep last 50 invoices
   if(hist.length > 50) hist.length = 50;
   pcSaveHist(hist);
+
+  // ── Cross-feed into main Price Tracker ────────────────────────────────────
+  // Write a price observation for each matched line so produce items appear
+  // in the main Price Tracker with full history. Key: normV(vendor)|catalogId.
+  // Guard: skip if cost is 0 or catalogId is missing.
+  try {
+    const priceDB = loadDB();
+    let dirty = false;
+    const invDate   = entry.date;
+    const invNo     = entry.invoiceNo;
+    const invVendor = entry.vendor;
+    const vk        = normalizeVendor(invVendor);
+    for(const l of lines){
+      if(!l.catalogId || !l.cost || l.cost <= 0) continue;
+      const dbKey = vk + '|' + l.catalogId;
+      if(!priceDB[dbKey]) priceDB[dbKey] = [];
+      // Dedup by invoiceNo — same guard as saveInvoiceToDB
+      if(priceDB[dbKey].find(e => e.invoiceNo === invNo)) continue;
+      priceDB[dbKey].push({
+        date:      invDate,
+        caseCost:  l.caseCost || 0,
+        unitCost:  l.cost,
+        units:     l.unitsPerCase || 1,
+        invoiceNo: invNo,
+        docType:   'invoice',
+        size:      l.invoiceSize || '',
+        desc:      l.catalogName || l.invoiceText || '',
+        normDesc:  normDesc(l.catalogName || l.invoiceText || ''),
+        cat:       'produce',
+        vendor:    invVendor,
+        _fromProduce: true,  // marker so it's identifiable
+      });
+      dirty = true;
+    }
+    if(dirty){
+      // Keep each key sorted by date ascending (same as saveInvoiceToDB)
+      Object.keys(priceDB).forEach(k => {
+        priceDB[k].sort((a,b) => new Date(a.date) - new Date(b.date));
+      });
+      saveDB(priceDB);
+    }
+  } catch(e){ console.warn('pcSaveToHist: price cross-feed failed:', e); }
+
   pcUpdateNavCount();
 }
 
