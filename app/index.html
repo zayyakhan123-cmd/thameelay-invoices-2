@@ -7897,7 +7897,14 @@ function pcRenderResults(){
   const summary = document.getElementById('pc-results-summary');
   const buckets = {high:0,med:0,low:0,none:0};
   for(const l of PC_LAST_MATCHED.lines) buckets[l.confidence]++;
-  if(summary) summary.textContent = `${PC_LAST_MATCHED.lines.length} items · ${buckets.high} high · ${buckets.med} med · ${buckets.low+buckets.none} review`;
+  if(summary){
+    const unmatched = buckets.none;
+    const review    = buckets.low;
+    let s = `${PC_LAST_MATCHED.lines.length} items · ${buckets.high} high · ${buckets.med} med`;
+    if(review)    s += ` · ${review} low`;
+    if(unmatched) s += ` · ⚠ ${unmatched} unmatched`;
+    summary.textContent = s;
+  }
   
   const cat = pcLoadCatalog();
   const catOptions = cat.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
@@ -7912,7 +7919,13 @@ function pcRenderResults(){
     dupVendors[l.catalogId].add(v);
   }
   
-  list.innerHTML = PC_LAST_MATCHED.lines.map((line, idx)=>{
+  // Render matched rows first, unmatched (confidence=none / no catalogId) last.
+  // We build two ordered index arrays so the callback idx values stay correct.
+  const _matchedIdxs   = PC_LAST_MATCHED.lines.map((_,i)=>i).filter(i=> PC_LAST_MATCHED.lines[i].catalogId);
+  const _unmatchedIdxs = PC_LAST_MATCHED.lines.map((_,i)=>i).filter(i=>!PC_LAST_MATCHED.lines[i].catalogId);
+  const _renderOrder   = [..._matchedIdxs, ..._unmatchedIdxs];
+
+  list.innerHTML = _renderOrder.map(idx=>{const line=PC_LAST_MATCHED.lines[idx]; // eslint-disable-line
     const conf = line.confidence;
     // Re-derive per-unit cost from stored invoiceSize + caseCost, then apply
     // any user overrides (unitsOverride / soldByOverride) on top.
@@ -8013,6 +8026,17 @@ function pcRenderResults(){
       </div>
     </div>`;
   }).join('');
+
+  // Insert a visual separator before the first unmatched row (if any)
+  if(_unmatchedIdxs.length){
+    const noneRows = list.querySelectorAll('.pc-row.none');
+    if(noneRows.length){
+      const sep = document.createElement('div');
+      sep.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;margin:8px 0 4px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:var(--rl);font-size:12px;font-weight:600;color:var(--amber)';
+      sep.innerHTML = `<i class="ti ti-alert-triangle"></i><span>${noneRows.length} item${noneRows.length>1?'s':''} couldn’t be matched — use the dropdown to assign to catalog, or leave as “No match” to skip</span>`;
+      list.insertBefore(sep, noneRows[0]);
+    }
+  }
 }
 
 // Editable units-per-case and sold-by unit handlers.
