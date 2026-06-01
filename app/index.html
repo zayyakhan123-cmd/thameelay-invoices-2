@@ -2669,7 +2669,17 @@ function f2(n){return '$'+n.toFixed(2);}
 function fBig(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function normV(v){return (v||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20);}
 function normDate(d){if(!d)return d;if(/^\d{4}-\d{2}-\d{2}/.test(d))return d.slice(0,10);const m=d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;return d;}
-function normalizeVendor(v){if(!v)return '';return String(v).trim().toLowerCase().replace(/[^a-z0-9]/g,'');}
+// Strip LEGAL entity suffixes only (inc, llc, ltd, corp, lp, llp, plc) — NOT business
+// descriptor words like "group", "trading", "foods", "produce" which are part of the name.
+// This maps "Gusto Group Inc." and "GUSTO GROUP LLC" to the same key "gustogroup".
+const _VENDOR_LEGAL_RE = /[,.\s]+(inc\.?|incorporated|l\.?l\.?c\.?|ltd\.?|limited|corp\.?|corporation|l\.?l\.?p\.?|l\.?p\.?|plc\.?|co\.?)$/i;
+function normalizeVendor(v){
+  if(!v) return '';
+  let s = String(v).trim();
+  // Strip trailing legal suffix once (handles the common case of one suffix)
+  s = s.replace(_VENDOR_LEGAL_RE, '').trim();
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
 // ═══════════ HTML/JS ESCAPING ═══════════
 // esc(s): safe for HTML text content AND inside double-quoted attributes (e.g. value="${esc(x)}").
