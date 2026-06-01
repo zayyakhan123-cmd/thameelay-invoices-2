@@ -62,131 +62,242 @@
   <a href="/signin" class="text-[13.5px] font-medium text-slate-300 hover:text-white transition-colors">Sign in</a>
 </header>
 
-<!-- Main -->
-<main class="mx-auto max-w-md px-5 py-10 sm:py-14">
+<!-- Main — single column by default, two-column when a plan is selected -->
+<main class="mx-auto px-5 py-10 sm:py-14" id="signup-main" style="max-width:448px">
 
-  <!-- Plan badge -->
-  <div class="plan-badge mb-6" id="plan-badge">
-    <span class="font-medium text-slate-300">You're signing up for </span>
-    <strong id="plan-badge-text" class="text-cyan-300"></strong>
-    <span class="font-medium text-slate-300"> — </span>
-    <strong id="plan-badge-price" class="text-white"></strong>
-  </div>
-
-  <div class="auth-card">
-    <h1 class="text-[22px] font-bold text-white mb-1">Create your account</h1>
-    <p class="text-[14px] text-slate-400 mb-7">Start catching every vendor price change.</p>
-
-    <!-- Error message -->
-    <div class="form-msg mb-5" id="form-error"></div>
-
-    <!-- Signup form -->
-    <form id="signup-form" novalidate>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <input class="auth-input" id="first-name" type="text" placeholder="First name" autocomplete="given-name" />
-          <div class="field-error" id="err-first-name">Required</div>
-        </div>
-        <div>
-          <input class="auth-input" id="last-name" type="text" placeholder="Last name" autocomplete="family-name" />
-          <div class="field-error" id="err-last-name">Required</div>
-        </div>
-      </div>
-      <div class="mb-3">
-        <input class="auth-input" id="business-name" type="text" placeholder="Business name" autocomplete="organization" />
-        <div class="field-error" id="err-business-name">Required</div>
-      </div>
-      <div class="mb-3">
-        <input class="auth-input" id="email" type="email" placeholder="Work email" autocomplete="email" />
-        <div class="field-error" id="err-email">Enter a valid email</div>
-      </div>
-      <div class="mb-5">
-        <input class="auth-input" id="password" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" oninput="onPwInput(this.value)" />
-        <div class="pw-bar-wrap mt-2"><div class="pw-bar" id="pw-bar"></div></div>
-        <div class="flex justify-between mt-1">
-          <span class="text-[11px] text-slate-500" id="pw-label"></span>
-        </div>
-        <div class="field-error" id="err-password">Must be at least 8 characters</div>
-      </div>
-      <button type="submit" class="btn-cyan w-full rounded-xl px-5 py-3 text-[14px] transition" id="submit-btn">
-        Create account
-      </button>
-    </form>
-
-    <!-- Success state -->
-    <div class="success-state" id="success-state">
-      <div class="check-circle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <h2 class="text-[20px] font-bold text-white mb-2">Check your email</h2>
-      <p class="text-[14px] text-slate-400 leading-relaxed">
-        We've sent a confirmation link to<br>
-        <strong class="text-white" id="confirm-email"></strong>
-      </p>
-      <p class="text-[13px] text-slate-500 mt-4">Click the link in the email to activate your account and continue to checkout.</p>
+  <div id="signup-form-col">
+    <!-- Plan badge (mobile / no-plan fallback) -->
+    <div class="plan-badge mb-6" id="plan-badge">
+      <span class="font-medium text-slate-300">You're signing up for </span>
+      <strong id="plan-badge-text" class="text-cyan-300"></strong>
+      <span class="font-medium text-slate-300"> — </span>
+      <strong id="plan-badge-price" class="text-white"></strong>
     </div>
+
+    <div class="auth-card">
+      <h1 class="text-[22px] font-bold text-white mb-1">Create your account</h1>
+      <p class="text-[14px] text-slate-400 mb-7">Start catching every vendor price change.</p>
+
+      <!-- Error message -->
+      <div class="form-msg mb-5" id="form-error"></div>
+
+      <!-- Signup form -->
+      <form id="signup-form" novalidate>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <input class="auth-input" id="first-name" type="text" placeholder="First name" autocomplete="given-name" />
+            <div class="field-error" id="err-first-name">Required</div>
+          </div>
+          <div>
+            <input class="auth-input" id="last-name" type="text" placeholder="Last name" autocomplete="family-name" />
+            <div class="field-error" id="err-last-name">Required</div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <input class="auth-input" id="business-name" type="text" placeholder="Business name" autocomplete="organization" />
+          <div class="field-error" id="err-business-name">Required</div>
+        </div>
+        <div class="mb-3">
+          <input class="auth-input" id="email" type="email" placeholder="Work email" autocomplete="email" />
+          <div class="field-error" id="err-email">Enter a valid email</div>
+        </div>
+        <div class="mb-5">
+          <input class="auth-input" id="password" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" oninput="onPwInput(this.value)" />
+          <div class="pw-bar-wrap mt-2"><div class="pw-bar" id="pw-bar"></div></div>
+          <div class="flex justify-between mt-1">
+            <span class="text-[11px] text-slate-500" id="pw-label"></span>
+          </div>
+          <div class="field-error" id="err-password">Must be at least 8 characters</div>
+        </div>
+        <button type="submit" class="btn-cyan w-full rounded-xl px-5 py-3 text-[14px] transition" id="submit-btn">
+          Create account
+        </button>
+        <p class="mt-3 text-center text-[11.5px] text-slate-600 flex items-center justify-center gap-1.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Bank-level encryption · No credit card at signup
+        </p>
+      </form>
+
+      <!-- Success state -->
+      <div class="success-state" id="success-state">
+        <div class="check-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="text-[20px] font-bold text-white mb-2">Check your email</h2>
+        <p class="text-[14px] text-slate-400 leading-relaxed">
+          We've sent a confirmation link to<br>
+          <strong class="text-white" id="confirm-email"></strong>
+        </p>
+        <p class="text-[13px] text-slate-500 mt-4">Click the link in the email to activate your account and continue to checkout.</p>
+      </div>
+    </div>
+
+    <p class="text-center mt-5 text-[13.5px] text-slate-400">
+      Already have an account? <a href="/signin" class="text-cyan-300 hover:text-cyan-200 font-medium">Sign in</a>
+    </p>
   </div>
 
-  <p class="text-center mt-5 text-[13.5px] text-slate-400">
-    Already have an account? <a href="/signin" class="text-cyan-300 hover:text-cyan-200 font-medium">Sign in</a>
-  </p>
+  <!-- Plan panel — hidden until JS populates it -->
+  <aside class="hidden" id="plan-panel" aria-label="Plan summary"></aside>
+
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const SUPABASE_URL     = 'https://fslrqqaplwfyqemdumfz.supabase.co';
+const SUPABASE_URL      = 'https://fslrqqaplwfyqemdumfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_4BasD3CNBDNtDOQfSzKLeA_8L41PxHR';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const PLAN_LABELS = {
-  starter: 'Starter',
-  growth:  'Growth',
-  pro:     'Pro',
-};
+const PLAN_LABELS = { starter:'Starter', growth:'Growth', pro:'Pro' };
 const PLAN_PRICES = {
-  starter: { monthly: '$59/mo', annual: '$637/yr' },
-  growth:  { monthly: '$179/mo', annual: '$1,933/yr' },
-  pro:     { monthly: '$399/mo', annual: '$4,309/yr' },
+  starter: { monthly:'$59/mo',   annual:'$53/mo' },
+  growth:  { monthly:'$179/mo',  annual:'$161/mo' },
+  pro:     { monthly:'$399/mo',  annual:'$359/mo' },
+};
+const PLAN_DESCRIPTIONS = {
+  starter: 'For solo operators getting started',
+  growth:  'For growing businesses',
+  pro:     'For multi-location and growing teams',
+};
+const PLAN_FEATURES = {
+  starter: ['50 invoices / month','AI invoice extraction','All reports','Unlimited products & vendors','Email support'],
+  growth:  ['Everything in Starter','150 invoices / month','POS sync','Vendor price change alerts','Up to 3 users','Priority email support'],
+  pro:     ['Everything in Growth','400 invoices / month','Multi-location support','SAML SSO','SCIM provisioning','Dedicated support contact'],
 };
 
-// Read URL params
+const CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;flex-shrink:0;margin-top:1px;color:#22d3ee"><polyline points="20,6 9,17 4,12"/></svg>`;
+
 const params   = new URLSearchParams(location.search);
 const selPlan  = params.get('plan');
 const selIntvl = params.get('interval') || 'monthly';
 
-// Show plan badge
+// Plan badge (always shown when plan selected)
 if(selPlan && PLAN_LABELS[selPlan]){
   document.getElementById('plan-badge').classList.add('show');
-  document.getElementById('plan-badge-text').textContent = PLAN_LABELS[selPlan];
+  document.getElementById('plan-badge-text').textContent  = PLAN_LABELS[selPlan];
   document.getElementById('plan-badge-price').textContent = PLAN_PRICES[selPlan]?.[selIntvl] || '';
   document.getElementById('submit-btn').textContent = 'Continue to checkout';
 }
 
-// Password strength
+// Plan side panel — two-column layout on wider screens
+if(selPlan && PLAN_FEATURES[selPlan]){
+  const main  = document.getElementById('signup-main');
+  const panel = document.getElementById('plan-panel');
+  const features = PLAN_FEATURES[selPlan];
+  const billedNote = selIntvl === 'annual' ? 'Billed annually · save 10%' : 'Billed monthly · cancel anytime';
+
+  panel.innerHTML = `
+    <div style="background:rgba(15,20,36,0.9);border:1px solid rgba(148,163,184,0.14);border-radius:18px;padding:28px 26px;position:sticky;top:24px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:#22d3ee;margin-bottom:6px">Your plan</div>
+      <div style="font-size:24px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.1">${PLAN_LABELS[selPlan]}</div>
+      <div style="font-size:13px;color:#94a3b8;margin-top:4px;margin-bottom:2px">${PLAN_DESCRIPTIONS[selPlan]}</div>
+      <div style="display:flex;align-items:baseline;gap:4px;margin-top:12px;margin-bottom:4px">
+        <span style="font-size:32px;font-weight:800;color:#fff;letter-spacing:-.02em">${(PLAN_PRICES[selPlan]?.[selIntvl]||'').replace('/mo','')}</span>
+        <span style="font-size:14px;color:#64748b">/mo</span>
+      </div>
+      <div style="font-size:11.5px;color:#475569;margin-bottom:20px">${billedNote}</div>
+      <div style="width:100%;height:1px;background:rgba(255,255,255,0.07);margin-bottom:18px"></div>
+      <ul style="list-style:none;padding:0;margin:0 0 22px;display:flex;flex-direction:column;gap:10px">
+        ${features.map(f=>`<li style="display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:#cbd5e1">${CHECK_SVG}${f}</li>`).join('')}
+      </ul>
+      <div style="font-size:11.5px;color:#334155;display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        SOC 2 secured · data never used for training
+      </div>
+    </div>`;
+
+  panel.classList.remove('hidden');
+
+  // Switch to two-column layout on lg screens
+  main.style.maxWidth = '960px';
+  main.style.display  = 'grid';
+  main.style.gridTemplateColumns = '1fr';
+  main.style.gap = '32px';
+  main.style.alignItems = 'start';
+
+  // Responsive: single-column on narrow, two-column at >=768px
+  const mq = window.matchMedia('(min-width:768px)');
+  function applyLayout(e){
+    main.style.gridTemplateColumns = e.matches ? '1fr 340px' : '1fr';
+  }
+  applyLayout(mq);
+  mq.addEventListener('change', applyLayout);
+
+  // Hide the compact badge on wider screens (the panel replaces it)
+  const badge = document.getElementById('plan-badge');
+  function toggleBadge(e){ badge.style.display = e.matches ? 'none' : ''; }
+  toggleBadge(mq);
+  mq.addEventListener('change', toggleBadge);
+}
+
+// ── Password strength ──────────────────────────────────────────────────────
 function onPwInput(val){
   const bar = document.getElementById('pw-bar');
   const lbl = document.getElementById('pw-label');
   let score = 0;
-  if(val.length >= 8)  score++;
-  if(val.length >= 12) score++;
-  if(/[A-Z]/.test(val)) score++;
-  if(/[0-9]/.test(val)) score++;
+  if(val.length >= 8)          score++;
+  if(val.length >= 12)         score++;
+  if(/[A-Z]/.test(val))        score++;
+  if(/[0-9]/.test(val))        score++;
   if(/[^A-Za-z0-9]/.test(val)) score++;
   const levels = [
-    { w:'0%',   bg:'transparent',  txt:'' },
-    { w:'20%',  bg:'#f87171',      txt:'Very weak' },
-    { w:'40%',  bg:'#fb923c',      txt:'Weak' },
-    { w:'60%',  bg:'#fbbf24',      txt:'Fair' },
-    { w:'80%',  bg:'#34d399',      txt:'Strong' },
-    { w:'100%', bg:'#22d3ee',      txt:'Very strong' },
+    { w:'0%',   bg:'transparent', txt:'' },
+    { w:'20%',  bg:'#f87171',     txt:'Very weak' },
+    { w:'40%',  bg:'#fb923c',     txt:'Weak' },
+    { w:'60%',  bg:'#fbbf24',     txt:'Fair' },
+    { w:'80%',  bg:'#34d399',     txt:'Strong' },
+    { w:'100%', bg:'#22d3ee',     txt:'Very strong' },
   ];
   const lvl = levels[score];
   bar.style.width      = lvl.w;
   bar.style.background = lvl.bg;
   lbl.textContent      = lvl.txt;
+  // Inline length error
+  const errEl = document.getElementById('err-password');
+  const pwEl  = document.getElementById('password');
+  if(val.length > 0 && val.length < 8){
+    pwEl.classList.add('error');
+    errEl.textContent = 'Must be at least 8 characters';
+    errEl.classList.add('show');
+  } else if(val.length >= 8 && pwEl.classList.contains('error')){
+    pwEl.classList.remove('error');
+    errEl.classList.remove('show');
+  }
 }
 
-// Form submit
+// ── Inline blur validation ─────────────────────────────────────────────────
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function clearField(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('error');
+  const err = document.getElementById('err-' + id);
+  if(err) err.classList.remove('show');
+}
+
+['first-name','last-name','business-name'].forEach(id => {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('blur', () => {
+    if(!el.value.trim()) showFieldErr(id, 'Required');
+  });
+  el.addEventListener('input', () => {
+    if(el.value.trim()) clearField(id);
+  });
+});
+
+const emailEl = document.getElementById('email');
+emailEl.addEventListener('blur', () => {
+  const v = emailEl.value.trim();
+  if(v && !EMAIL_RE.test(v)) showFieldErr('email', 'Enter a valid email');
+});
+emailEl.addEventListener('input', () => {
+  const v = emailEl.value.trim();
+  if(EMAIL_RE.test(v)) clearField('email');
+});
+
+// ── Form submit ────────────────────────────────────────────────────────────
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearErrors();
@@ -194,16 +305,15 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
   const firstName    = document.getElementById('first-name').value.trim();
   const lastName     = document.getElementById('last-name').value.trim();
   const businessName = document.getElementById('business-name').value.trim();
-  const email        = document.getElementById('email').value.trim();
+  const email        = emailEl.value.trim();
   const password     = document.getElementById('password').value;
 
   let valid = true;
-  if(!firstName)                          { showFieldErr('first-name',    'Required'); valid=false; }
-  if(!lastName)                           { showFieldErr('last-name',     'Required'); valid=false; }
-  if(!businessName)                       { showFieldErr('business-name', 'Required'); valid=false; }
-  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-                                          { showFieldErr('email',         'Enter a valid email'); valid=false; }
-  if(password.length < 8)                { showFieldErr('password',      'Must be at least 8 characters'); valid=false; }
+  if(!firstName)              { showFieldErr('first-name',    'Required');              valid=false; }
+  if(!lastName)               { showFieldErr('last-name',     'Required');              valid=false; }
+  if(!businessName)           { showFieldErr('business-name', 'Required');              valid=false; }
+  if(!email||!EMAIL_RE.test(email)){ showFieldErr('email',   'Enter a valid email');   valid=false; }
+  if(password.length < 8)    { showFieldErr('password','Must be at least 8 characters'); valid=false; }
   if(!valid) return;
 
   const btn = document.getElementById('submit-btn');
@@ -211,16 +321,15 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
   btn.textContent = 'Creating account…';
 
   const { error } = await sb.auth.signUp({
-    email,
-    password,
+    email, password,
     options: {
       emailRedirectTo: 'https://trackaisle.com/auth/callback',
       data: {
         first_name:       firstName,
         last_name:        lastName,
         business_name:    businessName,
-        pending_plan:     selPlan     || null,
-        pending_interval: selIntvl    || null,
+        pending_plan:     selPlan  || null,
+        pending_interval: selIntvl || null,
       },
     },
   });
@@ -232,14 +341,14 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     return;
   }
 
-  // Show success
-  document.getElementById('signup-form').style.display  = 'none';
-  document.getElementById('confirm-email').textContent  = email;
+  document.getElementById('signup-form').style.display = 'none';
+  document.getElementById('confirm-email').textContent = email;
   document.getElementById('success-state').classList.add('show');
 });
 
 function showFieldErr(id, msg){
-  document.getElementById(id).classList.add('error');
+  const el = document.getElementById(id);
+  if(el) el.classList.add('error');
   const err = document.getElementById('err-' + id);
   if(err){ err.textContent = msg; err.classList.add('show'); }
 }
