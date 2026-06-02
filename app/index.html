@@ -8336,16 +8336,26 @@ async function pcExtractFromSheet(file){
   }
   if(!rows || rows.length < 2) throw new Error('Spreadsheet has no data rows');
   
-  // Find header row — first row containing description-like and qty-like columns
-  let headerIdx = 0;
-  for(let i=0; i<Math.min(rows.length, 10); i++){
-    const cells = rows[i].map(c=>String(c||'').toLowerCase());
-    if(cells.some(c=>/item|desc|product/i.test(c)) && cells.some(c=>/qty|quantity|cases?\b|cost|price/i.test(c))){
-      headerIdx = i; break;
+  // Find header row — look up to 30 rows for a row with item-like AND qty/cost-like columns.
+  // Some vendors (Gusto, Eastland) put company info in the first several rows before the data table.
+  let headerIdx = -1;
+  for(let i=0; i<Math.min(rows.length, 30); i++){
+    const cells = rows[i].map(c=>String(c||'').toLowerCase().trim());
+    const hasDesc = cells.some(c=>/item|desc|product|name/i.test(c));
+    const hasNum  = cells.some(c=>/qty|quantity|cases?\b|cost|price|amount|total/i.test(c));
+    if(hasDesc && hasNum){ headerIdx = i; break; }
+  }
+  // Softer fallback: any row with just a description-like column
+  if(headerIdx < 0){
+    for(let i=0; i<Math.min(rows.length, 30); i++){
+      const cells = rows[i].map(c=>String(c||'').toLowerCase().trim());
+      if(cells.some(c=>/item|desc|product/i.test(c))){ headerIdx = i; break; }
     }
   }
+  if(headerIdx < 0) headerIdx = 0;
+
   const headers = rows[headerIdx].map(c=>String(c||'').toLowerCase().trim());
-  
+
   // Fuzzy column resolver — first match wins, more specific patterns listed first
   const findCol = (...patterns) => {
     for(const pat of patterns){
@@ -8354,13 +8364,27 @@ async function pcExtractFromSheet(file){
     }
     return -1;
   };
-  const cItem = findCol('item #','item#','item no','sku','code');
-  const cDesc = findCol('description','product name','item name','name','product','item');
-  const cSize = findCol('size','pack','unit size','case size','uom','units');
-  const cQty  = findCol('qty','quantity','cases','case count');
-  const cCost = findCol('case cost','case price','total cost','cost','price','unit price');
-  
-  if(cDesc < 0) throw new Error(`Couldn't find description column. Headers seen: ${headers.join(', ')}`);
+  const cItem = findCol('item #','item#','item no','sku','code','no');
+  const cDesc = findCol('description','product name','item name','name','product','item','pkg');
+  const cSize = findCol('pkg size','size','pack','unit size','case size','uom','units','packaging');
+  const cQty  = findCol('qty','quantity','cases','case count','ordered');
+  const cCost = findCol('case cost','case price','unit price','price after','price before','total cost','cost','price','amount');
+
+  // If description column still not resolved, pick the widest text column in the data rows
+  let effectiveCDesc = cDesc;
+  if(effectiveCDesc < 0){
+    const dataRows = rows.slice(headerIdx+1, headerIdx+6).filter(r=>r&&r.length);
+    if(dataRows.length){
+      let best = -1, bestLen = 0;
+      for(let c=0; c<(rows[headerIdx]||[]).length; c++){
+        const avg = dataRows.reduce((s,r)=>s+String(r[c]||'').length, 0)/dataRows.length;
+        if(avg > bestLen){ bestLen = avg; best = c; }
+      }
+      effectiveCDesc = best;
+    }
+  }
+  if(effectiveCDesc < 0) throw new Error(`Couldn't find description column. Headers seen: ${headers.join(', ')}`);
+  const cDescFinal = effectiveCDesc;
   
   // Try to grab vendor + invoice info from rows above the header
   let vendor = '', invoiceNo = '', date = new Date().toISOString().split('T')[0];
@@ -8380,7 +8404,7 @@ async function pcExtractFromSheet(file){
   for(let i = headerIdx+1; i < rows.length; i++){
     const row = rows[i];
     if(!row || !row.length) continue;
-    const desc = String(row[cDesc]||'').trim();
+    const desc = String(row[cDescFinal]||'').trim();
     if(!desc) continue;
     // Skip total/subtotal/footer rows
     if(/^(total|subtotal|grand total|tax|shipping|sum)/i.test(desc)) continue;
