@@ -4504,9 +4504,16 @@ function buildPosNationCSV(rows){
 
   const lines = rows.map(r => {
     // UPC — convert barcode to selected format; IT Retail max 13 digits, no alpha
-    const rawBc = r.barcode || r.no;
-    const upcRaw = convertBarcode(rawBc, bcFmt==='none'?'raw':bcFmt) || rawBc;
-    const upc = String(upcRaw).replace(/[^0-9]/g,'').substring(0,13) || r.no;
+    // UPC — strip non-digits first to get the numeric portion.
+    // If the barcode field contains barcode-font garbage (e.g. "q{{|aIDHDH{|{19020"),
+    // stripping yields only the partial code (5 digits). When the result is < 8 digits
+    // it's not a real UPC — fall back to the item number (vendor SKU) which is unique,
+    // fully numeric, and can serve as a PLU reference in POS Nation.
+    const rawBc     = (r.barcode || '').replace(/[^0-9]/g, '') || (r.no || '').replace(/[^0-9]/g,'');
+    const fullEnough = rawBc.length >= 8;
+    const upc = fullEnough
+      ? String(convertBarcode(rawBc, bcFmt==='none'?'raw':bcFmt) || rawBc).replace(/[^0-9]/g,'').substring(0,13)
+      : String(r.no || '').replace(/[^0-9]/g,'').substring(0,13);
 
     // Description — commas not allowed; quotes not needed if none present
     const desc = (r.desc||'').replace(/,/g,' ').replace(/"/g,'').substring(0,40);
