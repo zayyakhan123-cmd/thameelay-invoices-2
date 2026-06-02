@@ -4025,23 +4025,28 @@ async function extractInvoice(file, onStep){
 
   const fileType = (file.type||'').toLowerCase();
   let contentBlock;
-  let model = 'claude-sonnet-4-6'; // default — handles images + binary PDFs
 
   if(fileType === 'application/pdf'){
     // ── Tier 1: try text layer extraction first ──────────────────────────────
+    // Text path: smaller payload → fewer input tokens → faster upload + lower cost.
+    // Model stays Sonnet on both paths — reliability is non-negotiable.
+    // Haiku is NOT used: the extraction prompt has 2,000 tokens of classification
+    // rules (soldBy, categories, OOS, charge rows) that Haiku applies inconsistently
+    // on edge-case invoices. Sonnet follows every rule reliably.
     _setStepLabel('reading', 'Analyzing text layer…');
     let textResult = null;
     try { textResult = await extractPdfTextLayer(b64); } catch(e){ console.warn('pdfjs failed:', e); }
 
     if(textResult && textResult.quality === 'good'){
-      // Fast path — text layer is clean. Send text to Claude Haiku (3-5× faster).
+      // Text path — clean text layer found. Send as text (smaller than PDF binary).
+      // Sonnet handles the extraction; pdfjs just reduced the payload size.
       contentBlock = {
         type: 'text',
         text: `Extract the following invoice document:\n\n${textResult.text}`
       };
-      model = 'claude-haiku-4-5-20251001';
+      // model stays 'claude-sonnet-4-6' — no model downgrade
       _setStepLabel('reading',    '✓ Text layer extracted');
-      _setStepLabel('extracting', 'AI extracting (text mode — lower cost)');
+      _setStepLabel('extracting', 'AI extracting line items');
     } else {
       // Standard path — scanned or image PDF, send binary.
       contentBlock = {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}};
@@ -4063,7 +4068,7 @@ async function extractInvoice(file, onStep){
   step('extracting');
   const resp = await callAI({
     messages: [{ role:'user', content: [{ type:'text', text: buildAiPrompt(), cache_control: { type: 'ephemeral' } }, contentBlock] }],
-    model,
+    model: 'claude-sonnet-4-6',
     maxTokens: 16000
   });
   step('parsing');
