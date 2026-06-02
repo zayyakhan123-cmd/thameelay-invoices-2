@@ -4109,18 +4109,24 @@ async function extractInvoice(file, onStep){
     let textResult = null;
     try { textResult = await extractPdfTextLayer(b64); } catch(e){ console.warn('pdfjs failed:', e); }
 
-    if(textResult && textResult.quality === 'good'){
-      // Text path — clean text layer found. Send as text (smaller than PDF binary).
-      // Sonnet handles the extraction; pdfjs just reduced the payload size.
+    // Detect barcode font encoding — proprietary fonts used by vendors like Eastland
+    // encode barcode images as special character sequences (e.g. "q{{|aIDHDH{|{19020'|{{w").
+    // pdfjs only extracts the partial numeric portion, NOT the full barcode. The binary
+    // PDF path lets Claude read the full barcode from the actual barcode images via vision.
+    const hasBarcodeFont = textResult && /[a-zA-Z]\{\{[|a-zA-Z]{2,}\{\|?\{[\d]/.test(textResult.text);
+
+    if(textResult && textResult.quality === 'good' && !hasBarcodeFont){
+      // Text path — clean text layer, no proprietary barcode fonts found.
       contentBlock = {
         type: 'text',
         text: `Extract the following invoice document:\n\n${textResult.text}`
       };
-      // model stays 'claude-sonnet-4-6' — no model downgrade
       _setStepLabel('reading',    '✓ Text layer extracted');
       _setStepLabel('extracting', 'AI extracting line items');
     } else {
-      // Standard path — scanned or image PDF, send binary.
+      // Binary PDF path — either scanned/image PDF, or barcode font detected.
+      // Binary path lets Claude read full barcode numbers from the barcode images.
+      if(hasBarcodeFont) _setStepLabel('reading', '✓ Barcode images detected — using full scan');
       contentBlock = {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}};
       _setStepLabel('reading',    '✓ File read (image PDF)');
       _setStepLabel('extracting', 'AI extracting line items');
