@@ -7030,7 +7030,7 @@ function renderDashboardTable(){
     const retailHtml = `
       <div class="retail-edit-wrap">
         <span class="retail-prefix">$</span>
-        <input type="number" class="tinput retail-edit${edited?' edited':''}" step="0.01" min="0"
+        <input id="apr-ret-input-${escKey}" type="number" class="tinput retail-edit${edited?' edited':''}" step="0.01" min="0"
                value="${ru.toFixed(2)}" data-orig="${resolved.retail.toFixed(2)}"
                oninput="onRetailInput('${escJs(item.item)}', this)"
                onchange="onRetailCommit('${escJs(item.item)}', this)">
