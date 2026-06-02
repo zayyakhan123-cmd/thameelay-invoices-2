@@ -4335,7 +4335,7 @@ function dbApproveSafe(){
 // the side panel (commit 3a). Not persisted across reloads — matches the
 // prior no-persist behavior of the standalone <select>s. Mirrored into
 // every mounted [data-exp-setting] element via setExportSetting().
-const EXPORT_SETTINGS = { fmt: 'generic', scope: 'approved', round: 'charm4', bcFmt: 'raw' };
+const EXPORT_SETTINGS = { fmt: 'generic', scope: 'approved', round: 'charm4', bcFmt: 'raw', pnTaxId: '', pnQty: 'blank' };
 function setExportSetting(key, value){
   EXPORT_SETTINGS[key] = value;
   document.querySelectorAll(`[data-exp-setting="${key}"]`).forEach(el => {
@@ -4351,11 +4351,36 @@ function renderExportSettings(container){
   if(!container) return;
   container.innerHTML = `
     <div class="ig"><label>POS format</label>
-      <select data-exp-setting="fmt" onchange="setExportSetting('fmt', this.value)">
+      <select data-exp-setting="fmt" onchange="setExportSetting('fmt', this.value); document.getElementById('pn-settings').style.display=this.value==='posnation'?'block':'none'">
         <option value="generic">Generic CSV (Item#, Description, Price)</option>
         <option value="square">Square POS</option>
         <option value="clover">Clover POS</option>
+        <option value="posnation">POS Nation / IT Retail</option>
       </select>
+    </div>
+    <div id="pn-settings" style="display:none">
+      <div class="ig"><label>Tax ID</label>
+        <input type="text" data-exp-setting="pnTaxId" placeholder="e.g. 3  or  3&amp;5"
+               style="width:100%;padding:6px 10px;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:12px"
+               oninput="setExportSetting('pnTaxId', this.value)">
+        <div style="font-size:10px;color:var(--text4);margin-top:3px">Your Tax ID from POS Nation Admin → Taxes. Multiple IDs: use &amp;</div>
+      </div>
+      <div class="ig"><label>Qty on Hand</label>
+        <select data-exp-setting="pnQty" onchange="setExportSetting('pnQty', this.value)">
+          <option value="blank">Blank (don't set inventory count)</option>
+          <option value="received">Units received this delivery</option>
+        </select>
+      </div>
+      <div style="font-size:10px;color:var(--text4);line-height:1.5;margin-top:4px;padding:8px;background:var(--bg3);border-radius:var(--r)">
+        <strong style="color:var(--text3)">Department IDs used:</strong><br>
+        Snacks/Dry/Bev/Frozen/Sauce → <b>4</b> (Grocery) &nbsp;·&nbsp;
+        Frozen Fish → <b>16</b> &nbsp;·&nbsp;
+        Meat → <b>3</b> &nbsp;·&nbsp;
+        Produce (by lb) → <b>1</b> &nbsp;·&nbsp;
+        Produce (by each) → <b>2</b> &nbsp;·&nbsp;
+        HBC → <b>12</b> &nbsp;·&nbsp;
+        Misc → <b>13</b>
+      </div>
     </div>
     <div class="ig"><label>Include items</label>
       <select data-exp-setting="scope" onchange="setExportSetting('scope', this.value)">
@@ -4406,20 +4431,125 @@ function getExportRows(){
     const cu=unitCost(i); const r=round(ap.retailPrice||retailUnit(i));
     // Prefer explicit barcode field from AI extraction; fall back to item# if it looks like a barcode
     const rawBc = i.barcode || (detectBarcodeFormat(i.item).format !== 'SKU' ? i.item : '');
-    return {no:i.item,barcode:rawBc,desc:i.desc,size:i.size,upc:i._u,cat:CLABEL[i.cat],box:i.caseCost,unit:cu,mk:getTgt(i.cat),retail:r,profit:(r-cu).toFixed(2),margin:((r-cu)/r*100).toFixed(1)+'%'};
+    return {no:i.item,barcode:rawBc,desc:i.desc,size:i.size,upc:i._u,cat:CLABEL[i.cat],
+      catId:i.cat, soldBy:i._soldBy||i.soldBy||'each', qty:i.qty||0,
+      box:i.caseCost,unit:cu,mk:getTgt(i.cat),retail:r,profit:(r-cu).toFixed(2),margin:((r-cu)/r*100).toFixed(1)+'%'};
   });
 }
+// ── POS NATION / IT RETAIL EXPORT HELPERS ─────────────────────────────────────
+// Department ID mapping — matches the user's POS Nation department setup.
+// Produce Scale (1) = sold by weight, Produce Unit (2) = sold by piece.
+const _PN_FISH_RE = /\b(fish|salmon|tilapia|tuna|shrimp|prawn|squid|crab|lobster|clam|mussel|oyster|snapper|mackerel|trout|catfish|sardine|anchovy|eel|cod|flounder|seafood)\b/i;
+const _PN_DEPT = {snacks:4,candy:4,dry:4,bev:4,frozen:4,sauce:4,other:4,hbc:12,holdhold:13,meat:3};
+function _pnDeptId(catId, soldBy, desc){
+  const c = (catId||'other').toLowerCase();
+  if(c==='produce') return (soldBy==='lb'||soldBy==='kg') ? 1 : 2;
+  if(c==='frozen' && _PN_FISH_RE.test(desc||'')) return 16; // Frozen Fish
+  return _PN_DEPT[c] || 4; // default Grocery
+}
+
+// Parse a size string like "12X4OZ", "24x454g", "8 x 4 lbs" into {pack, size, uom}
+function _pnParseSize(sizeStr, soldBy){
+  if(!sizeStr) return { pack:'', size:'', uom:soldBy==='lb'?'lb':'ea' };
+  const s = sizeStr.trim();
+  const mMulti = s.match(/^(\d+)\s*[xX×]\s*(?:\d+\s*[xX×]\s*)?(\d+\.?\d*)\s*([a-zA-Z. /]+)/);
+  if(mMulti) return { pack:mMulti[1], size:mMulti[2], uom:_pnNormUom(mMulti[3], soldBy) };
+  const mSingle = s.match(/^(\d+\.?\d*)\s*([a-zA-Z. /]+)/);
+  if(mSingle) return { pack:'1', size:mSingle[1], uom:_pnNormUom(mSingle[2], soldBy) };
+  return { pack:'', size:'', uom:soldBy==='lb'?'lb':'ea' };
+}
+function _pnNormUom(raw, soldBy){
+  const r = (raw||'').replace(/\./g,'').trim().toLowerCase();
+  if(r.startsWith('lb')) return 'lb';
+  if(r.startsWith('oz') || r.startsWith('fl')) return 'oz';
+  if(r.startsWith('kg')) return 'kg';
+  if(r.startsWith('ml')) return 'ml';
+  if(r.startsWith('g') && !r.startsWith('gal')) return 'g';
+  if(r.startsWith('ct')||r.startsWith('ea')||r.startsWith('pc')||r.startsWith('bunch')) return 'ea';
+  return soldBy==='lb' ? 'lb' : 'ea';
+}
+
+// Build the full 17-column POS Nation / IT Retail import CSV.
+// Starts with UTF-8 BOM — required by IT Retail import tool.
+function buildPosNationCSV(rows){
+  const taxId  = (EXPORT_SETTINGS.pnTaxId||'').trim();
+  const qtyMode = EXPORT_SETTINGS.pnQty || 'blank';
+  const bcFmt  = EXPORT_SETTINGS.bcFmt  || 'raw';
+  const foodCats = new Set(['snacks','candy','dry','bev','frozen','sauce','produce','other','rice','noodles']);
+
+  const header = 'UPC,Description,Cost,Price,Quantity on Hand,Department ID,Section ID,Vendor ID,Pack,Size,Unit of Measure,Foodstamp Eligible,WIC Eligible,Minimum Age,PLU,Sell by Weight,Tax ID';
+
+  const lines = rows.map(r => {
+    // UPC — convert barcode to selected format; IT Retail max 13 digits, no alpha
+    const rawBc = r.barcode || r.no;
+    const upcRaw = convertBarcode(rawBc, bcFmt==='none'?'raw':bcFmt) || rawBc;
+    const upc = String(upcRaw).replace(/[^0-9]/g,'').substring(0,13) || r.no;
+
+    // Description — commas not allowed; quotes not needed if none present
+    const desc = (r.desc||'').replace(/,/g,' ').replace(/"/g,'').substring(0,40);
+
+    // Cost and Price (Price cannot be $0.00)
+    const cost  = r.unit  > 0 ? r.unit.toFixed(2)   : '';
+    const price = r.retail > 0 ? r.retail.toFixed(2) : cost||'0.01';
+
+    // Quantity on Hand
+    const qty = qtyMode === 'received'
+      ? String(Math.round((r.qty||0) * (r.upc||1))) // cases × units per case
+      : '';
+
+    // Department ID
+    const dept = _pnDeptId(r.catId, r.soldBy, r.desc);
+
+    // Size string parse
+    const sz = _pnParseSize(r.size, r.soldBy);
+
+    // Unit of Measure (primary source: soldBy field from AI extraction)
+    const uom = r.soldBy==='lb' ? 'lb' : r.soldBy==='kg' ? 'kg' : sz.uom || 'ea';
+
+    // Foodstamp Eligible (TRUE/FALSE)
+    const foodstamp = foodCats.has(r.catId||'other') ? 'TRUE' : 'FALSE';
+
+    // WIC Eligible — uses 0/1 per IT Retail spec (NOT TRUE/FALSE)
+    const wic = '0';
+
+    // Sell by Weight (TRUE/FALSE)
+    const sellByWt = (r.soldBy==='lb'||r.soldBy==='kg') ? 'TRUE' : 'FALSE';
+
+    // PLU — if the item# itself is a 4-5 digit PLU code
+    const bcDet = detectBarcodeFormat(r.no);
+    const plu = bcDet.format==='PLU' ? r.no : '';
+
+    return [
+      upc, desc, cost, price, qty,
+      dept,
+      '',  // Section ID — leave blank (not 0)
+      '',  // Vendor ID  — leave blank (not 0)
+      sz.pack, sz.size, uom,
+      foodstamp, wic,
+      '',  // Minimum Age — blank unless age-restricted
+      plu,
+      sellByWt,
+      taxId,
+    ].join(',');
+  });
+
+  // ﻿ = UTF-8 BOM — IT Retail import tool requires this
+  return '﻿' + header + '\n' + lines.join('\n');
+}
+
 function buildCSV(rows){
   const fmt   = EXPORT_SETTINGS.fmt   || 'generic';
   const bcFmt = EXPORT_SETTINGS.bcFmt || 'raw';
-  const includeBc = bcFmt !== 'none';
 
-  // Convert each row's barcode to the target format
+  // Route to POS Nation builder
+  if(fmt === 'posnation') return buildPosNationCSV(rows);
+
+  const includeBc = bcFmt !== 'none';
   const bc = r => includeBc ? convertBarcode(r.barcode, bcFmt) : null;
 
   let h, fn;
   if(fmt === 'generic'){
-    h  = ['Item#','Description','Size','Case Cost','Unit Cost','Retail Price', ...(includeBc?['Barcode']:[] )];
+    h  = ['Item#','Description','Size','Case Cost','Unit Cost','Retail Price', ...(includeBc?['Barcode']:[])];
     fn = r => [r.no, `"${r.desc}"`, r.size, r.box.toFixed(2), r.unit.toFixed(2), r.retail.toFixed(2), ...(includeBc?[bc(r)]:[])];
   } else {
     h  = ['SKU','Name','Size','Case Cost','Unit Cost','Retail', ...(includeBc?['Barcode']:[])];
