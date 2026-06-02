@@ -2533,6 +2533,22 @@ const CHARGE_ITEM=/^503\d{3}$|^9\d{5}$/;
 function parseUnitsRobust(size){
   if(!size) return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.5,note:'Missing size'};
   const s=size.trim();
+  // Triple pattern: "AxBxC UNIT" — A packs × B items × C individual size
+  // e.g. "4x6x325 ML" → 24 units (4×6), each 325ml; "6x6x2.33 fl.oz" → 36 units
+  const triple=s.match(/^(\d+)\s*[xX×]\s*(\d+)\s*[xX×]\s*(\d+(?:\.\d+)?)\s*(fl\.?\s*oz|#|LBS?|KGS?|OZ|ML|L|PCS?|CT|EA|G|GR)\b/i);
+  if(triple){
+    const a=parseInt(triple[1]),b=parseInt(triple[2]),c=parseFloat(triple[3]);
+    const ru=(triple[4]||'').toLowerCase().replace(/[\s.]/g,'');
+    let unit=null;
+    if(ru.startsWith('fl')||ru==='oz') unit='oz';
+    else if(ru==='ml') unit='ml';
+    else if(ru==='l') unit='l';
+    else if(ru==='g'||ru==='gr') unit='g';
+    else if(ru.startsWith('lb')||ru==='#') unit='lb';
+    else if(ru.startsWith('kg')) unit='kg';
+    const total=a*b;
+    return {u:total,boxCount:total,perBoxAmount:c,unit,inferredSoldBy:'each',conf:0.9,note:`${a}×${b}=${total} units`};
+  }
   // Outer × (Inner×SIZE) pattern: "4 X (6X10.82" — outer N packs per case
   const oi=s.match(/^(\d+)\s*[xX]\s*\(/);
   if(oi){const n=parseInt(oi[1]);return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.75,note:`Outer pack format: ${n} inner packs per case`};}
@@ -4350,6 +4366,31 @@ function recalcRowMargin(itemKey){
   const el = document.getElementById('db-pmar-' + cssEscapeId(itemKey));
   if(el) el.innerHTML = `<span class="margin-num" style="color:${color}">${proj.toFixed(1)}%</span>`;
 }
+// User manually corrects units per case (e.g. 4x6x325 ML parsed as 4 instead of 24).
+// Updates _u on the live item, marks the override, recalculates unit cost + retail + margin
+// without a full re-render so the user stays in context.
+function dbSetUnits(itemKey, val){
+  if(!INV) return;
+  const item = INV.items.find(x => x.item === itemKey); if(!item) return;
+  const n = Math.max(1, parseInt(val)||1);
+  item._u = n;
+  item._uOverride = true;
+  // Update the input border to show it's been overridden
+  const inp = document.getElementById('apr-units-' + cssEscapeId(itemKey));
+  if(inp){ inp.value = n; inp.style.borderColor = 'var(--c1)'; }
+  // Recalculate unit cost display
+  const cu = unitCost(item);
+  const ucEl = document.getElementById('apr-uc-' + cssEscapeId(itemKey));
+  if(ucEl) ucEl.textContent = '$'+cu.toFixed(4);
+  // Recalculate suggested retail and store in APPROVALS
+  if(APPROVALS[itemKey]){
+    APPROVALS[itemKey].retailPrice = charmRoundUp(retailUnit(item),[0.29,0.49,0.79,0.99]);
+    const retEl = document.getElementById('apr-ret-input-' + cssEscapeId(itemKey));
+    if(retEl) retEl.value = APPROVALS[itemKey].retailPrice.toFixed(2);
+  }
+  recalcRowMargin(itemKey);
+}
+
 function resetRetail(itemKey){
   if(!INV) return;
   const item = INV.items.find(x => x.item === itemKey); if(!item) return;
@@ -7033,9 +7074,18 @@ function renderDashboardTable(){
       </div>`;
     }
     
-    // Units cell — flag if prior had a different number of units (parser drift)
+    // Units cell — editable input so user can fix parser errors (e.g. 4x6x325 ML parsed as 4 instead of 24)
     const unitsWarn = hasPrev && ch.prevUnits>0 && ch.prevUnits!==curUnits;
-    const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Units per case'}">${curUnits}${unitsWarn?` <span style="color:var(--amber)"><i class="ti ti-alert-triangle"></i></span>`:''}<span class="u-sub">${esc(item.size||'')}${unitsWarn?`<br>was ${ch.prevUnits}`:''}</span></div>`;
+    const escKey = cssEscapeId(item.item);
+    const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Click to edit units per case'}">
+      <input id="apr-units-${escKey}" type="number" min="1" step="1" value="${curUnits}"
+        style="width:52px;padding:2px 5px;border:1px solid ${item._uOverride?'var(--c1)':'var(--border2)'};border-radius:4px;background:var(--surface);color:var(--text);font-weight:700;font-size:13px;text-align:center"
+        title="Units per case — edit to correct parser errors"
+        onchange="dbSetUnits('${escJs(item.item)}',this.value)"
+        onclick="event.stopPropagation()">
+      ${unitsWarn?`<span style="color:var(--amber);font-size:10px"><i class="ti ti-alert-triangle"></i> was ${ch.prevUnits}</span>`:''}
+      <span class="u-sub">${esc(item.size||'')}</span>
+    </div>`;
     
     // Unit cost cell
     let unitCellHtml;
