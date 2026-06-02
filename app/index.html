@@ -4030,6 +4030,37 @@ Return ONLY raw JSON with no markdown, no backticks, no explanation:
 {"vendor":"","invoiceNo":"","date":"","docType":"invoice","customer":"","total":0,"items":[{"item":"","barcode":"","desc":"","size":"","qty":0,"caseCost":0.00,"cat":"other","soldBy":"each","isNew":false,"isOOS":false}]}`;
 }
 
+// ── BARCODE FONT DECODER ─────────────────────────────────────────────────────
+// Some vendors (e.g. Eastland Food Corporation) print barcodes using a
+// proprietary barcode font. The PDF text layer stores encoded font characters
+// like "q{{{|aIDHDH{|{19020'|{{{w" instead of the real barcode number.
+// pdfjs (and Claude via text path) can only recover the short item-reference
+// digits embedded in the font — not the full UPC.
+//
+// For known font codes we can reconstruct the full barcode:
+//   font code → GS1 manufacturer prefix → prefix + item_digits + check_digit
+//
+// Confirmed mapping (verified against physical product scan):
+//   aIDHDH → 083737  (Eastland Food Corporation / Asian Best own-brand)
+const _BC_FONT_PREFIXES = {
+  'aIDHDH': '083737',
+};
+
+function decodeBarcodeFont(fontText){
+  // Pattern: [char]{+|[FONTCODE]{|{[DIGITS]
+  const m = (fontText||'').match(/[a-zA-Z]\{+[|]([a-zA-Z]+)\{[|]\{(\d+)/);
+  if(!m) return null;
+  const fontCode = m[1], itemDigits = m[2];
+  const prefix = _BC_FONT_PREFIXES[fontCode];
+  if(!prefix) return null;                       // unknown font → caller falls back to item#
+  const partial = prefix + itemDigits;
+  if(partial.length !== 11) return null;         // expect 11 digits before check digit
+  const d = partial.split('').map(Number);
+  let sum = 0;
+  for(let i = 0; i < 11; i++) sum += d[i] * (i % 2 === 0 ? 3 : 1);
+  return partial + (10 - sum % 10) % 10;         // full 12-digit UPC-A
+}
+
 // ── PDF TEXT EXTRACTION (Tier 1 fast path) ──────────────────────────────────
 // Lazy-loads pdfjs-dist the first time a PDF is processed. Subsequent calls
 // reuse the already-loaded library — no startup cost for the app.
@@ -4504,16 +4535,25 @@ function buildPosNationCSV(rows){
 
   const lines = rows.map(r => {
     // UPC — convert barcode to selected format; IT Retail max 13 digits, no alpha
-    // UPC — strip non-digits first to get the numeric portion.
-    // If the barcode field contains barcode-font garbage (e.g. "q{{|aIDHDH{|{19020"),
-    // stripping yields only the partial code (5 digits). When the result is < 8 digits
-    // it's not a real UPC — fall back to the item number (vendor SKU) which is unique,
-    // fully numeric, and can serve as a PLU reference in POS Nation.
-    const rawBc     = (r.barcode || '').replace(/[^0-9]/g, '') || (r.no || '').replace(/[^0-9]/g,'');
-    const fullEnough = rawBc.length >= 8;
-    const upc = fullEnough
-      ? String(convertBarcode(rawBc, bcFmt==='none'?'raw':bcFmt) || rawBc).replace(/[^0-9]/g,'').substring(0,13)
-      : String(r.no || '').replace(/[^0-9]/g,'').substring(0,13);
+    // UPC — three-step resolution:
+    // 1. Try to decode proprietary barcode font text (e.g. Eastland "aIDHDH" font → full UPC-A)
+    // 2. If decoded barcode or plain barcode has ≥ 8 digits → it's a real barcode, use it
+    // 3. Otherwise (< 8 digits = partial barcode font artifact) → use item number as PLU ref
+    let upc;
+    const decoded = decodeBarcodeFont(r.barcode || '');
+    if(decoded){
+      // Known barcode font decoded to full UPC-A
+      upc = String(convertBarcode(decoded, bcFmt==='none'?'raw':bcFmt) || decoded).replace(/[^0-9]/g,'').substring(0,13);
+    } else {
+      const numericBc = (r.barcode || '').replace(/[^0-9]/g, '');
+      if(numericBc.length >= 8){
+        // Plain numeric barcode — convert as requested
+        upc = String(convertBarcode(numericBc, bcFmt==='none'?'raw':bcFmt) || numericBc).replace(/[^0-9]/g,'').substring(0,13);
+      } else {
+        // Short partial code or unknown font — use item number as PLU reference
+        upc = String(r.no || '').replace(/[^0-9]/g,'').substring(0,13);
+      }
+    }
 
     // Description — commas not allowed; quotes not needed if none present
     const desc = (r.desc||'').replace(/,/g,' ').replace(/"/g,'').substring(0,40);
