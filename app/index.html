@@ -5409,7 +5409,24 @@ function renderHistory(){
 }
 function deleteHistory(idx){
   if(!confirm('Delete this invoice?'))return;
-  const h=loadHist();h.splice(idx,1);saveHist(h);renderHistory();updateNavCounts();
+  const h = loadHist();
+  const deleted = h[idx]; // capture before splice
+  h.splice(idx,1);
+  saveHist(h);
+  // Immediately delete this specific row from Supabase so it doesn't
+  // reappear on the next cloudPullAll. cloudUpsertInvoices is upsert-only
+  // and cannot remove rows — we need to explicitly delete.
+  if(_USER && _supabase && deleted){
+    _supabase.from('invoices').delete()
+      .eq('tenant_id', _USER.id)
+      .eq('vendor', deleted.vendor || '')
+      .eq('invoice_no', deleted.invoiceNo || '')
+      .eq('date', deleted.date || null)
+      .then(() => {})
+      .catch(e => console.warn('Invoice cloud delete failed:', e));
+  }
+  renderHistory();
+  updateNavCounts();
 }
 
 // ═══════════ PRICING RULES ═══════════
