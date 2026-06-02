@@ -4041,7 +4041,7 @@ async function extractInvoice(file, onStep){
       };
       model = 'claude-haiku-4-5-20251001';
       _setStepLabel('reading',    '✓ Text layer extracted');
-      _setStepLabel('extracting', '⚡ Fast extract — text mode');
+      _setStepLabel('extracting', 'AI extracting (text mode — lower cost)');
     } else {
       // Standard path — scanned or image PDF, send binary.
       contentBlock = {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}};
