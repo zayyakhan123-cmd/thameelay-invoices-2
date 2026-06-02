@@ -1034,7 +1034,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
             <div class="dz-mini-icon" style="font-size:22px;margin:0"><i class="ti ti-cloud-upload"></i></div>
             <div style="text-align:left">
               <div class="dz-mini-title">Drag &amp; drop invoice files here</div>
-              <div class="dz-mini-sub">PDF, JPG, PNG up to 20MB</div>
+              <div class="dz-mini-sub">PDF · CSV · Excel (.xlsx) · JPG / PNG</div>
             </div>
           </div>
           <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
@@ -1252,8 +1252,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div class="dz" id="dropzone">
       <span class="dz-icon"><i class="ti ti-file-text"></i></span>
       <div class="dz-title">Drop your vendor invoice here</div>
-      <div class="dz-sub">PDF or image · AI reads every line item · Detects price changes against history<br>Multiple files OK for batch processing</div>
-      <input type="file" id="file-in" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(event)">
+      <div class="dz-sub">PDF · CSV · Excel (.xlsx) · JPG / PNG · Multiple files OK for batch processing</div>
+      <input type="file" id="file-in" accept=".pdf,.csv,.xlsx,.xls,image/*" multiple style="display:none" onchange="handleFiles(event)">
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" onclick="event.stopPropagation()">
         <button onclick="document.getElementById('file-in').click()"><i class="ti ti-folder" style="margin-right:6px"></i>Choose file(s)</button>
         <button class="bp" onclick="loadDemo()"><i class="ti ti-player-play" style="margin-right:6px"></i>Load demo invoice</button>
@@ -3502,7 +3502,11 @@ DZ.addEventListener('dragover',e=>{e.preventDefault();DZ.classList.add('over');}
 DZ.addEventListener('dragleave',()=>DZ.classList.remove('over'));
 DZ.addEventListener('drop',e=>{
   e.preventDefault();DZ.classList.remove('over');
-  const files=Array.from(e.dataTransfer.files).filter(f=>f.type==='application/pdf'||f.type.startsWith('image/'));
+  const files=Array.from(e.dataTransfer.files).filter(f=>
+    f.type==='application/pdf'||f.type.startsWith('image/')||
+    /\.(csv|xlsx|xls)$/i.test(f.name)||
+    f.type==='text/csv'||f.type.includes('spreadsheet')||f.type.includes('excel')
+  );
   if(!files.length)return;
   routeFiles(files);
 });
@@ -3586,10 +3590,44 @@ async function checkMonthlyInvoiceLimit(){
   return true;
 }
 
+function _isSheet(file){ return /\.(csv|xlsx|xls)$/i.test(file.name); }
+
 async function processFileList(files){
   if(!files.length) return;
   if(!await checkMonthlyInvoiceLimit()) return;
-  if(files.length===1) processSingleFile(files[0]); else addToQueue(files);
+
+  const sheets = files.filter(_isSheet);
+  const media  = files.filter(f => !_isSheet(f));
+
+  // Sheet files (CSV/Excel) bypass AI — parse directly, no rate-limit cost.
+  for(const f of sheets) processSheetFile(f);
+
+  // PDF/image files through the normal AI extraction path.
+  if(media.length === 1)      processSingleFile(media[0]);
+  else if(media.length > 1)   addToQueue(media);
+}
+
+async function processSheetFile(file){
+  show('dz-wrap', false);
+  startUploadProgress(file);
+  try{
+    setUploadStep('reading');
+    const inv = await pcExtractFromSheet(file);
+    if(!inv.docType) inv.docType = 'invoice';
+    inv._uploadedAs = file.name;
+    setUploadStep('classifying');
+    await new Promise(r=>setTimeout(r,150));
+    finishUploadProgress(true);
+    loadInvoice(inv);
+    saveCurrentInvoiceToHistory();
+    const cnt = inv.items ? inv.items.filter(i=>i._rt===RT.PURCHASED&&i.qty>0).length : inv.items.length;
+    showToast('success', `${file.name.split('.').pop().toUpperCase()} loaded — ${cnt} items ready to review`);
+    detectAndOfferProduceMatch([inv]);
+  }catch(err){
+    finishUploadProgress(false, err.message);
+    show('dz-wrap', true);
+    showToast('error', 'Import failed: '+err.message, 8000);
+  }
 }
 
 // Phase A — read the uploaded file as a data URL for the new-editor PDF
@@ -3805,7 +3843,9 @@ async function processQueue(){
     addLog(`[${i+1}/${total}] Extracting ${FILE_QUEUE[i].name}...`);
     try{
       const pdfPromise = readFileAsDataUrl(FILE_QUEUE[i].file);
-      const invs=await extractInvoice(FILE_QUEUE[i].file);
+      const invs = _isSheet(FILE_QUEUE[i].file)
+        ? [await pcExtractFromSheet(FILE_QUEUE[i].file)]
+        : await extractInvoice(FILE_QUEUE[i].file);
       const pdfDataUrl = await pdfPromise;
       FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=invs[0];
       for(const inv of invs){
