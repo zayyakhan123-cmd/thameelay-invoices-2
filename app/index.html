@@ -2689,7 +2689,13 @@ function charmRoundUp(price, tiers){
   // overflow — bump dollar, use lowest tier
   return Math.round((dollars + 1 + tiers[0])*100)/100;
 }
-function getTgt(cat){const el=document.getElementById('tgt-'+cat);return el?parseFloat(el.value)||TARGETS[cat]:TARGETS[cat];}
+function getTgt(cat){
+  const el=document.getElementById('tgt-'+cat);
+  const v = el ? parseFloat(el.value) : undefined;
+  const t = (v!=null && !isNaN(v)) ? v : TARGETS[cat];
+  // Guard: if category is unknown or markup is NaN/undefined, default to 30%
+  return (t!=null && !isNaN(t)) ? t : 30;
+}
 function unitCost(item){
   const sb = item._soldBy || 'box';
   // Weight-based sold_by divides by total weight (boxCount × perBoxAmount).
@@ -3617,6 +3623,8 @@ async function processSheetFile(file){
     inv._uploadedAs = file.name;
     setUploadStep('classifying');
     await new Promise(r=>setTimeout(r,150));
+    // Ensure category markups are current before retail is computed in loadInvoice
+    rebuildCatMaps();
     finishUploadProgress(true);
     loadInvoice(inv);
     saveCurrentInvoiceToHistory();
@@ -3685,6 +3693,14 @@ async function processSingleFile(file){
   }
   catch(err){
     if(err.message==='no_api_key'){ finishUploadProgress(false); show('dz-wrap',true); return; }
+    // Session-expired errors come back as "Invalid session" or "not_authenticated" from the edge
+    // function. Show a specific message so the user knows to sign out and sign back in.
+    if(/invalid.?session|not_authenticated/i.test(err.message)){
+      finishUploadProgress(false, 'Session expired');
+      show('dz-wrap',true);
+      showToast('error', 'Your session has expired — please sign out and sign back in, then try again.', 12000);
+      return;
+    }
     finishUploadProgress(false, err.message);
     show('dz-wrap',true);
     showToast('error', 'Extraction failed: '+err.message, 8000);
@@ -7195,10 +7211,12 @@ function renderDashboardChart(){
   const sorted = [...hist].sort((a,b)=>new Date(a.date)-new Date(b.date));
   const dates = sorted.map(inv=>{
     const items = (inv.items||[]).filter(i=>i._rt===RT.PURCHASED && i.qty>0);
-    const avgCost = items.length ? items.reduce((s,i)=>s+unitCost(i),0)/items.length : 0;
-    const avgRetail = items.length ? items.reduce((s,i)=>s+retailUnit(i),0)/items.length : 0;
+    const costs   = items.map(i=>unitCost(i)).filter(v=>Number.isFinite(v)&&v>0);
+    const retails = items.map(i=>retailUnit(i)).filter(v=>Number.isFinite(v)&&v>0);
+    const avgCost   = costs.length   ? costs.reduce((s,v)=>s+v,0)/costs.length     : 0;
+    const avgRetail = retails.length ? retails.reduce((s,v)=>s+v,0)/retails.length : avgCost*1.3;
     return {date:inv.date, avgCost, avgRetail};
-  }).filter(d=>d.avgCost>0);
+  }).filter(d=>Number.isFinite(d.avgCost)&&d.avgCost>0);
   
   if(dates.length < 2){
     svg.innerHTML = `<text x="200" y="80" text-anchor="middle" fill="currentColor" style="color:var(--text2)" font-size="11" font-family="Inter">Need 2+ invoices for trend chart</text>`;
@@ -7212,8 +7230,9 @@ function renderDashboardChart(){
     const yScale = v => h - pad - ((v - minVal) / range) * (h - pad*2);
     const xPos = i => pad + i * xStep;
     
-    const costPath = dates.map((d,i)=>`${i===0?'M':'L'}${xPos(i)},${yScale(d.avgCost)}`).join(' ');
-    const retailPath = dates.map((d,i)=>`${i===0?'M':'L'}${xPos(i)},${yScale(d.avgRetail)}`).join(' ');
+    const safeY = v => { const y=yScale(v); return Number.isFinite(y)?y.toFixed(2):'0'; };
+    const costPath   = dates.map((d,i)=>`${i===0?'M':'L'}${xPos(i)},${safeY(d.avgCost)}`).join(' ');
+    const retailPath = dates.map((d,i)=>`${i===0?'M':'L'}${xPos(i)},${safeY(d.avgRetail)}`).join(' ');
     
     // Grid lines
     let grid = '';
@@ -7245,8 +7264,8 @@ function renderDashboardChart(){
       ${xLabels}
       <path d="${costPath}" stroke="#22d3ee" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="${retailPath}" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      ${dates.map((d,i)=>`<circle cx="${xPos(i)}" cy="${yScale(d.avgCost)}" r="3" fill="#22d3ee"/>`).join('')}
-      ${dates.map((d,i)=>`<circle cx="${xPos(i)}" cy="${yScale(d.avgRetail)}" r="3" fill="#10b981"/>`).join('')}
+      ${dates.map((d,i)=>`<circle cx="${xPos(i)}" cy="${safeY(d.avgCost)}" r="3" fill="#22d3ee"/>`).join('')}
+      ${dates.map((d,i)=>`<circle cx="${xPos(i)}" cy="${safeY(d.avgRetail)}" r="3" fill="#10b981"/>`).join('')}
     `;
   }
   
