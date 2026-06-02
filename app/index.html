@@ -6945,7 +6945,9 @@ function renderDashboardTable(){
   
   tbody.innerHTML = pageRows.map(r=>{
     const {item, ch, cu, ru, curMargin, projMargin, resolved} = r;
-    
+    // Declare escKey at the top of the row callback so every section can use it
+    const escKey = cssEscapeId(item.item);
+
     // Item icon emoji based on category
     const catIcon = {snacks:'🍪', candy:'🍬', frozen:'🧊', bev:'🥤', dry:'🍚', other:'📦'}[item.cat] || '📦';
     
@@ -7087,7 +7089,6 @@ function renderDashboardTable(){
     
     // Units cell — editable input so user can fix parser errors (e.g. 4x6x325 ML parsed as 4 instead of 24)
     const unitsWarn = hasPrev && ch.prevUnits>0 && ch.prevUnits!==curUnits;
-    const escKey = cssEscapeId(item.item);
     const unitsHtml = `<div class="units-cell${unitsWarn?' warn':''}" title="${unitsWarn?`Prior invoice had ${ch.prevUnits} units — verify size parsing`:'Click to edit units per case'}">
       <input id="apr-units-${escKey}" type="number" min="1" step="1" value="${curUnits}"
         style="width:52px;padding:2px 5px;border:1px solid ${item._uOverride?'var(--c1)':'var(--border2)'};border-radius:4px;background:var(--surface);color:var(--text);font-weight:700;font-size:13px;text-align:center"
