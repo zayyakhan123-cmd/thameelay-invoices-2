@@ -4367,9 +4367,10 @@ function renderExportSettings(container){
       </div>
       <div class="ig"><label>Qty on Hand</label>
         <select data-exp-setting="pnQty" onchange="setExportSetting('pnQty', this.value)">
-          <option value="blank">Blank (don't set inventory count)</option>
-          <option value="received">Units received this delivery</option>
+          <option value="blank">Blank — recommended (keeps existing inventory)</option>
+          <option value="received">Units received (only for brand-new products)</option>
         </select>
+        <div style="font-size:10px;color:var(--text4);margin-top:3px">⚠ Filled qty overwrites existing counts in POS. Use "Blank" unless importing products for the first time.</div>
       </div>
       <div style="font-size:10px;color:var(--text4);line-height:1.5;margin-top:4px;padding:8px;background:var(--bg3);border-radius:var(--r)">
         <strong style="color:var(--text3)">Department IDs used:</strong><br>

@@ -1,0 +1,52 @@
+SALES INVOICE
+Invoice: 300240235
+Date: 06/01/2026
+Page: 1 of 2
+Order No: 100270547
+Sales Rep: (CH) ANDY_N
+Terms: 14DaysNet
+Customer P.O.: 488241921
+Est. Delivery Date: 06/03/2026
+
+Vendor: Eastland Food Corporation Company
+8305 Stayton Drive, Suite C, Jessup, MD 20794
+Tel. 301-621-8140
+
+Bill to / Ship to:
+Thameelay Market LLC
+5608 Decatur Rd
+Fort Wayne IN 46806 USA
+Customer: C50682 3IN1
+
+ITEM	QTY	BRAND	DESCRIPTION & PACKAGING	UPC	PRICE BEFORE DISCOUNT	PRICE AFTER DISCOUNT	TOTAL
+11900020	1	Tips	Tips Fish Sauce (23 fl.oz) Plastic	12x23 FL.OZ	Gen.	018373719020	18.25	18.2500	18.2500
+11900022	1	Tips	Tips Fish Sauce (25 FL.OZ) Plastic	12x25 FL.OZ	Gen.	018373719022	18.50	18.5000	18.5000
+12003139	1	Taokaenoi	Grilled Seaweed Roll BBQ Flavour	12x15G	Gen.	018373720139	23.50	23.5000	23.5000
+12201000	2	Asian Best	Bamboo Shoot Tip/Ruak (Tin)	1x39 LBS	Gen.	018373722000	47.00	47.0000	94.0000
+12201003	1	Asian Best	Bamboo Shoot Tip (Tin)	1x40 LBS	Gen.	N/A	36.00	36.0000	36.0000
+12203300	1	Asian Best	Quail Eggs in Water	24x14.46 OZ	Gen.	018373722300	50.00	50.0000	50.0000
+12505105	1	Vera	Aloe Vera Juice Drink White Grape Flavour (L)	12x50.7 FL.OZ	Gen.	868709005438	28.50	28.5000	28.5000
+12900016	1	DSB	Thin Soy Sauce	12x21.8 FL.OZ	Gen.	618350001079	22.25	22.2500	22.2500
+12900040	1	DSB	Sweet Soy Sauce	12x21.3 FL.OZ	Gen.	618350001093	28.25	28.2500	28.2500
+14007704	1	Kawan	Mini Paratha -F-	24x6x60 G	Frozen	955658710258	52.00	52.0000	52.0000
+14102500	1	Astor	Astor Chocolate Wafer Stick	6x11.64 OZ	Gen.	723751028860	23.75	23.7500	23.7500
+14707011	1	BoBo	Premium Fried Fish Ball (M) -F-	20x455 G	Frozen	868500135783	71.00	71.0000	71.0000
+14707032	1	BoBo	Small Xidao Premium Fish Cake (M) -F-	20x16 OZ	Frozen	868500135844	70.00	70.0000	70.0000
+14707042	1	BoBo	Prawn Flavored Ball (M) -F-	20x16 OZ	Frozen	868500130245	100.00	100.0000	100.0000
+14707043	1	BoBo	Crab Flavored Ball (M) -F-	20x16 OZ	Frozen	868500130269	100.00	100.0000	100.0000
+
+PMR221755 (IL) Mae Krua Oyster Sauce Buy 10 get 1 Free (Total Free Items -$38.60)
+11000060	10	Mae Krua	Mae Krua Oyster Sauce (L)	12x20 OZ	Gen.	856500400080	38.60	35.0909	386.0000
+11000060	1	Mae Krua	Mae Krua Oyster Sauce (L) FREE	12x20 OZ	Gen.	856500400080	38.60	35.0909	0.0000
+
+--- PAGE 2 ---
+
+PMR221803 (IL) Asian Best Mackerel Buy 5 get 5% off Buy 12 get 1 Free Mix and Match (Total Free Items -$104.69)
+13407010	9	Asian Best	Steamed Mackerel -F-	24x9 OZ	Frozen	018373734010	104.69	96.7192	942.2300
+13407010	1	Asian Best	Steamed Mackerel -F- FREE	24x9 OZ	Frozen	018373734010	104.69	96.7172	0.0000
+13407012	3	Asian Best	(FTL)Mackerel -F-	20x1 LB	Frozen	018373734012	109.25	100.9299	327.7500
+
+Invoice Total: 2,391.98
+
+Items on Back Order:
+11207102	Asian Best	(FTL)Whiteleg Shrimp (Kung Foy M) -F-	25x12 OZ	Ordered: 2	Ship: 0	018373712102
