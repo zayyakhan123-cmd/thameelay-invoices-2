@@ -3672,8 +3672,14 @@ function saveCurrentInvoiceToHistory(){
 // Matcher" action toast. If accepted, pcExtractProduceLines() runs (1 AI call)
 // and the produce history + main Price Tracker are both updated.
 
-const _PRODUCE_DETECT_THRESHOLD = 0.60;
+const _PRODUCE_DETECT_THRESHOLD = 0.70;  // raised from 0.60
 const _PRODUCE_MIN_ITEMS = 2;
+
+// Words that appear in packaged/processed goods but not in fresh produce invoices.
+// If an invoice item description contains any of these, it is NOT fresh produce
+// even if the catalog fuzzy-scorer finds a substring match (e.g. "aloe vera juice"
+// matches the "aloe vera" catalog alias at 0.92 but is clearly a packaged drink).
+const _PRODUCE_EXCLUDE_RE = /\b(sauce|juice|drink|canned|tinned|\btin\b|jar|can|powder|paste|oil|extract|flavou?r(ed)?|seasoning|soup|broth|stock|syrup|cream|spread|pickle|pickled|marinated|fermented|instant|noodle|roll|snack|cracker|chip|biscuit|cookie|candy|wafer|stick|cake|ball|fried|baked|grilled|smoked|steamed|dried|frozen\s+ball|prawn\s+fla|crab\s+fla|fish\s+(ball|cake|sauce)|paratha|bread)\b/i;
 
 function detectAndOfferProduceMatch(invs){
   if(!invs || !invs.length) return;
@@ -3685,6 +3691,16 @@ function detectAndOfferProduceMatch(invs){
   for(const inv of invs){
     const items = (inv.items||[]).filter(i => i._rt === RT.PURCHASED && (i.qty||0) > 0);
     for(const item of items){
+      // Gate 1: must be sold by weight — fresh produce is almost always lb/bunch/kg.
+      // Packaged goods (bottles, cans, boxes) are sold by 'each' or 'box'.
+      const soldBy = item._soldBy || item.soldBy || '';
+      if(soldBy !== 'lb' && soldBy !== 'bunch' && soldBy !== 'kg') continue;
+
+      // Gate 2: skip if description contains packaging/processing keywords.
+      // This catches "Aloe Vera Juice Drink", "Bamboo Shoot Tip (Tin)", etc.
+      if(_PRODUCE_EXCLUDE_RE.test(item.desc || '')) continue;
+
+      // Gate 3: fuzzy catalog score must be high enough.
       const m = pcMatchLineLocal(item.desc);
       if(m && m.score >= _PRODUCE_DETECT_THRESHOLD) produceCount++;
     }
@@ -4335,7 +4351,7 @@ function dbApproveSafe(){
 // the side panel (commit 3a). Not persisted across reloads — matches the
 // prior no-persist behavior of the standalone <select>s. Mirrored into
 // every mounted [data-exp-setting] element via setExportSetting().
-const EXPORT_SETTINGS = { fmt: 'generic', scope: 'approved', round: 'charm4', bcFmt: 'raw', pnTaxId: '', pnQty: 'blank' };
+const EXPORT_SETTINGS = { fmt: 'generic', scope: 'approved', round: 'charm4', bcFmt: 'raw', pnTaxId: '', pnQty: 'received' };
 function setExportSetting(key, value){
   EXPORT_SETTINGS[key] = value;
   document.querySelectorAll(`[data-exp-setting="${key}"]`).forEach(el => {
@@ -4367,10 +4383,10 @@ function renderExportSettings(container){
       </div>
       <div class="ig"><label>Qty on Hand</label>
         <select data-exp-setting="pnQty" onchange="setExportSetting('pnQty', this.value)">
-          <option value="blank">Blank — recommended (keeps existing inventory)</option>
-          <option value="received">Units received (only for brand-new products)</option>
+          <option value="received">Units received this delivery (edit in Excel before importing)</option>
+          <option value="blank">Blank (leave existing inventory count untouched)</option>
         </select>
-        <div style="font-size:10px;color:var(--text4);margin-top:3px">⚠ Filled qty overwrites existing counts in POS. Use "Blank" unless importing products for the first time.</div>
+        <div style="font-size:10px;color:var(--text4);margin-top:3px">Tip: download the CSV, adjust qty column to match what you actually have on hand, then import.</div>
       </div>
       <div style="font-size:10px;color:var(--text4);line-height:1.5;margin-top:4px;padding:8px;background:var(--bg3);border-radius:var(--r)">
         <strong style="color:var(--text3)">Department IDs used:</strong><br>

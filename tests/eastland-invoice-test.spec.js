@@ -114,7 +114,62 @@ test('T1: Eastland invoice extraction — items, totals, promo handling', async 
     console.log(`  isOOS: ${freeOysterSauce.isOOS} (expected true — $0 free item)`);
   }
 
-  return result; // return for T2
+});
+
+// ─────────────────────────────────────────────────────────────────
+// TEST 1B — False produce detection guard
+// The Eastland invoice has zero fresh produce items.
+// detectAndOfferProduceMatch must NOT fire on it.
+// ─────────────────────────────────────────────────────────────────
+test('T1b: no false produce detection on packaged-goods invoice', async () => {
+  const invoiceText = fs.readFileSync(INVOICE_TXT, 'utf8');
+
+  const result = await page.evaluate(async (text) => {
+    const resp = await callAI({
+      messages: [{ role: 'user', content: [
+        { type: 'text', text: buildAiPrompt(), cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: `Extract this invoice:\n\n${text}` }
+      ]}],
+      model: 'claude-sonnet-4-6', maxTokens: 8000,
+    });
+    const parsed = aiJson(resp.text);
+    const invList = Array.isArray(parsed) ? parsed : [parsed];
+    const inv = invList[0];
+    classifyInvoice(inv);
+
+    // Simulate what detectAndOfferProduceMatch does, return the count
+    pcSeed();
+    let produceCount = 0;
+    const items = (inv.items||[]).filter(i => i._rt === 'purchased' && (i.qty||0) > 0);
+    const checks = [];
+    for(const item of items){
+      const soldBy = item._soldBy || item.soldBy || '';
+      const excludeKw = /\b(sauce|juice|drink|canned|tinned|\btin\b|jar|can|powder|paste|oil|extract|flavou?r(ed)?|seasoning|soup|broth|stock|syrup|cream|spread|pickle|pickled|marinated|fermented|instant|noodle|roll|snack|cracker|chip|biscuit|cookie|candy|wafer|stick|cake|ball|fried|baked|grilled|smoked|steamed|dried|frozen\s+ball|prawn\s+fla|crab\s+fla|fish\s+(ball|cake|sauce)|paratha|bread)\b/i;
+      const passedSoldBy  = (soldBy === 'lb' || soldBy === 'bunch' || soldBy === 'kg');
+      const passedKeyword = !excludeKw.test(item.desc||'');
+      const m = (passedSoldBy && passedKeyword) ? pcMatchLineLocal(item.desc) : null;
+      const passedScore   = !!(m && m.score >= 0.70);
+      const counted = passedSoldBy && passedKeyword && passedScore;
+      if(counted) produceCount++;
+      checks.push({
+        desc: item.desc.substring(0,40),
+        soldBy,
+        passedSoldBy, passedKeyword, passedScore, counted,
+        score: m ? m.score.toFixed(2) : '—',
+        match: m ? m.item?.name : '—',
+      });
+    }
+    return { produceCount, checks };
+  }, invoiceText);
+
+  console.log('\n── PRODUCE DETECTION CHECK (Eastland invoice) ──────');
+  result.checks.forEach(c => {
+    const flag = c.counted ? '⚠ COUNTED' : '✓ skipped';
+    console.log(`  ${flag} | ${c.desc.padEnd(40)} | soldBy:${(c.soldBy||'?').padEnd(5)} | kw:${c.passedKeyword?'✓':'✗'} | score:${c.score} → ${c.match}`);
+  });
+  console.log(`\nTotal produce count: ${result.produceCount} (must be < 2 to not fire)`);
+
+  expect(result.produceCount, 'Eastland packaged-goods invoice must NOT trigger produce detection').toBeLessThan(2);
 });
 
 // ─────────────────────────────────────────────────────────────────
