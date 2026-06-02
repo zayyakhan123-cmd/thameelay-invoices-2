@@ -4825,7 +4825,7 @@ function setProdSoldBy(name, vendor, value){
 // Track last filter so search & checkbox re-render the same view
 let _lastTrFilter = 'all';
 let _trSearchT = null;
-function trSearchDebounced(){
+function trSearchDebounced(){ _trPage = 0; // reset to page 1 on new search
   clearTimeout(_trSearchT);
   _trSearchT = setTimeout(()=>renderTracker(_lastTrFilter || 'all'), 150);
 }
@@ -4930,11 +4930,14 @@ function renderTracker(filter){
   const cnt = document.getElementById('tr-result-count');
   if(cnt) cnt.textContent = `${prods.length} match${prods.length!==1?'es':''}`;
 
-  // Pagination: with thousands of products, rendering all rows at once locks up the browser
-  // for several seconds. Show first 200 by default; "Show all" override exposes the full set.
-  const TR_PAGE_SIZE = 200;
-  const showAll = !!_trShowAll;
-  const slice = showAll ? prods : prods.slice(0, TR_PAGE_SIZE);
+  // Pagination: rendering 200+ rows blocks the main thread noticeably.
+  // Use 50-row pages with prev/next navigation for smooth interaction.
+  const TR_PAGE_SIZE = 50;
+  if(_trShowAll){ _trPage = 0; _trShowAll = false; } // reset on filter change
+  const totalPages = Math.max(1, Math.ceil(prods.length / TR_PAGE_SIZE));
+  _trPage = Math.min(_trPage, totalPages - 1);
+  const start = _trPage * TR_PAGE_SIZE;
+  const slice = prods.slice(start, start + TR_PAGE_SIZE);
   const hidden = prods.length - slice.length;
 
   document.getElementById('tr-body').innerHTML = slice.map(p=>{
@@ -4964,17 +4967,22 @@ function renderTracker(filter){
         style="width:100%;max-width:160px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:11px"></td>
       <td style="text-align:center">${discBtn}</td>
     </tr>`;
-  }).join('') + (hidden > 0 ? `<tr><td colspan="11" style="text-align:center;padding:14px;background:var(--bg3)">
-    <span style="color:var(--text3);margin-right:10px">Showing first ${slice.length} of ${prods.length} — use search/filters to narrow down</span>
-    <button class="db-bulk-btn" onclick="trShowAll()">Show all ${prods.length}</button>
+  }).join('') + (totalPages > 1 ? `<tr><td colspan="11" style="text-align:center;padding:10px 14px;background:var(--bg3)">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+      <button class="db-bulk-btn" onclick="trPage(-1)" ${_trPage===0?'disabled':''} style="padding:5px 12px">← Prev</button>
+      <span style="font-size:12px;color:var(--text3)">Page ${_trPage+1} of ${totalPages} &nbsp;·&nbsp; ${start+1}–${Math.min(start+TR_PAGE_SIZE,prods.length)} of ${prods.length}</span>
+      <button class="db-bulk-btn" onclick="trPage(1)" ${_trPage>=totalPages-1?'disabled':''} style="padding:5px 12px">Next →</button>
+    </div>
   </td></tr>` : '');
 }
 let _trShowAll = false;
-function trShowAll(){ _trShowAll = true; renderTracker(_lastTrFilter || 'all'); }
+let _trPage = 0;
+function trPage(dir){ _trPage = Math.max(0, _trPage + dir); renderTracker(_lastTrFilter || 'all'); }
+function trShowAll(){ _trPage = 0; renderTracker(_lastTrFilter || 'all'); }
 document.getElementById('tr-pills').addEventListener('click',e=>{
   const p=e.target.closest('.pill');if(!p)return;
   document.querySelectorAll('#tr-pills .pill').forEach(x=>x.classList.remove('on'));
-  p.classList.add('on');renderTracker(p.dataset.tf);
+  p.classList.add('on'); _trPage = 0; renderTracker(p.dataset.tf);
 });
 
 // ═══════════ VENDORS ═══════════
