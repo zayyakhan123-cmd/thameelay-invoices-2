@@ -3958,6 +3958,58 @@ Return ONLY raw JSON with no markdown, no backticks, no explanation:
 {"vendor":"","invoiceNo":"","date":"","docType":"invoice","customer":"","total":0,"items":[{"item":"","desc":"","size":"","qty":0,"caseCost":0.00,"cat":"other","soldBy":"each","isNew":false,"isOOS":false}]}`;
 }
 
+// ── PDF TEXT EXTRACTION (Tier 1 fast path) ──────────────────────────────────
+// Lazy-loads pdfjs-dist the first time a PDF is processed. Subsequent calls
+// reuse the already-loaded library — no startup cost for the app.
+let _pdfjs = null;
+async function _loadPdfjs(){
+  if(_pdfjs) return _pdfjs;
+  await new Promise((res, rej) => {
+    if(window.pdfjsLib){ _pdfjs = window.pdfjsLib; return res(); }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+    s.onload = () => {
+      _pdfjs = window.pdfjsLib;
+      if(_pdfjs) _pdfjs.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      res();
+    };
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  return _pdfjs;
+}
+
+// Extract the text layer from a base64-encoded PDF.
+// Returns { text, pageCount, quality: 'good' | 'poor' }
+// quality='good'  → text is clean enough to send to Claude as plain text (fast path)
+// quality='poor'  → scanned / image PDF, fall back to sending the binary (standard path)
+async function extractPdfTextLayer(b64){
+  const lib = await _loadPdfjs();
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const pdf   = await lib.getDocument({ data: bytes }).promise;
+  const pageCount = pdf.numPages;
+  let fullText = '';
+  for(let p = 1; p <= pageCount; p++){
+    const page  = await pdf.getPage(p);
+    const tc    = await page.getTextContent();
+    fullText += tc.items.map(i => i.str).join(' ') + '\n';
+  }
+  // Quality gate: good text must have enough content and real numbers
+  // (scanned PDFs produce garbage or near-empty strings via pdfjs)
+  const trimmed   = fullText.trim();
+  const hasLength = trimmed.length > 120;
+  const hasDigits = (trimmed.match(/\d/g) || []).length >= 10;
+  const quality   = (hasLength && hasDigits) ? 'good' : 'poor';
+  return { text: trimmed, pageCount, quality };
+}
+
+// Update the label of a progress step div without re-rendering the whole list.
+function _setStepLabel(stepKey, label){
+  const el = document.querySelector(`#db-extracting [data-step="${stepKey}"] div:last-child`);
+  if(el) el.textContent = label;
+}
+
 async function extractInvoice(file, onStep){
   const step=(s)=>{ if(typeof onStep==='function') onStep(s); };
   if(!aiAvailable()){
@@ -3967,28 +4019,51 @@ async function extractInvoice(file, onStep){
     goTo('api-settings');
     throw new Error('no_api_key');
   }
+
   step('reading');
   const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
-  step('extracting');
-  // Build content block based on file type. Anthropic API uses 'image' for png/jpg/gif/webp,
-  // 'document' only for PDFs. Sending an image as a document gives "PDF was not valid" error.
+
   const fileType = (file.type||'').toLowerCase();
   let contentBlock;
+  let model = 'claude-sonnet-4-6'; // default — handles images + binary PDFs
+
   if(fileType === 'application/pdf'){
-    contentBlock = {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}};
+    // ── Tier 1: try text layer extraction first ──────────────────────────────
+    _setStepLabel('reading', 'Analyzing text layer…');
+    let textResult = null;
+    try { textResult = await extractPdfTextLayer(b64); } catch(e){ console.warn('pdfjs failed:', e); }
+
+    if(textResult && textResult.quality === 'good'){
+      // Fast path — text layer is clean. Send text to Claude Haiku (3-5× faster).
+      contentBlock = {
+        type: 'text',
+        text: `Extract the following invoice document:\n\n${textResult.text}`
+      };
+      model = 'claude-haiku-4-5-20251001';
+      _setStepLabel('reading',    '✓ Text layer extracted');
+      _setStepLabel('extracting', '⚡ Fast extract — text mode');
+    } else {
+      // Standard path — scanned or image PDF, send binary.
+      contentBlock = {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}};
+      _setStepLabel('reading',    '✓ File read (image PDF)');
+      _setStepLabel('extracting', 'AI extracting line items');
+    }
   } else if(fileType.startsWith('image/')){
-    // Normalize media_type — some browsers report 'image/jpg' instead of 'image/jpeg'
+    // Images always need vision — Sonnet stays.
     let media = fileType === 'image/jpg' ? 'image/jpeg' : fileType;
     if(!['image/jpeg','image/png','image/gif','image/webp'].includes(media)){
       throw new Error('Unsupported image type: '+fileType+'. Use JPG, PNG, GIF, or WebP.');
     }
     contentBlock = {type:'image',source:{type:'base64',media_type:media,data:b64}};
+    _setStepLabel('extracting', 'AI extracting line items');
   } else {
     throw new Error('Unsupported file type: '+(fileType||'unknown')+'. Use PDF or an image (JPG/PNG).');
   }
+
+  step('extracting');
   const resp = await callAI({
     messages: [{ role:'user', content: [{ type:'text', text: buildAiPrompt(), cache_control: { type: 'ephemeral' } }, contentBlock] }],
-    model: 'claude-sonnet-4-6',
+    model,
     maxTokens: 16000
   });
   step('parsing');
