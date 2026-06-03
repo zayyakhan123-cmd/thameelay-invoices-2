@@ -2511,7 +2511,8 @@ function convertBarcode(raw, targetFormat){
   }
   return raw;
 }
-const CHARGE_RE=/pallet|charge|fee|handling|service|freight|shipping|surcharge|deposit/i;
+// Word boundaries prevent false positives like "Coffee" matching "fee" or "Pallet Jack" matching "pallet"
+const CHARGE_RE=/\b(pallet|charge|fee|handling|service|freight|shipping|surcharge|deposit)\b/i;
 const CHARGE_ITEM=/^503\d{3}$|^9\d{5}$/;
 
 // Parse a size string like "12X2LBS", "1X33#", "24X15OZ", "1X10KG" into the
@@ -2614,7 +2615,9 @@ function classifyRow(item,allItems){
     return {rt:RT.ZERO_DUP,conf:sib?0.95:0.7,notes:[sib?`Zero-price duplicate of item ${item.item}`:'Zero cost, no paid sibling']};
   }
   const {u,conf,note}=parseUnitsRobust(item.size);
-  if(conf<0.5) return {rt:RT.MALFORMED,conf,notes:[note],u};
+  // Items imported from user-typed spreadsheets (_fromSheet:true) are trusted even
+  // when the size string doesn't parse cleanly — the user entered them manually.
+  if(conf<0.5 && !item._fromSheet) return {rt:RT.MALFORMED,conf,notes:[note],u};
   const notes=[];if(conf<0.8&&note)notes.push(note);
   const isNew=!Object.keys(loadDB()).some(k=>k.endsWith('|'+item.item));
   if(isNew)notes.push('First time ordered');
@@ -8512,7 +8515,8 @@ async function pcExtractFromSheet(file){
       caseCost: cost,
       unitCost: cost,
       _u: 1,
-      _rt: 0    // PURCHASED — bypasses classifier
+      _rt: 0,       // PURCHASED — bypasses classifier
+      _fromSheet: true // flag so classifyItem is lenient with confidence
     });
   }
   if(!items.length) throw new Error('No usable rows found in spreadsheet (need at least one row with description and cost > 0)');
