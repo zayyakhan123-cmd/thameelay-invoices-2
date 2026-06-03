@@ -638,6 +638,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <form id="login-form" onsubmit="loginSubmit(event)" autocomplete="on">
       <input id="login-email" class="login-input" type="email" placeholder="you@example.com" required autocomplete="email">
       <input id="login-password" class="login-input" type="password" placeholder="Password" required autocomplete="current-password" minlength="6">
+      <a id="login-forgot" href="/forgot-password" class="login-toggle" style="display:block;text-align:right;margin-top:4px;text-decoration:none">Forgot password?</a>
       <button id="login-btn" class="login-btn" type="submit">Sign in</button>
     </form>
     <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()">Don't have an account? Create one</button>
@@ -2106,16 +2107,19 @@ function loginToggleMode(){
   const pwd = document.getElementById('login-password');
   const sub = document.getElementById('login-sub');
   const msg = document.getElementById('login-msg');
+  const forgot = document.getElementById('login-forgot');
   if(_LOGIN_MODE === 'signup'){
     btn.textContent = 'Create account';
     toggle.textContent = 'Already have an account? Sign in';
     pwd.autocomplete = 'new-password';
     if(sub) sub.textContent = 'Create an account with your email and a password.';
+    if(forgot) forgot.style.display = 'none';
   } else {
     btn.textContent = 'Sign in';
     toggle.textContent = "Don't have an account? Create one";
     pwd.autocomplete = 'current-password';
     if(sub) sub.textContent = 'Sign in with your email and password.';
+    if(forgot) forgot.style.display = 'block';
   }
   if(msg){ msg.className = 'login-msg'; msg.textContent = ''; }
 }
