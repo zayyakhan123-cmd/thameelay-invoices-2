@@ -2603,6 +2603,33 @@ function parseUnitsRobust(size){
   // Simple "Nx" fallback (no amount after the x)
   const simple=s.match(/^(\d+)\s*[xX]/i);
   if(simple){const n=parseInt(simple[1]);if(n>=1&&n<=500)return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.95,note:''}; return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.6,note:`Unusual unit count: ${n}`};}
+
+  // Compound-embedded-unit format: "6pcsx16packsx125ml", "50gx6bx8p", "125gx6cpx12pk"
+  // Split on x, classify each segment as volume/weight (size dimension) or count (packaging),
+  // then take the largest count. Gives units=16, 8, 12 for the examples above.
+  if(/[xX×]/.test(s)){
+    const _SZ=/^(ml|l|fl\.?oz|floz|oz|g|gm|gr|kg|lb|lbs?)$/i;
+    const segs=s.split(/[xX×]/).map(seg=>{
+      const mm=seg.trim().match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/);
+      return mm?{n:parseFloat(mm[1]),u:(mm[2]||'').toLowerCase().replace(/\./g,'')}:null;
+    }).filter(Boolean);
+    const sizes=segs.filter(p=>_SZ.test(p.u));
+    const counts=segs.filter(p=>!_SZ.test(p.u)&&p.n>=1&&p.n<=500);
+    if(sizes.length>0&&counts.length>=1){
+      const u=Math.max(...counts.map(p=>p.n));
+      const sz=sizes[0];
+      let unit=null;
+      if(/^ml$/i.test(sz.u))unit='ml';else if(/^(oz|floz)$/i.test(sz.u))unit='oz';
+      else if(/^(g|gm|gr)$/i.test(sz.u))unit='g';else if(/^kg$/i.test(sz.u))unit='kg';
+      return {u,boxCount:u,perBoxAmount:sz.n,unit,inferredSoldBy:'each',conf:0.8,
+        note:`Compound packing: ${counts.map(p=>p.n+(p.u||'')).join('×')}=${u} units`};
+    }
+    if(counts.length>=2){
+      const u=Math.max(...counts.map(p=>p.n));
+      return {u,boxCount:u,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.7,note:`Multi-count: largest=${u}`};
+    }
+  }
+
   return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.4,note:`Cannot parse: "${s}"`};
 }
 
