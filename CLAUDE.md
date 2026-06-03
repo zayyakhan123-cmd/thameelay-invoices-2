@@ -53,3 +53,52 @@ needs to learn about it; the rendering and read chain are already in
 place.
 When debugging any issue, follow the protocol in DEBUGGING.md.
 Do not skip steps. Gather evidence before making code changes.
+
+## Working conventions
+
+These rules apply to every code change in this repo, regardless of size.
+
+### Small-batch discipline
+One commit at a time. Each commit must be independently revertable. If you find yourself touching multiple unrelated concerns in one diff, split it. The May 12 invoice-manager.html revert was a casualty of bundled commits — three changes got panic-reverted together because one of them looked risky.
+
+Never bundle:
+- Structural changes (new files, deletions, route changes) with cleanup (renames, comment edits)
+- New features with refactors
+- Bug fixes with formatting changes
+
+### Scope is mandatory
+Every code-change prompt names IN SCOPE, OUT OF SCOPE, and HARD RULES. At minimum OUT OF SCOPE always includes:
+- Cloud sync functions: `cloudFlush`, `cloudSignOut`, `cloudSignIn`, `cloudSignUp`, `cloudUpdateAuthUI`, `cloudPromptSignIn`
+- May 26 isolation guards: `AUTO_MIGRATE_LEGACY_LOCAL`, `tm_data_owner`, `SK.*` localStorage keys
+- The 9 cloud-synced tables and their RLS policies: invoices, products, price_observations, categories, product_links, produce_catalog, produce_map, vendor_rules, product_meta
+- Stripe constants: `STRIPE_PRICES`, webhook URL, edge function names
+- Supabase constants: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, project ref
+
+If the change actually needs to touch one of these, surface it before writing code.
+
+### Read before writing
+When adding new code that mirrors an existing pattern (Supabase init, login form, table rendering, etc.), read the source-of-truth file first. Match the CDN version, constant names, and init style exactly. Don't invent a parallel pattern. If you can't find the pattern, stop and ask.
+
+### Self-verify after deploy
+`git push` exiting 0 is not success. Verify against the live URL:
+- Status check: `curl -sI <url> | head -1`
+- Content check: `curl -s <url> | grep -o '<expected-text>'`
+- Flow check: Playwright or browser tool — click through and assert outcomes
+- Wait ~60s after push for Vercel to deploy before checking
+
+Report PASS/FAIL with the evidence (curl output, screenshot, or test result). Do not declare success without it. If you lack the tooling to verify, say so explicitly — don't paper over it.
+
+### Auto-iterate on test failures
+After making changes:
+1. Run `npm test`
+2. If failures, analyze, fix, re-run
+3. Up to 3 iterations
+4. If still red, stop and report what's failing, what you tried, what you suspect
+
+Never push with failing tests. A red test you didn't write is still your problem — investigate before pushing. The `#login-forgot` selector miss (broken since its commit was shipped, caught two commits later) is the failure mode this rule prevents.
+
+### Smoke test format
+Every commit shipping visible behavior includes a numbered SMOKE TEST AFTER PUSH section with explicit pass criteria per step. "Looks good" is not a pass criterion. "Tab title reads 'Forgot password — Track Aisle'" is.
+
+### When in doubt, stop
+If you've spent 15 minutes guessing at intent or scope, stop guessing and ask. Same 15-minute timer as DEBUGGING.md.
