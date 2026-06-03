@@ -3427,7 +3427,7 @@ async function cloudPullAll(){
           last_retail_at: r.last_retail_at || undefined,
         };
       });
-      lsSet(SK.PROD_META, meta);
+      _CACHE.prodMeta = meta; lsSet(SK.PROD_META, meta);
     }
   } finally {
     _CLOUD_PULLING = false;
@@ -9242,7 +9242,7 @@ migrateDB();
     for(const k in m){
       if(m[k] && m[k].sold_by === 'package'){ m[k].sold_by = 'each'; changed = true; }
     }
-    if(changed){ lsSet(SK.PROD_META, m); if(typeof cloudMark === 'function') cloudMark('product_meta'); }
+    if(changed){ _CACHE.prodMeta = m; lsSet(SK.PROD_META, m); if(typeof cloudMark === 'function') cloudMark('product_meta'); }
   } catch(e){ console.warn('sold_by localStorage normalization failed:', e); }
 })();
 checkApiOnLoad();
