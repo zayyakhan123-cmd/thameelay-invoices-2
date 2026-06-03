@@ -8460,8 +8460,14 @@ async function pcExtractFromSheet(file){
     }
     return -1;
   };
-  const cItem = findCol('item #','item#','item no','sku','code','no');
-  const cDesc = findCol('description','product name','item name','name','product','item','pkg');
+  const cItem = findCol('item #','item#','item no','part no','part number','product code','item code','sku','code','no');
+  // 'item' is excluded from cDesc when cItem already claimed it via 'item#'/'item no' etc.
+  // But if cItem=-1 and the header is literally "item", it likely holds the item code (e.g. Gusto "ITEM" column
+  // which contains "FA107 - Frz Golden Stick Fish Cake"). In that case, don't map "item" to cDesc —
+  // instead we'll extract the code from the description's prefix in the row loop below.
+  const cDesc = cItem >= 0
+    ? findCol('description','product name','desc','product description','name','product')
+    : findCol('description','product name','item name','name','product','item','pkg');
   const cSize = findCol('pkg size','size','pack','unit size','case size','uom','units','packaging');
   const cQty  = findCol('qty','quantity','cases','case count','ordered');
   const cCost = findCol('case cost','case price','unit price','price after','price before','total cost','cost','price','amount');
@@ -8507,9 +8513,22 @@ async function pcExtractFromSheet(file){
     const qty = parseFloat(String(row[cQty]||'').replace(/[^\d.-]/g,'')) || 1;
     const cost = parseFloat(String(row[cCost]||'').replace(/[^\d.-]/g,'')) || 0;
     if(cost <= 0) continue;
+    // Resolve item number: explicit column → vendor-code prefix in description → row fallback
+    let itemNo = cItem>=0 ? String(row[cItem]||'').trim() : '';
+    let cleanDesc = desc;
+    if(!itemNo || /^S\d+$/.test(itemNo) || /^\d{1,3}$/.test(itemNo)){
+      // No useful item# yet. Check if description starts with a vendor code like "FA107 - " or "DCN161 - "
+      const codeMatch = cleanDesc.match(/^([A-Z]{1,5}\d{2,8})\s*[-–]\s*/i);
+      if(codeMatch){
+        itemNo = codeMatch[1].toUpperCase();
+        cleanDesc = cleanDesc.slice(codeMatch[0].length).trim();
+      } else {
+        itemNo = itemNo || `S${i}`;
+      }
+    }
     items.push({
-      item: cItem>=0 ? String(row[cItem]||'').trim() || `S${i}` : `S${i}`,
-      desc: desc,
+      item: itemNo,
+      desc: cleanDesc,
       size: cSize>=0 ? String(row[cSize]||'').trim() : '',
       qty: qty,
       caseCost: cost,
