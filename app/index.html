@@ -2972,7 +2972,7 @@ async function cloudInit(){
       if(params.get('checkout') === 'success'){
         showToast('Subscription activated! Your plan has been updated.', 'success');
         history.replaceState({}, '', location.pathname);
-        goTo('account-settings');
+        goTo('dashboard');
       } else if(params.get('checkout') === 'cancel'){
         showToast('Checkout cancelled. Your plan was not changed.', 'info');
         history.replaceState({}, '', location.pathname);
