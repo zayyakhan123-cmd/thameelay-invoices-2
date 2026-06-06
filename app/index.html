@@ -1424,6 +1424,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <th>Orders</th>
         <th>Notes</th>
         <th style="text-align:center">Status</th>
+        <th></th>
       </tr></thead>
       <tbody id="tr-body"></tbody></table>
     </div>
@@ -5249,8 +5250,9 @@ function renderTracker(filter){
         onchange="setProdNote('${escJs(p.desc)}','${escJs(p.vendor)}',this.value)"
         style="width:100%;max-width:160px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:11px"></td>
       <td style="text-align:center">${discBtn}</td>
+      <td><button onclick="openProdDetailModal('${escJs(p.desc)}','${escJs(p.vendor)}',${p.lastCu},${p.latestRetail},'${escJs(p.lastSeen||'')}',${p.orders})" style="font-size:11px;padding:3px 9px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer">Open</button></td>
     </tr>`;
-  }).join('') + (totalPages > 1 ? `<tr><td colspan="10" style="text-align:center;padding:10px 14px;background:var(--bg3)">
+  }).join('') + (totalPages > 1 ? `<tr><td colspan="11" style="text-align:center;padding:10px 14px;background:var(--bg3)">
     <div style="display:flex;align-items:center;justify-content:center;gap:12px">
       <button class="db-bulk-btn" onclick="trPage(-1)" ${_trPage===0?'disabled':''} style="padding:5px 12px">← Prev</button>
       <span style="font-size:12px;color:var(--text3)">Page ${_trPage+1} of ${totalPages} &nbsp;·&nbsp; ${start+1}–${Math.min(start+TR_PAGE_SIZE,prods.length)} of ${prods.length}</span>
