@@ -192,21 +192,22 @@ serve(async (req) => {
   }
 
   if (!isExempt) {
-    // Per-user daily rate limit (atomic check-and-increment inside Postgres).
-    const DAILY_LIMIT = 10;
-    const { data: rateRows, error: rateErr } = await supabase
-      .rpc("check_and_increment_ai_usage", { lim: DAILY_LIMIT });
-    if (rateErr) {
-      return json({ error: "Rate check failed: " + rateErr.message }, origin, { status: 500 });
+    // Per-user monthly quota — reads invoice_limit from user_profiles (set by
+    // Stripe webhook) and counts invoices saved this calendar month.
+    const { data: quotaRows, error: quotaErr } = await supabase
+      .rpc("check_ai_monthly_quota");
+    if (quotaErr) {
+      return json({ error: "Quota check failed: " + quotaErr.message }, origin, { status: 500 });
     }
-    const rate = Array.isArray(rateRows) ? rateRows[0] : rateRows;
-    if (!rate?.allowed) {
+    const quota = Array.isArray(quotaRows) ? quotaRows[0] : quotaRows;
+    if (!quota?.allowed) {
       return json(
         {
-          error: `Daily limit reached (${DAILY_LIMIT} extractions/day). Try again tomorrow.`,
+          error: `Monthly limit reached (${quota.current_count}/${quota.monthly_limit} invoices). Resets ${quota.resets_at}.`,
           code: "rate_limited",
-          used: rate?.current_count ?? DAILY_LIMIT,
-          limit: DAILY_LIMIT,
+          used: quota.current_count,
+          limit: quota.monthly_limit,
+          resets_at: quota.resets_at,
         },
         origin,
         { status: 429 },

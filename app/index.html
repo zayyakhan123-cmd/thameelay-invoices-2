@@ -3629,7 +3629,7 @@ async function _monthlyInvoiceCount(){
       .from('invoices')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', _USER.id)
-      .gte('created_at', monthStart.toISOString());
+      .gte('saved_at', monthStart.toISOString());
     return error ? null : (count ?? 0);
   } catch { return null; }
 }
