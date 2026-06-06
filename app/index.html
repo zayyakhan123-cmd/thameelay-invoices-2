@@ -963,6 +963,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <a data-pg="upload"><i class="sico ti ti-upload"></i>Upload Invoices</a>
   </div>
   <div class="sg"><div class="slabel">Intelligence</div>
+    <a data-pg="items"><i class="sico ti ti-clipboard-list"></i>Item Master</a>
     <a data-pg="tracker"><i class="sico ti ti-trending-up"></i>Price Tracker</a>
     <a data-pg="vendors"><i class="sico ti ti-building-store"></i>Vendor Insights</a>
     <a data-pg="alerts"><i class="sico ti ti-bell"></i>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
@@ -1325,6 +1326,54 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </div>
 
 <!-- TRACKER -->
+<div class="pg" id="pg-items">
+  <div class="pgh"><div class="pgt">Item Master</div><div class="pgs">Every product you carry — add pack sizes, reorder points, and produce groups</div></div>
+  <div id="im-empty" class="card" style="text-align:center;padding:40px;display:none">
+    <div style="font-size:40px;margin-bottom:12px"><i class="ti ti-clipboard-list"></i></div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px">No items yet</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Upload an invoice and items will appear here automatically</div>
+    <button class="bp" onclick="goTo('upload')">Upload first invoice</button>
+  </div>
+  <div id="im-content" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <input id="im-search" type="text" placeholder="Search name or vendor…" oninput="renderItemMaster()" style="flex:1;min-width:180px;max-width:280px;padding:7px 11px;font-size:13px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text)">
+      <select id="im-filter-vendor" onchange="renderItemMaster()" style="padding:7px 10px;font-size:13px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text);cursor:pointer">
+        <option value="">All vendors</option>
+      </select>
+      <select id="im-filter-group" onchange="renderItemMaster()" style="padding:7px 10px;font-size:13px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text);cursor:pointer">
+        <option value="">All groups</option>
+        <option value="specialty">Specialty</option>
+        <option value="staples">Staples</option>
+        <option value="herbs">Herbs &amp; aromatics</option>
+        <option value="frozen">Frozen produce</option>
+        <option value="tropical">Tropical</option>
+        <option value="leafy">Leafy &amp; greens</option>
+      </select>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none">
+        <input type="checkbox" id="im-show-disc" onchange="renderItemMaster()" style="cursor:pointer"> Show discontinued
+      </label>
+      <span id="im-count" style="font-size:12px;color:var(--text3);margin-left:auto"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;font-size:12px">
+        <thead><tr>
+          <th style="text-align:left;padding:10px 14px">Description</th>
+          <th style="text-align:left">Vendor</th>
+          <th style="text-align:left">Pack size</th>
+          <th style="text-align:left">Unit size</th>
+          <th style="text-align:right">Reorder pt</th>
+          <th style="text-align:right">Target stock</th>
+          <th style="text-align:left">Produce group</th>
+          <th style="text-align:right">Last cost</th>
+          <th style="text-align:left">Last seen</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="im-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div class="pg" id="pg-tracker">
   <div class="pgh"><div class="pgt">Price Tracker</div><div class="pgs">Full price history — every product, every invoice</div></div>
   <div id="tr-empty" class="card" style="text-align:center;padding:40px">
@@ -3614,6 +3663,7 @@ function goTo(id){
   updatePageHeader(id);
   if(id==='dashboard')renderDashboard();
   if(id==='tracker')renderTracker('all');
+  if(id==='items')renderItemMaster();
   if(id==='vendors')renderVendors();
   if(id==='alerts')renderAlerts();
   if(id==='history')renderHistory();
@@ -5269,6 +5319,88 @@ document.getElementById('tr-pills').addEventListener('click',e=>{
   document.querySelectorAll('#tr-pills .pill').forEach(x=>x.classList.remove('on'));
   p.classList.add('on'); _trPage = 0; renderTracker(p.dataset.tf);
 });
+
+// ═══════════ ITEM MASTER ═══════════
+function renderItemMaster(){
+  const db = loadDB();
+  const meta = loadProdMeta();
+  const showDisc = document.getElementById('im-show-disc')?.checked;
+  const q = (document.getElementById('im-search')?.value || '').trim().toLowerCase();
+  const filterVendor = document.getElementById('im-filter-vendor')?.value || '';
+  const filterGroup = document.getElementById('im-filter-group')?.value || '';
+
+  // Group observations by (desc, vendor)
+  const map = {};
+  for(const obs of db){
+    if(!obs.desc || !obs.vendor) continue;
+    const k = prodMetaKey(obs.desc, obs.vendor);
+    if(!map[k]) map[k] = { desc:obs.desc, vendor:obs.vendor, cat:obs.cat||'other', entries:[] };
+    map[k].entries.push(obs);
+  }
+
+  // Build product rows
+  let prods = Object.values(map).map(p => {
+    const sorted = p.entries.slice().sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+    const last = sorted[sorted.length-1];
+    const k = prodMetaKey(p.desc, p.vendor);
+    const m = meta[k] || {};
+    return {
+      desc: p.desc, vendor: p.vendor, cat: p.cat,
+      lastCost: last.unitCost, lastSeen: last.date || '',
+      orders: p.entries.length,
+      pack_size: m.pack_size, unit_size: m.unit_size,
+      reorder_point: m.reorder_point, target_stock: m.target_stock,
+      produce_group: m.produce_group, note: m.note,
+      discontinued: !!m.discontinued,
+    };
+  });
+
+  // Populate vendor dropdown once (on first real render)
+  const vendorSel = document.getElementById('im-filter-vendor');
+  if(vendorSel && vendorSel.options.length <= 1){
+    const vendors = [...new Set(prods.map(p=>p.vendor))].sort();
+    vendors.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; vendorSel.appendChild(o); });
+  }
+
+  // Apply filters
+  if(!showDisc) prods = prods.filter(p=>!p.discontinued);
+  if(q) prods = prods.filter(p=>(p.desc||'').toLowerCase().includes(q)||(p.vendor||'').toLowerCase().includes(q));
+  if(filterVendor) prods = prods.filter(p=>p.vendor===filterVendor);
+  if(filterGroup) prods = prods.filter(p=>p.produce_group===filterGroup);
+
+  prods.sort((a,b)=>a.desc.localeCompare(b.desc));
+
+  const empty = document.getElementById('im-empty');
+  const content = document.getElementById('im-content');
+  const countEl = document.getElementById('im-count');
+
+  if(!prods.length && !q && !filterVendor && !filterGroup && !showDisc){
+    show('im-empty', true); show('im-content', false); return;
+  }
+  show('im-empty', false); show('im-content', true);
+  if(countEl) countEl.textContent = `${prods.length} item${prods.length!==1?'s':''}`;
+
+  const NONE = '<span style="color:var(--text4)">—</span>';
+  document.getElementById('im-body').innerHTML = prods.map(p => {
+    const discStyle = p.discontinued ? 'style="opacity:.55"' : '';
+    const discBadge = p.discontinued ? ' <span class="tag tgr" style="font-size:9px">DISC</span>' : '';
+    const groupLabel = p.produce_group
+      ? p.produce_group.charAt(0).toUpperCase()+p.produce_group.slice(1)
+      : NONE;
+    return `<tr ${discStyle}>
+      <td style="padding:8px 14px"><b>${esc(p.desc)}</b>${discBadge}</td>
+      <td style="font-size:11px;color:var(--text2)">${esc(p.vendor)}</td>
+      <td class="mn">${p.pack_size!=null?p.pack_size:NONE}</td>
+      <td style="font-size:12px">${p.unit_size?esc(p.unit_size):NONE}</td>
+      <td class="mn" style="text-align:right">${p.reorder_point!=null?p.reorder_point:NONE}</td>
+      <td class="mn" style="text-align:right">${p.target_stock!=null?p.target_stock:NONE}</td>
+      <td style="font-size:12px">${groupLabel}</td>
+      <td class="mn" style="text-align:right;font-weight:600">${f2(p.lastCost)}</td>
+      <td style="font-size:11px;color:var(--text3)">${esc(p.lastSeen||'—')}</td>
+      <td><button onclick="openProdDetailModal('${escJs(p.desc)}','${escJs(p.vendor)}',${p.lastCost},${p.lastCost},'${escJs(p.lastSeen||'')}',${p.orders})" style="font-size:11px;padding:3px 9px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer">Open</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">No items match your search</td></tr>`;
+}
 
 // ═══════════ VENDORS ═══════════
 function renderVendors(){
