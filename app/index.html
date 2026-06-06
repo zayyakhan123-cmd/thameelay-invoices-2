@@ -3620,10 +3620,8 @@ function routeFiles(files){
   }
 }
 
-async function checkMonthlyInvoiceLimit(){
-  if(!_supabase || !_USER) return true; // can't check — allow
-  const limit = _sPro?.invoice_limit ?? 10;
-  if(limit <= 0) return true; // no limit set
+async function _monthlyInvoiceCount(){
+  if(!_supabase || !_USER) return null;
   try{
     const monthStart = new Date();
     monthStart.setDate(1); monthStart.setHours(0,0,0,0);
@@ -3632,13 +3630,42 @@ async function checkMonthlyInvoiceLimit(){
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', _USER.id)
       .gte('created_at', monthStart.toISOString());
-    if(error) return true; // on error, don't block the user
-    if(count >= limit){
-      showToast(`Monthly limit reached (${limit} invoices). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to process more.`, 'error');
-      return false;
-    }
-  } catch { return true; }
+    return error ? null : (count ?? 0);
+  } catch { return null; }
+}
+
+async function checkMonthlyInvoiceLimit(){
+  if(!_supabase || !_USER) return true;
+  const limit = _sPro?.invoice_limit ?? 10;
+  if(limit <= 0) return true;
+  const used = await _monthlyInvoiceCount();
+  if(used === null) return true; // on error, don't block
+  if(used >= limit){
+    showToast(`Monthly limit reached (${limit} invoices). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to process more.`, 'error');
+    return false;
+  }
   return true;
+}
+
+// Post-extraction enforcement: trims invs to the slots remaining this month.
+// Prevents combining multiple invoices into one file to bypass the monthly cap.
+async function trimInvsToLimit(invs){
+  if(!invs || !invs.length) return invs;
+  const limit = _sPro?.invoice_limit ?? 10;
+  if(!_supabase || !_USER || limit <= 0) return invs;
+  const used = await _monthlyInvoiceCount();
+  if(used === null) return invs; // on error, allow
+  const remaining = Math.max(0, limit - used);
+  if(remaining <= 0){
+    showToast(`Monthly limit reached (${limit} invoices). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to process more.`, 'error', 8000);
+    return [];
+  }
+  if(invs.length > remaining){
+    const total = invs.length;
+    showToast(`Saved ${remaining} of ${total} invoices — monthly limit reached (${limit}/month). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to save the rest.`, 'warn', 10000);
+    return invs.slice(0, remaining);
+  }
+  return invs;
 }
 
 function _isSheet(file){ return /\.(csv|xlsx|xls)$/i.test(file.name); }
@@ -3711,7 +3738,9 @@ async function processSingleFile(file){
   startUploadProgress(file);
   const pdfPromise = readFileAsDataUrl(file); // run in parallel with extraction
   try{
-    const invs=await extractInvoice(file, setUploadStep);
+    const _rawInvs=await extractInvoice(file, setUploadStep);
+    const invs=await trimInvsToLimit(_rawInvs);
+    if(!invs.length){ finishUploadProgress(false); show('dz-wrap',true); return; }
     const pdfDataUrl = await pdfPromise;
     invs.forEach(inv => { inv._uploadedAs = file.name; attachPdfDataUrl(inv, pdfDataUrl); });
     setUploadStep('classifying');
@@ -3905,9 +3934,15 @@ async function processQueue(){
     addLog(`[${i+1}/${total}] Extracting ${FILE_QUEUE[i].name}...`);
     try{
       const pdfPromise = readFileAsDataUrl(FILE_QUEUE[i].file);
-      const invs = _isSheet(FILE_QUEUE[i].file)
+      const _rawInvs = _isSheet(FILE_QUEUE[i].file)
         ? [await pcExtractFromSheet(FILE_QUEUE[i].file)]
         : await extractInvoice(FILE_QUEUE[i].file);
+      const invs = await trimInvsToLimit(_rawInvs);
+      if(!invs.length){
+        FILE_QUEUE[i].status='error';
+        addLog(`  ⚠ ${FILE_QUEUE[i].name}: monthly limit reached — skipped`,'#f59e0b');
+        renderQueue(); break; // stop processing the queue
+      }
       const pdfDataUrl = await pdfPromise;
       FILE_QUEUE[i].status='done';FILE_QUEUE[i].result=invs[0];
       for(const inv of invs){
