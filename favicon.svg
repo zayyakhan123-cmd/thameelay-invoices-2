@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+    <defs>
+      <radialGradient id="bgGlow" cx="0.3" cy="0.18" r="0.85">
+        <stop offset="0" stop-color="rgba(34,211,238,0.26)"></stop>
+        <stop offset="0.6" stop-color="rgba(34,211,238,0.0)"></stop>
+      </radialGradient>
+    </defs>
+    <rect width="48" height="48" rx="11" fill="#0a1129"></rect>
+       <rect width="48" height="48" rx="11" fill="url(#bgGlow)"></rect>
+       <rect x="1" y="1" width="46" height="46" rx="10" fill="none" stroke="rgba(34,211,238,0.30)" stroke-width="2"></rect>
+    <svg x="9.5" y="9.5" width="29" height="29" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="gt" x1="6" y1="42" x2="42" y2="6" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5eead4"></stop><stop offset="1" stop-color="#22d3ee"></stop>
+    </linearGradient>
+    <filter id="glt" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="#22d3ee" flood-opacity="0.85"></feDropShadow>
+    </filter>
+  </defs>
+  <g fill="none" stroke="url(#gt)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 17 V11 H17" stroke-width="3"></path>
+    <path d="M31 11 H37 V17" stroke-width="3"></path>
+    <path d="M11 31 V37 H17" stroke-width="3"></path>
+    <path d="M37 31 V37 H31" stroke-width="3"></path>
+    <path d="M14 30 L20.5 25 L26 28 L34 17" stroke-width="2.8"></path>
+  </g>
+  <circle cx="34" cy="17" r="3.3" fill="#22d3ee"></circle></svg>
+  </svg>

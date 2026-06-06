@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="56" viewBox="0 0 250 56">
+    <svg x="2" y="6" width="44" height="44" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="glk" x1="6" y1="42" x2="42" y2="6" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5eead4"></stop><stop offset="1" stop-color="#22d3ee"></stop>
+    </linearGradient>
+    <filter id="gllk" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="#22d3ee" flood-opacity="0.85"></feDropShadow>
+    </filter>
+  </defs>
+  <g filter="url(#gllk)" fill="none" stroke="url(#glk)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 17 V11 H17" stroke-width="3"></path>
+    <path d="M31 11 H37 V17" stroke-width="3"></path>
+    <path d="M11 31 V37 H17" stroke-width="3"></path>
+    <path d="M37 31 V37 H31" stroke-width="3"></path>
+    <path d="M14 30 L20.5 25 L26 28 L34 17" stroke-width="2.8"></path>
+  </g>
+  <circle cx="34" cy="17" r="3.3" fill="#22d3ee" filter="url(#gllk)"></circle></svg>
+    <text x="58" y="36" font-family="Inter, Arial, sans-serif" font-size="29" font-weight="600" letter-spacing="-0.6" fill="#ffffff">Track<tspan fill="#5eead4">Aisle</tspan></text>
+  </svg>
