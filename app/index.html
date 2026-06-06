@@ -702,33 +702,28 @@ body.cloud-active [data-cloud-show]{display:block !important}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .ti-spin{display:inline-block;animation:spin 1s linear infinite}
 
-/* ─── DASHBOARD APPROVE BUTTONS ─────────────────── */
-.db-act-cell{display:flex;flex-direction:row;gap:4px;align-items:center;min-width:110px}
-.db-act-btn{font-size:10px;font-weight:600;padding:5px 8px;border-radius:5px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;transition:all .12s;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:-.005em}
-.db-act-btn:hover{transform:translateY(-1px)}
-.db-act-btn.approve{background:var(--green);color:#fff;border-color:var(--green)}
-.db-act-btn.approve:hover{background:var(--greend);border-color:var(--greend)}
-.db-act-btn.reject{background:var(--surface);color:var(--red);border-color:var(--red)}
-.db-act-btn.reject:hover{background:var(--redbg)}
-.db-act-status{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;text-align:center;letter-spacing:.02em;text-transform:uppercase}
-.db-act-status.approved{background:var(--greenl);color:var(--greend);border:1px solid var(--green)}
-.db-act-status.rejected{background:var(--redl);color:var(--redd);border:1px solid var(--red)}
-.db-act-status.pending{background:var(--amberl);color:var(--amberd);border:1px solid var(--amber)}
-.db-act-undo{font-size:9px;color:var(--text3);cursor:pointer;text-decoration:underline;margin-top:2px}
-.db-act-undo:hover{color:var(--c1)}
-
-/* ─── DASHBOARD BULK BAR ────────────────────────── */
-.db-bulk{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;flex-wrap:wrap}
-.db-bulk-info{font-size:11px;color:var(--text2);font-weight:500}
-.db-bulk-info b{color:var(--text);font-family:var(--font-mono)}
-.db-bulk-spacer{flex:1;min-width:0}
+/* ─── DASHBOARD STATUS STRIP + SAVE ─────────────── */
+.db-strip{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;flex-wrap:wrap}
+.db-strip-info{font-size:12px;color:var(--text3);flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+.db-strip-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
+.db-strip-chip.up{background:rgba(245,158,11,.12);color:var(--amber)}
+.db-strip-chip.dn{background:rgba(16,185,129,.12);color:var(--green)}
+.db-strip-chip.new{background:rgba(96,165,250,.12);color:var(--blue)}
+.db-strip-chip.stable{background:rgba(148,163,184,.08);color:var(--text3)}
+.db-save-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--c1),var(--c1d));color:#042630;border:none;cursor:pointer;letter-spacing:-.01em;transition:filter .15s,transform .15s,box-shadow .15s;box-shadow:0 0 16px -4px rgba(34,211,238,.4),inset 0 1px 0 rgba(255,255,255,.2);white-space:nowrap}
+.db-save-btn:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 0 24px -4px rgba(34,211,238,.55),inset 0 1px 0 rgba(255,255,255,.2)}
+.db-save-btn:active{transform:translateY(0)}
+.db-save-btn:disabled{opacity:.45;cursor:not-allowed;filter:none;transform:none;box-shadow:none}
+/* Row-state left borders — the only status signal users need */
+.db-approval-body tr.apr-up{border-left:3px solid var(--amber)}
+.db-approval-body tr.apr-dn{border-left:3px solid var(--green)}
+.db-approval-body tr.apr-new{border-left:3px solid var(--blue)}
+.db-approval-body tr.apr-stable{border-left:3px solid transparent}
+/* db-bulk-btn kept for export panel footer only */
 .db-bulk-btn{font-size:11px;font-weight:600;padding:6px 12px;border-radius:5px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;color:var(--text2);transition:all .12s;display:flex;align-items:center;gap:5px}
 .db-bulk-btn:hover{background:var(--bg4);border-color:var(--border3)}
-.db-bulk-btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
-.db-bulk-btn.primary:hover{background:var(--greend);border-color:var(--greend)}
-.db-bulk-btn.warn{background:var(--surface);color:var(--red);border-color:var(--red)}
-.db-bulk-btn.warn:hover{background:var(--redbg)}
-.db-bulk-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.db-bulk-btn.primary{background:var(--c1);color:#042630;border-color:var(--c1);font-weight:700}
+.db-bulk-btn.primary:hover{filter:brightness(1.08)}
 
 /* ─── EXPORT DROPDOWN (Workbench top bar) ────────── */
 .exp-menu-wrap{position:relative;display:inline-block}
@@ -1085,17 +1080,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
         </div>
         <div class="tbl-search">
           <div class="tbl-search-input"><input type="text" placeholder="Search items..." id="db-search" oninput="dbSearchDebounced()"></div>
-          <button class="tbl-btn"><i class="ti ti-filter" style="margin-right:6px"></i>Filters</button>
           <button class="tbl-btn" id="db-export-open-btn" onclick="openExportPanel()"><i class="ti ti-download" style="margin-right:6px"></i>Export</button>
+          <button class="db-save-btn" id="db-save-btn" onclick="dbSaveAll()" disabled><i class="ti ti-device-floppy"></i>Save</button>
         </div>
       </div>
-      <div class="db-bulk" id="db-bulk-bar" style="display:none">
-        <div class="db-bulk-info"><b id="db-bulk-pending">0</b> pending · <b id="db-bulk-approved" style="color:var(--green)">0</b> approved · <b id="db-bulk-rejected" style="color:var(--red)">0</b> rejected</div>
-        <div class="db-bulk-spacer"></div>
-        <button class="db-bulk-btn primary" onclick="dbApproveSafe()" title="Approve all items where Recommended Action is Do Nothing"><i class="ti ti-check" style="margin-right:6px"></i>Safe</button>
-        <button class="db-bulk-btn primary" onclick="dbApproveAll()" title="Approve every item"><i class="ti ti-checks" style="margin-right:6px"></i>All</button>
-        <button class="db-bulk-btn warn" onclick="dbRejectAll()"><i class="ti ti-x" style="margin-right:6px"></i>Reject All</button>
-        <button class="db-bulk-btn" onclick="dbLoadLastInvoice()" title="Re-load the most recently uploaded invoice"><i class="ti ti-file-text" style="margin-right:6px"></i>Last Invoice</button>
+      <div class="db-strip" id="db-bulk-bar" style="display:none">
+        <div class="db-strip-info" id="db-strip-info"></div>
       </div>
       <div class="tw">
         <table>
@@ -1109,10 +1099,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
             <th style="width:32px;text-align:center" title="Reason">ℹ</th>
             <th>Margin</th>
             <th>Retail</th>
-            <th style="text-align:center">Action</th>
           </tr></thead>
-          <tbody id="db-approval-body">
-            <tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text3)">
+          <tbody id="db-approval-body" class="db-approval-body">
+            <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--text3)">
               <div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-package"></i></div>
               <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
               <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
@@ -4538,6 +4527,15 @@ function bulkApprove(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='ap
 function rejectAll(){Object.keys(APPROVALS).forEach(k=>APPROVALS[k].status='rejected');renderDashboardTable();updateExportSummary();showToast('warn', `Rejected ${Object.keys(APPROVALS).length} items`);}
 
 // Dashboard-only bulk actions
+function dbSaveAll(){
+  if(!INV||!Object.keys(APPROVALS).length){showToast('warn','Upload an invoice first');return;}
+  const btn = document.getElementById('db-save-btn');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader ti-spin"></i>Saving…'; }
+  bulkApprove();
+  const ok = finalizeAndSave(true);
+  if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i>Save'; }
+  if(ok){ const n=Object.keys(APPROVALS).length; showToast('success',`✓ Saved — ${n} item${n!==1?'s':''} saved to history`); }
+}
 function dbApproveAll(){
   if(!INV||!Object.keys(APPROVALS).length){showToast('warn','Nothing to approve yet — upload an invoice first');return;}
   bulkApprove();
@@ -6917,13 +6915,15 @@ function renderDashboardTable(){
   const bulkBar = document.getElementById('db-bulk-bar');
   
   if(!INV){
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:48px;color:var(--text3)">
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:48px;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:8px;opacity:.5"><i class="ti ti-package"></i></div>
       <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No items to review yet</div>
       <div style="font-size:11px">Upload an invoice or load the demo to see price recommendations</div>
     </td></tr>`;
     document.getElementById('db-pager').style.display='none';
     if(bulkBar) bulkBar.style.display='none';
+    const saveBtn = document.getElementById('db-save-btn');
+    if(saveBtn) saveBtn.disabled = true;
     const pill = document.getElementById('db-action-pill');
     if(pill) pill.textContent = '0 Action Required';
     return;
@@ -6933,19 +6933,10 @@ function renderDashboardTable(){
   const vk = normV(INV.vendor);
   const search = (document.getElementById('db-search')?.value || '').toLowerCase();
   
-  // Update bulk bar counts
-  if(bulkBar){
-    bulkBar.style.display = 'flex';
-    const vals = Object.values(APPROVALS);
-    const pCnt = vals.filter(v=>v.status==='pending').length;
-    const aCnt = vals.filter(v=>v.status==='approved').length;
-    const rCnt = vals.filter(v=>v.status==='rejected').length;
-    document.getElementById('db-bulk-pending').textContent = pCnt;
-    document.getElementById('db-bulk-approved').textContent = aCnt;
-    document.getElementById('db-bulk-rejected').textContent = rCnt;
-    const pill = document.getElementById('db-action-pill');
-    if(pill) pill.textContent = pCnt + ' Pending';
-  }
+  // Update status strip
+  if(bulkBar) bulkBar.style.display = 'flex';
+  const saveBtn = document.getElementById('db-save-btn');
+  if(saveBtn) saveBtn.disabled = false;
   
   let rows = purch.map(item=>{
     const ap = APPROVALS[item.item];
@@ -6976,10 +6967,27 @@ function renderDashboardTable(){
   }
   
   if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text3)">No items match "${esc(search)}"</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No items match "${esc(search)}"</td></tr>`;
     return;
   }
   
+  // Update status strip chips
+  const _stripEl = document.getElementById('db-strip-info');
+  if(_stripEl){
+    const _up  = rows.filter(r=>r.ch.status==='increase').length;
+    const _dn  = rows.filter(r=>r.ch.status==='decrease').length;
+    const _new = rows.filter(r=>r.ch.status==='no_history').length;
+    const _stb = rows.length - _up - _dn - _new;
+    let chips = '';
+    if(_up)  chips += `<span class="db-strip-chip up"><i class="ti ti-trending-up"></i>${_up} price up</span>`;
+    if(_dn)  chips += `<span class="db-strip-chip dn"><i class="ti ti-trending-down"></i>${_dn} price down</span>`;
+    if(_new) chips += `<span class="db-strip-chip new"><i class="ti ti-sparkles"></i>${_new} new</span>`;
+    if(_stb) chips += `<span class="db-strip-chip stable">${_stb} stable</span>`;
+    _stripEl.innerHTML = chips || '<span style="color:var(--text3)">No items</span>';
+    const pill = document.getElementById('db-action-pill');
+    if(pill) pill.textContent = _up ? `${_up} Price Change${_up!==1?'s':''}` : 'All Stable';
+  }
+
   // Sort: changes needed first, then review, then safe
   rows.sort((a,b)=>{
     const aPri = a.ch.status==='increase'?0 : a.ch.status==='decrease'?1 : a.item._conf<0.7?2 : 3;
@@ -7178,7 +7186,8 @@ function renderDashboardTable(){
       ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--text3)">${esc(_bcRaw)}</span>`
       : '';
 
-    return `<tr>
+    const rowClass = ch.status==='increase'?'apr-up':ch.status==='decrease'?'apr-dn':ch.status==='no_history'?'apr-new':'apr-stable';
+    return `<tr class="${rowClass}">
       <td>
         <div class="itm-cell">
           <div class="itm-img">${catIcon}</div>
@@ -7201,7 +7210,6 @@ function renderDashboardTable(){
         </div>
       </td>
       <td>${retailHtml}</td>
-      <td style="vertical-align:middle">${actionCell}</td>
     </tr>`;
   }).join('');
   
