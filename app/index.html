@@ -4347,6 +4347,9 @@ function loadInvoice(inv){
     APPROVALS[i.item]={status:'pending',retailPrice:resolved.retail,change:ch,resolved,
       desc:i.desc,cat:i.cat,size:i.size,qty:i.qty,caseCost:i.caseCost};
   });
+  // Restore approval statuses and retail prices from a prior save (history reload)
+  if(inv._approvedStatuses) Object.entries(inv._approvedStatuses).forEach(([k,s])=>{ if(APPROVALS[k]) APPROVALS[k].status=s; });
+  if(inv._approvedRetails)  Object.entries(inv._approvedRetails).forEach(([k,r])=>{ if(APPROVALS[k]&&Number.isFinite(r)) APPROVALS[k].retailPrice=r; });
   buildAlerts();updateNavCounts();
   renderDashboard();
   goTo('dashboard');
@@ -4871,8 +4874,8 @@ function finalizeAndSave(silent){
   const {saved,skipped}=saveInvoiceToDB(INV);
   const hist=loadHist();const idx=hist.findIndex(h=>h.invoiceNo===INV.invoiceNo&&h.vendor===INV.vendor&&normDate(h.date)===normDate(INV.date));
   if(idx>=0)hist.splice(idx,1);
-  const _ar={};Object.entries(APPROVALS).forEach(([k,v])=>{if(v&&v.retailPrice!=null)_ar[k]=v.retailPrice;});
-  hist.unshift({...INV,_approvedRetails:_ar,savedAt:new Date().toISOString()});saveHist(hist);
+  const _ar={},_as={};Object.entries(APPROVALS).forEach(([k,v])=>{if(v){if(v.retailPrice!=null)_ar[k]=v.retailPrice;if(v.status)_as[k]=v.status;}});
+  hist.unshift({...INV,_approvedRetails:_ar,_approvedStatuses:_as,savedAt:new Date().toISOString()});saveHist(hist);
   updateNavCounts();
   if(document.getElementById('pg-history')?.classList.contains('on')) renderHistory();
   if(document.getElementById('pg-tracker')?.classList.contains('on')) renderTracker('all');
