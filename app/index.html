@@ -2818,11 +2818,13 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 // Caches are invalidated on every save.
 const _CACHE = {hist:null, db:null, prodMeta:null};
 const _VENDOR_ITEMS_CACHE = {}; // keyed by vendor name; invalidated on saveHist
+// detectChange results cached by "itemNo||vk||invoiceNo||date"; cleared when DB changes
+const _DETECT_CACHE = {};
 function loadHist(){ if(_CACHE.hist===null) _CACHE.hist = lsGet(SK.HIST)||[]; return _CACHE.hist; }
 function saveHist(a){ _CACHE.hist = a; lsSet(SK.HIST,a); for(const k in _VENDOR_ITEMS_CACHE) delete _VENDOR_ITEMS_CACHE[k]; cloudMark('invoices'); cloudMark('price_obs'); }
 function loadDB(){ if(_CACHE.db===null) _CACHE.db = lsGet(SK.PRICE)||{}; return _CACHE.db; }
-function saveDB(d){ _CACHE.db = d; lsSet(SK.PRICE,d); cloudMark('price_obs'); }
-function invalidateCache(){ _CACHE.hist = null; _CACHE.db = null; _CACHE.prodMeta = null; }
+function saveDB(d){ _CACHE.db = d; lsSet(SK.PRICE,d); cloudMark('price_obs'); for(const k in _DETECT_CACHE) delete _DETECT_CACHE[k]; }
+function invalidateCache(){ _CACHE.hist = null; _CACHE.db = null; _CACHE.prodMeta = null; for(const k in _DETECT_CACHE) delete _DETECT_CACHE[k]; }
 
 // ═══════════ CLOUD SYNC (Supabase) ═══════════
 // Optional cloud-sync layer. Stays dormant when SUPABASE_URL is the placeholder
@@ -3472,20 +3474,22 @@ function getPrevCost(vk,itemNo,curInvNo){
 function detectChange(item,vk,curInvNo,curInvDate){
   if(item._rt!==RT.PURCHASED) return {status:'excluded'};
   const curr=unitCost(item);
+  const _ck=(item.item||'')+'||'+vk+'||'+(curInvNo||'')+'||'+(curInvDate||'');
+  if(_DETECT_CACHE[_ck]) return _DETECT_CACHE[_ck];
   
   // Use fuzzy matching engine — finds same item across invoices AND vendors
   const match=findBestHistoryMatch(item,vk,curInvNo,curInvDate);
-  if(!match) return {status:'no_history',curr};
-  
+  if(!match){ const r={status:'no_history',curr}; _DETECT_CACHE[_ck]=r; return r; }
+
   const prev=match.entry;
   const diff=curr-prev.unitCost;
   const pct=prev.unitCost>0?(diff/prev.unitCost*100):0;
   const status=Math.abs(diff)<0.001?'no_change':diff>0?'increase':'decrease';
-  
+
   // Cross-vendor comparison
   const crossVendor=getCrossVendorPrices(item.item,vk,curr);
-  
-  return {
+
+  const result={
     status,prev:prev.unitCost,curr,diff,pct,
     prevCase:prev.caseCost||0, prevUnits:prev.units||1,
     prevInv:prev.invoiceNo,prevDate:prev.date,
@@ -3495,6 +3499,8 @@ function detectChange(item,vk,curInvNo,curInvDate){
     // Flag if a cheaper vendor exists
     cheaperAvailable: crossVendor&&crossVendor.cheaperCount>0
   };
+  _DETECT_CACHE[_ck]=result;
+  return result;
 }
 
 // ═══════════ DB MIGRATION ═══════════
