@@ -2349,6 +2349,73 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
 </aside>
 
+<!-- Product detail modal: opened by clicking Open on a vendor drill-down row -->
+<div id="prod-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9100;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeProdDetailModal()">
+  <div style="background:var(--surface);border-radius:16px;width:100%;max-width:540px;box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px var(--border);overflow:hidden">
+    <div style="padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div>
+        <div id="pdm-title" style="font-size:16px;font-weight:700;color:var(--text)"></div>
+        <div id="pdm-sub" style="font-size:11px;color:var(--text3);margin-top:3px"></div>
+      </div>
+      <button onclick="closeProdDetailModal()" style="background:transparent;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1">×</button>
+    </div>
+    <div style="padding:18px 22px;display:flex;flex-direction:column;gap:16px">
+      <!-- Read-only context -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+        <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Unit cost</div><div id="pdm-unit-cost" style="font-size:13px;color:var(--text);font-weight:600;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
+        <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Retail</div><div id="pdm-retail" style="font-size:13px;color:var(--green);font-weight:600;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
+        <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Last seen</div><div id="pdm-last-seen" style="font-size:13px;color:var(--text2);padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
+        <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Orders</div><div id="pdm-orders" style="font-size:13px;color:var(--text2);padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border)">
+      <!-- Sizing -->
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Sizing</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Pack size</label><input id="pdm-pack-size" type="number" min="1" placeholder="e.g. 24" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div style="font-size:10px;color:var(--text4);margin-top:3px">Units per case</div></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Unit size</label><input id="pdm-unit-size" type="text" placeholder="e.g. each, 1 lb, 13.5 oz" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div style="font-size:10px;color:var(--text4);margin-top:3px">How it's sold to customers</div></div>
+        </div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border)">
+      <!-- Inventory targets -->
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Inventory targets</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Reorder point</label><input id="pdm-reorder-point" type="number" min="0" placeholder="e.g. 4" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div style="font-size:10px;color:var(--text4);margin-top:3px">Order when stock falls below this</div></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Target stock</label><input id="pdm-target-stock" type="number" min="0" placeholder="e.g. 12" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div style="font-size:10px;color:var(--text4);margin-top:3px">Units to keep on hand</div></div>
+        </div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border)">
+      <!-- Classification -->
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Classification</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Produce group</label>
+            <select id="pdm-produce-group" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);cursor:pointer">
+              <option value="">— none —</option>
+              <option value="specialty">Specialty</option>
+              <option value="staples">Staples</option>
+              <option value="herbs">Herbs &amp; aromatics</option>
+              <option value="frozen">Frozen produce</option>
+              <option value="tropical">Tropical</option>
+              <option value="leafy">Leafy &amp; greens</option>
+            </select>
+            <div style="font-size:10px;color:var(--text4);margin-top:3px">Groups items in reports</div>
+          </div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Note</label><input id="pdm-note" type="text" placeholder="Internal note…" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div style="font-size:10px;color:var(--text4);margin-top:3px">Only you can see this</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <button id="pdm-disc-btn" onclick="pdmToggleDisc()" style="font-size:12px;padding:8px 14px;border:1px solid rgba(239,68,68,.25);background:transparent;color:var(--red);border-radius:8px;cursor:pointer"></button>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeProdDetailModal()" style="font-size:13px;padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:8px;cursor:pointer">Cancel</button>
+        <button onclick="saveProdDetailModal()" style="font-size:13px;padding:8px 20px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);color:var(--c1);border-radius:8px;cursor:pointer;font-weight:600">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Vendor drill-down modal: opened by clicking a vendor card on the Vendor Dashboard -->
 <div id="vnd-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto" onclick="if(event.target===this)vendorClose()">
   <div style="background:var(--surface);border-radius:14px;max-width:1200px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden">
@@ -3300,6 +3367,11 @@ async function cloudReplaceProductMeta(){
     sold_by: v.sold_by || null,
     last_retail: Number.isFinite(v.last_retail) ? v.last_retail : null,
     last_retail_at: v.last_retail_at || null,
+    pack_size: Number.isFinite(v.pack_size) ? v.pack_size : null,
+    unit_size: v.unit_size || null,
+    reorder_point: Number.isFinite(v.reorder_point) ? v.reorder_point : null,
+    target_stock: Number.isFinite(v.target_stock) ? v.target_stock : null,
+    produce_group: v.produce_group || null,
   }));
   await _supabase.from('product_meta').delete().eq('tenant_id', _USER.id);
   if(rows.length) await _supabase.from('product_meta').insert(rows);
@@ -3425,6 +3497,11 @@ async function cloudPullAll(){
           discontinued: !!r.discontinued, note: r.note, sold_by: r.sold_by || undefined,
           last_retail: r.last_retail != null ? Number(r.last_retail) : undefined,
           last_retail_at: r.last_retail_at || undefined,
+          pack_size: r.pack_size != null ? Number(r.pack_size) : undefined,
+          unit_size: r.unit_size || undefined,
+          reorder_point: r.reorder_point != null ? Number(r.reorder_point) : undefined,
+          target_stock: r.target_stock != null ? Number(r.target_stock) : undefined,
+          produce_group: r.produce_group || undefined,
         };
       });
       _CACHE.prodMeta = meta; lsSet(SK.PROD_META, meta);
@@ -4930,6 +5007,74 @@ function finalizeAndSave(silent){
 // Per-product metadata (notes, discontinued flag) — keyed by normalized name+vendor
 function loadProdMeta(){ if(_CACHE.prodMeta===null) _CACHE.prodMeta = lsGet(SK.PROD_META)||{}; return _CACHE.prodMeta; }
 function saveProdMeta(m){ _CACHE.prodMeta = m; lsSet(SK.PROD_META, m); cloudMark('product_meta'); }
+
+// ─── Product detail modal ────────────────────────────────────────────────────
+let _pdmDesc = null, _pdmVendor = null;
+
+function openProdDetailModal(desc, vendor, lastCost, latestRetail, lastSeen, orders){
+  _pdmDesc = desc; _pdmVendor = vendor;
+  const m = loadProdMeta();
+  const k = prodMetaKey(desc, vendor);
+  const meta = m[k] || {};
+
+  el('pdm-title').textContent = desc;
+  el('pdm-sub').textContent = vendor;
+  el('pdm-unit-cost').textContent = lastCost != null ? f2(lastCost) : '—';
+  el('pdm-retail').textContent = latestRetail != null ? f2(latestRetail) : '—';
+  el('pdm-last-seen').textContent = lastSeen || '—';
+  el('pdm-orders').textContent = orders != null ? orders + (orders === 1 ? ' order' : ' orders') : '—';
+
+  el('pdm-pack-size').value = meta.pack_size != null ? meta.pack_size : '';
+  el('pdm-unit-size').value = meta.unit_size || '';
+  el('pdm-reorder-point').value = meta.reorder_point != null ? meta.reorder_point : '';
+  el('pdm-target-stock').value = meta.target_stock != null ? meta.target_stock : '';
+  el('pdm-produce-group').value = meta.produce_group || '';
+  el('pdm-note').value = meta.note || '';
+  el('pdm-disc-btn').textContent = meta.discontinued ? 'Restore product' : 'Mark discontinued';
+
+  const modal = document.getElementById('prod-detail-modal');
+  modal.style.display = 'flex';
+}
+
+function closeProdDetailModal(){
+  document.getElementById('prod-detail-modal').style.display = 'none';
+  _pdmDesc = null; _pdmVendor = null;
+}
+
+function saveProdDetailModal(){
+  if(!_pdmDesc || !_pdmVendor) return;
+  const m = loadProdMeta();
+  const k = prodMetaKey(_pdmDesc, _pdmVendor);
+  m[k] = m[k] || {};
+
+  const packRaw = el('pdm-pack-size').value.trim();
+  const reorderRaw = el('pdm-reorder-point').value.trim();
+  const targetRaw = el('pdm-target-stock').value.trim();
+
+  if(packRaw !== '') m[k].pack_size = parseInt(packRaw, 10); else delete m[k].pack_size;
+  m[k].unit_size = el('pdm-unit-size').value.trim() || undefined;
+  if(reorderRaw !== '') m[k].reorder_point = parseInt(reorderRaw, 10); else delete m[k].reorder_point;
+  if(targetRaw !== '') m[k].target_stock = parseInt(targetRaw, 10); else delete m[k].target_stock;
+  m[k].produce_group = el('pdm-produce-group').value || undefined;
+  m[k].note = el('pdm-note').value.trim() || undefined;
+
+  saveProdMeta(m);
+  showToast('Saved.', 'success');
+  closeProdDetailModal();
+  if(document.getElementById('pg-vendors')?.classList.contains('on')) renderVendors();
+}
+
+function pdmToggleDisc(){
+  if(!_pdmDesc || !_pdmVendor) return;
+  const m = loadProdMeta();
+  const k = prodMetaKey(_pdmDesc, _pdmVendor);
+  m[k] = m[k] || {};
+  m[k].discontinued = !m[k].discontinued;
+  saveProdMeta(m);
+  el('pdm-disc-btn').textContent = m[k].discontinued ? 'Restore product' : 'Mark discontinued';
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function prodMetaKey(name, vendor){
   return (name||'').toLowerCase().replace(/\s+/g,' ').trim() + '||' + (vendor||'').toLowerCase().trim();
 }
@@ -5389,6 +5534,7 @@ function vendorRenderTable(vendorName){
         <th style="text-align:right">Cases</th>
         <th style="text-align:right">Spend</th>
         <th style="text-align:left">Last seen</th>
+        <th></th>
       </tr></thead>
       <tbody>
         ${slice.map(i => {
@@ -5414,6 +5560,7 @@ function vendorRenderTable(vendorName){
               <td class="mn" style="text-align:right;color:var(--green);font-weight:600" title="Auto-calculated from last cost × ${catMarkup(i.cat)}% markup">${f2(retail)}<span style="color:var(--text4);font-weight:400;margin-left:2px">~</span></td>
               <td class="mn" style="text-align:right;color:${marginCol};font-weight:600">${margin.toFixed(1)}%</td>`;
           }
+          const {retail: iRetail} = vendorRetailFor(i);
           return `<tr>
             <td style="padding:8px 10px"><div style="font-weight:600">${esc(i.desc)}</div><div style="font-size:11px;color:var(--text3)">#${esc(i.item)} · ${esc(i.size||'')}</div></td>
             ${skuCell}
@@ -5425,6 +5572,7 @@ function vendorRenderTable(vendorName){
             <td class="mn" style="text-align:right">${i.totalQty}</td>
             <td class="mn" style="text-align:right;font-weight:600">${fBig(i.totalSpend)}</td>
             <td class="mn" style="font-size:11px;color:var(--text3)">${esc(i.lastSeen)}</td>
+            <td><button onclick="openProdDetailModal('${escJs(i.desc)}','${escJs(vendorName)}',${i.lastCost},${iRetail},'${escJs(i.lastSeen)}',${i.totalQty})" style="font-size:11px;padding:3px 9px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer">Open</button></td>
           </tr>`;
         }).join('')}
       </tbody>
