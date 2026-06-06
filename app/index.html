@@ -6102,9 +6102,13 @@ function tokenSim(a, b) {
 function fuzzyScore(a, b) {
   const na=normDesc(a), nb=normDesc(b);
   if(na===nb) return 1.0;
+  const tokSim = tokenSim(na, nb);
+  // Combined score = tokSim*0.6 + editSim*0.4. Max editSim = 1.0, so if
+  // tokSim*0.6 + 0.4 < 0.72, the score can never reach the 0.72 match threshold
+  // regardless of edit distance — skip the expensive levenshtein call.
+  if(tokSim * 0.6 + 0.4 < 0.72) return tokSim * 0.6;
   const maxLen=Math.max(na.length, nb.length);
   const editSim = maxLen>0 ? 1-(levenshtein(na,nb)/maxLen) : 0;
-  const tokSim = tokenSim(na, nb);
   return tokSim*0.6 + editSim*0.4;
 }
 
