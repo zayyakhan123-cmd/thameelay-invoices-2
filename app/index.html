@@ -705,11 +705,16 @@ body.cloud-active [data-cloud-show]{display:block !important}
 /* ─── DASHBOARD STATUS STRIP + SAVE ─────────────── */
 .db-strip{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;flex-wrap:wrap}
 .db-strip-info{font-size:12px;color:var(--text3);flex:1;min-width:0;display:flex;align-items:center;gap:10px}
-.db-strip-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
+.db-strip-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid transparent;cursor:pointer;background:none;transition:filter .12s,border-color .12s,background .12s}
+.db-strip-chip:hover{filter:brightness(1.2)}
 .db-strip-chip.up{background:rgba(245,158,11,.12);color:var(--amber)}
 .db-strip-chip.dn{background:rgba(16,185,129,.12);color:var(--green)}
 .db-strip-chip.new{background:rgba(96,165,250,.12);color:var(--blue)}
 .db-strip-chip.stable{background:rgba(148,163,184,.08);color:var(--text3)}
+.db-strip-chip.up.active{background:rgba(245,158,11,.22);border-color:var(--amber);box-shadow:0 0 0 1px rgba(245,158,11,.3)}
+.db-strip-chip.dn.active{background:rgba(16,185,129,.22);border-color:var(--green);box-shadow:0 0 0 1px rgba(16,185,129,.3)}
+.db-strip-chip.new.active{background:rgba(96,165,250,.22);border-color:var(--blue);box-shadow:0 0 0 1px rgba(96,165,250,.3)}
+.db-strip-chip.stable.active{background:rgba(148,163,184,.18);border-color:var(--text3);box-shadow:0 0 0 1px rgba(148,163,184,.25)}
 .db-save-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--c1),var(--c1d));color:#042630;border:none;cursor:pointer;letter-spacing:-.01em;transition:filter .15s,transform .15s,box-shadow .15s;box-shadow:0 0 16px -4px rgba(34,211,238,.4),inset 0 1px 0 rgba(255,255,255,.2);white-space:nowrap}
 .db-save-btn:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 0 24px -4px rgba(34,211,238,.55),inset 0 1px 0 rgba(255,255,255,.2)}
 .db-save-btn:active{transform:translateY(0)}
@@ -6285,6 +6290,13 @@ const DEMO={
 
 let DB_PAGE = 1;
 const DB_PAGE_SIZE = 8;
+let _dbStripFilter = null; // 'increase'|'decrease'|'no_history'|'no_change'|null
+
+function dbSetStripFilter(type){
+  _dbStripFilter = (_dbStripFilter === type) ? null : type; // toggle off if same chip clicked
+  DB_PAGE = 1;
+  renderDashboardTable();
+}
 
 function renderDashboard(){
   renderSummaryBanner();
@@ -6971,22 +6983,27 @@ function renderDashboardTable(){
     return;
   }
   
-  // Update status strip chips
+  // Update status strip chips (counts based on full unfiltered list)
   const _stripEl = document.getElementById('db-strip-info');
   if(_stripEl){
     const _up  = rows.filter(r=>r.ch.status==='increase').length;
     const _dn  = rows.filter(r=>r.ch.status==='decrease').length;
     const _new = rows.filter(r=>r.ch.status==='no_history').length;
     const _stb = rows.length - _up - _dn - _new;
+    const _act = _dbStripFilter;
     let chips = '';
-    if(_up)  chips += `<span class="db-strip-chip up"><i class="ti ti-trending-up"></i>${_up} price up</span>`;
-    if(_dn)  chips += `<span class="db-strip-chip dn"><i class="ti ti-trending-down"></i>${_dn} price down</span>`;
-    if(_new) chips += `<span class="db-strip-chip new"><i class="ti ti-sparkles"></i>${_new} new</span>`;
-    if(_stb) chips += `<span class="db-strip-chip stable">${_stb} stable</span>`;
+    if(_up)  chips += `<button class="db-strip-chip up${_act==='increase'?' active':''}" onclick="dbSetStripFilter('increase')"><i class="ti ti-trending-up"></i>${_up} price up</button>`;
+    if(_dn)  chips += `<button class="db-strip-chip dn${_act==='decrease'?' active':''}" onclick="dbSetStripFilter('decrease')"><i class="ti ti-trending-down"></i>${_dn} price down</button>`;
+    if(_new) chips += `<button class="db-strip-chip new${_act==='no_history'?' active':''}" onclick="dbSetStripFilter('no_history')"><i class="ti ti-sparkles"></i>${_new} new</button>`;
+    if(_stb) chips += `<button class="db-strip-chip stable${_act==='no_change'?' active':''}" onclick="dbSetStripFilter('no_change')">${_stb} stable</button>`;
+    if(_act) chips += `<button onclick="dbSetStripFilter(null)" style="background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:5px" title="Clear filter">✕ Show all</button>`;
     _stripEl.innerHTML = chips || '<span style="color:var(--text3)">No items</span>';
     const pill = document.getElementById('db-action-pill');
     if(pill) pill.textContent = _up ? `${_up} Price Change${_up!==1?'s':''}` : 'All Stable';
   }
+
+  // Apply chip filter (after strip counts so counts always reflect full set)
+  if(_dbStripFilter) rows = rows.filter(r=>r.ch.status===_dbStripFilter);
 
   // Sort: changes needed first, then review, then safe
   rows.sort((a,b)=>{
