@@ -904,13 +904,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .plan-cta:disabled{opacity:.5;cursor:not-allowed}
 
 /* ── Dashboard v2 ─────────────────────────────────────────────────── */
-.db2-topbar{display:flex;align-items:center;gap:12px;padding:0 0 18px;border-bottom:1px solid var(--border);margin-bottom:22px}
-.db2-search{display:flex;align-items:center;gap:8px;flex:1;max-width:460px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--text3);transition:border-color .15s}
-.db2-search:focus-within{border-color:rgba(34,211,238,.4)}
-.db2-search i{opacity:.45;font-size:14px}
-.db2-search-text{flex:1}
-.db2-kbd{background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:5px;padding:2px 7px;font-size:11px;color:var(--text4);font-family:var(--font-mono)}
-.db2-topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 
 .db2-kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:20px}
 .db2-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px 14px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:border-color .15s}
@@ -1050,20 +1043,6 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- DASHBOARD (HOME) -->
 <div class="pg on" id="pg-dashboard">
-
-  <!-- TOP BAR -->
-  <div class="db2-topbar">
-    <div class="db2-search">
-      <i class="ti ti-search"></i>
-      <input id="db2-global-search" type="text" placeholder="Search invoices, vendors, items…"
-        oninput="db2GlobalSearch(this.value)"
-        style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit">
-      <span class="db2-kbd">⌘K</span>
-    </div>
-    <div class="db2-topbar-right">
-      <div id="sync-status-db" style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px"></div>
-    </div>
-  </div>
 
   <!-- KPI CARDS -->
   <div class="db2-kpi-grid">
@@ -7533,37 +7512,6 @@ function renderSummaryBanner(){
 let _dbSearchT=null;
 function dbSearchDebounced(){ clearTimeout(_dbSearchT); _dbSearchT=setTimeout(renderDashboardTable, 150); }
 
-let _db2GlobalT = null;
-function db2GlobalSearch(q){
-  clearTimeout(_db2GlobalT);
-  _db2GlobalT = setTimeout(()=>{
-    const term = q.trim().toLowerCase();
-    // Mirror into the approvals search and re-render the approvals table
-    const approvalsSearch = document.getElementById('db-search');
-    if(approvalsSearch){ approvalsSearch.value = q; }
-    renderDashboardTable();
-
-    // Also highlight matching recent uploads
-    const recentEl = document.getElementById('db2-recent-list');
-    if(recentEl && term){
-      const rows = recentEl.querySelectorAll('.db2-recent-row');
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.opacity = text.includes(term) ? '1' : '0.35';
-      });
-    } else if(recentEl){
-      recentEl.querySelectorAll('.db2-recent-row').forEach(r => r.style.opacity='1');
-    }
-  }, 150);
-}
-
-// ⌘K / Ctrl+K focuses the global search
-document.addEventListener('keydown', e => {
-  if((e.metaKey||e.ctrlKey) && e.key==='k'){
-    e.preventDefault();
-    document.getElementById('db2-global-search')?.focus();
-  }
-});
 
 function renderDashboardTable(){
   const tbody = document.getElementById('db-approval-body');
