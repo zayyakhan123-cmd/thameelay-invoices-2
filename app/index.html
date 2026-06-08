@@ -1841,8 +1841,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
           <input id="pc-results-markup" type="number" step="1" min="0" max="500" value="50"
             style="width:60px;padding:5px 8px;font-size:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);text-align:center"
             oninput="pcMarkupChanged(this.value,'results')" title="Retail markup % — updates all prices live">
-          <button class="db-bulk-btn primary" onclick="pcAcceptAll()" title="Save mappings for every matched item (all confidence levels)"><i class="ti ti-checks" style="margin-right:6px"></i>Accept All</button>
-          <button class="db-bulk-btn" onclick="pcAcceptAllHigh()" title="Save mappings for high-confidence matches only"><i class="ti ti-check" style="margin-right:6px"></i>High Only</button>
+          <button class="db-bulk-btn primary" onclick="pcSaveAll()" title="Save all matches and prices to history"><i class="ti ti-device-floppy" style="margin-right:6px"></i>Save</button>
           <button class="db-bulk-btn" onclick="pcExportPDF()" title="Export a PDF price-tag sheet using the current markup"><i class="ti ti-file-type-pdf" style="margin-right:6px"></i>Export PDF</button>
           <button class="db-bulk-btn" onclick="pcResetMatches()"><i class="ti ti-rotate" style="margin-right:6px"></i>Reset</button>
         </div>
@@ -4132,7 +4131,6 @@ function detectAndOfferProduceMatch(invs){
 }
 
 async function runDualRouteProduceMatch(invs){
-  goTo('produce');
   if(typeof pcSeed === 'function') pcSeed();
   showToast('info', 'Matching produce items to catalog…');
 
@@ -9694,6 +9692,91 @@ function pcAcceptAll(){
   }
   pcSaveMap(map); pcSaveLast(); pcRenderResults();
   showToast('success', `🧠 Saved all ${n} mappings`);
+}
+function pcSaveAll(){
+  if(!PC_LAST_MATCHED) return;
+  const lines = PC_LAST_MATCHED.lines;
+  const inv = PC_LAST_MATCHED.invoice;
+
+  // Save catalog mappings
+  const map = pcLoadMap();
+  let n = 0;
+  for(const l of lines){
+    if(l.catalogId){
+      map[pcNormalize(l.invoiceText)] = l.catalogId;
+      l.remember = true; n++;
+    }
+  }
+  pcSaveMap(map);
+
+  if(inv){
+    // Upsert produce history
+    const hist = pcLoadHist();
+    const key = (inv.vendor||'').trim()+'|'+(inv.invoiceNo||'').trim();
+    const existingIdx = hist.findIndex(h=>h._key===key);
+    const entry = {
+      _key: key,
+      vendor: inv.vendor||'Unknown',
+      invoiceNo: inv.invoiceNo||'',
+      date: inv.date||new Date().toISOString().split('T')[0],
+      when: new Date().toISOString(),
+      lineCount: lines.length,
+      lines: lines.map(l=>({
+        invoiceText:l.invoiceText, invoiceSize:l.invoiceSize,
+        caseCost:l.caseCost, unitsPerCase:l.unitsPerCase,
+        cost:l.cost, unitType:l.unitType,
+        catalogId:l.catalogId, catalogName:l.catalogName,
+        retailOverride:l.retailOverride
+      }))
+    };
+    if(existingIdx>=0) hist[existingIdx]=entry; else hist.unshift(entry);
+    if(hist.length>50) hist.length=50;
+    pcSaveHist(hist);
+    pcUpdateNavCount();
+
+    // Force-overwrite price DB observations for this invoice (so edits after upload take effect)
+    try{
+      const priceDB = loadDB();
+      const invNo = inv.invoiceNo||'';
+      const vk = normalizeVendor(inv.vendor||'Unknown');
+      if(invNo){
+        Object.keys(priceDB).forEach(k=>{
+          priceDB[k] = priceDB[k].filter(e=>!(e.invoiceNo===invNo && e._fromProduce));
+        });
+      }
+      let dirty = false;
+      for(const l of lines){
+        if(!l.catalogId||!l.cost||l.cost<=0) continue;
+        const dbKey = vk+'|'+l.catalogId;
+        if(!priceDB[dbKey]) priceDB[dbKey]=[];
+        priceDB[dbKey].push({
+          date:      inv.date||new Date().toISOString().split('T')[0],
+          caseCost:  l.caseCost||0,
+          unitCost:  l.cost,
+          units:     l.unitsPerCase||1,
+          invoiceNo: invNo,
+          docType:   'invoice',
+          size:      l.invoiceSize||'',
+          desc:      l.catalogName||l.invoiceText||'',
+          normDesc:  normDesc(l.catalogName||l.invoiceText||''),
+          cat:       'produce',
+          vendor:    inv.vendor||'Unknown',
+          _fromProduce: true,
+        });
+        dirty = true;
+      }
+      if(dirty){
+        Object.keys(priceDB).forEach(k=>{
+          priceDB[k].sort((a,b)=>new Date(a.date)-new Date(b.date));
+        });
+        saveDB(priceDB);
+      }
+    }catch(e){ console.warn('pcSaveAll: price update failed:', e); }
+  }
+
+  pcSaveLast();
+  pcRenderResults();
+  showToast('success', `Saved ${n} match${n!==1?'es':''} and prices to history`);
 }
 async function pcResetMatches(){
   if(!confirm('Re-run matching from scratch? Saved manual mappings will still apply.')) return;
