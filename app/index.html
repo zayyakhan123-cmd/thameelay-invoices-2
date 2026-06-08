@@ -9746,14 +9746,20 @@ function pcSaveAll(){
       }
       let dirty = false;
       for(const l of lines){
-        if(!l.catalogId||!l.cost||l.cost<=0) continue;
+        if(!l.catalogId) continue;
+        // Compute effective cost exactly as pcRenderResults displays it (respects unitsOverride)
+        const _rp = pcParseSize(l.invoiceSize);
+        const parsedUnits = _rp.qty > 1 ? _rp.qty : (l.unitsPerCase || 1);
+        const effUnits = l.unitsOverride != null ? l.unitsOverride : parsedUnits;
+        const effCost = effUnits > 0 ? (l.caseCost || l.cost || 0) / effUnits : (l.cost || 0);
+        if(effCost <= 0) continue;
         const dbKey = vk+'|'+l.catalogId;
         if(!priceDB[dbKey]) priceDB[dbKey]=[];
         priceDB[dbKey].push({
           date:      inv.date||new Date().toISOString().split('T')[0],
           caseCost:  l.caseCost||0,
-          unitCost:  l.cost,
-          units:     l.unitsPerCase||1,
+          unitCost:  effCost,
+          units:     effUnits,
           invoiceNo: invNo,
           docType:   'invoice',
           size:      l.invoiceSize||'',
