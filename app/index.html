@@ -9696,85 +9696,91 @@ function pcAcceptAll(){
 function pcSaveAll(){
   if(!PC_LAST_MATCHED) return;
   const lines = PC_LAST_MATCHED.lines;
-  const inv = PC_LAST_MATCHED.invoice;
+  const fallbackInv = PC_LAST_MATCHED.invoice;
 
   // Save catalog mappings
   const map = pcLoadMap();
   let n = 0;
   for(const l of lines){
-    if(l.catalogId){
-      map[pcNormalize(l.invoiceText)] = l.catalogId;
-      l.remember = true; n++;
-    }
+    if(l.catalogId){ map[pcNormalize(l.invoiceText)] = l.catalogId; l.remember = true; n++; }
   }
   pcSaveMap(map);
 
-  if(inv){
-    // Upsert produce history
-    const hist = pcLoadHist();
-    const key = (inv.vendor||'').trim()+'|'+(inv.invoiceNo||'').trim();
-    const existingIdx = hist.findIndex(h=>h._key===key);
-    const entry = {
-      _key: key,
-      vendor: inv.vendor||'Unknown',
-      invoiceNo: inv.invoiceNo||'',
-      date: inv.date||new Date().toISOString().split('T')[0],
-      when: new Date().toISOString(),
-      lineCount: lines.length,
-      lines: lines.map(l=>({
-        invoiceText:l.invoiceText, invoiceSize:l.invoiceSize,
-        caseCost:l.caseCost, unitsPerCase:l.unitsPerCase,
-        cost:l.cost, unitType:l.unitType,
-        catalogId:l.catalogId, catalogName:l.catalogName,
-        retailOverride:l.retailOverride
-      }))
-    };
-    if(existingIdx>=0) hist[existingIdx]=entry; else hist.unshift(entry);
-    if(hist.length>50) hist.length=50;
-    pcSaveHist(hist);
-    pcUpdateNavCount();
+  // Group lines by invoice. Lines from pcProcessFiles carry _vendor/_invoiceNo/_invoiceDate;
+  // lines from runDualRoute / history load fall back to fallbackInv.
+  // This handles the pcProcessFiles case where PC_LAST_MATCHED.invoice is null.
+  const groups = new Map();
+  for(const l of lines){
+    const vendor    = ((l._vendor || (fallbackInv && fallbackInv.vendor) || 'Unknown')).trim();
+    const invoiceNo = ((l._invoiceNo || (fallbackInv && fallbackInv.invoiceNo) || '')).trim();
+    const date      = l._invoiceDate || (fallbackInv && fallbackInv.date) || new Date().toISOString().split('T')[0];
+    const gk = vendor + '||' + invoiceNo;
+    if(!groups.has(gk)) groups.set(gk, { vendor, invoiceNo, date, lines: [] });
+    groups.get(gk).lines.push(l);
+  }
 
-    // Force-overwrite price DB observations for this invoice (so edits after upload take effect)
+  if(groups.size > 0){
     try{
+      const hist    = pcLoadHist();
       const priceDB = loadDB();
-      const invNo = inv.invoiceNo||'';
-      const vk = normalizeVendor(inv.vendor||'Unknown');
-      if(invNo){
-        Object.keys(priceDB).forEach(k=>{
-          priceDB[k] = priceDB[k].filter(e=>!(e.invoiceNo===invNo && e._fromProduce));
+      let dbDirty   = false;
+
+      for(const { vendor, invoiceNo, date, lines: glines } of groups.values()){
+        const vk = normalizeVendor(vendor);
+
+        // Build line snapshots with effCost/effUnits (not raw l.cost) so history is accurate
+        const snapLines = glines.map(l => {
+          const _rp = pcParseSize(l.invoiceSize);
+          const parsedUnits = _rp.qty > 1 ? _rp.qty : (l.unitsPerCase || 1);
+          const effUnits = l.unitsOverride != null ? l.unitsOverride : parsedUnits;
+          const effCost  = effUnits > 0 ? (l.caseCost || l.cost || 0) / effUnits : (l.cost || 0);
+          return {
+            invoiceText: l.invoiceText, invoiceSize: l.invoiceSize,
+            caseCost: l.caseCost, unitsPerCase: effUnits,
+            cost: effCost,
+            unitType: l.soldByOverride || l.unitType,
+            catalogId: l.catalogId, catalogName: l.catalogName,
+            retailOverride: l.retailOverride
+          };
         });
+
+        // Upsert produce history
+        const hkey = vendor + '|' + invoiceNo;
+        const histEntry = {
+          _key: hkey, vendor, invoiceNo, date,
+          when: new Date().toISOString(),
+          lineCount: glines.length,
+          lines: snapLines
+        };
+        const existingIdx = hist.findIndex(h => h._key === hkey);
+        if(existingIdx >= 0) hist[existingIdx] = histEntry; else hist.unshift(histEntry);
+
+        // Force-overwrite price DB for this invoiceNo (removes stale produce entries)
+        if(invoiceNo){
+          Object.keys(priceDB).forEach(k => {
+            priceDB[k] = priceDB[k].filter(e => !(e.invoiceNo === invoiceNo && e._fromProduce));
+          });
+        }
+        for(const snap of snapLines){
+          if(!snap.catalogId || snap.cost <= 0) continue;
+          const dbKey = vk + '|' + snap.catalogId;
+          if(!priceDB[dbKey]) priceDB[dbKey] = [];
+          priceDB[dbKey].push({
+            date, caseCost: snap.caseCost || 0, unitCost: snap.cost, units: snap.unitsPerCase,
+            invoiceNo, docType: 'invoice', size: snap.invoiceSize || '',
+            desc: snap.catalogName || snap.invoiceText || '',
+            normDesc: normDesc(snap.catalogName || snap.invoiceText || ''),
+            cat: 'produce', vendor, _fromProduce: true,
+          });
+          dbDirty = true;
+        }
       }
-      let dirty = false;
-      for(const l of lines){
-        if(!l.catalogId) continue;
-        // Compute effective cost exactly as pcRenderResults displays it (respects unitsOverride)
-        const _rp = pcParseSize(l.invoiceSize);
-        const parsedUnits = _rp.qty > 1 ? _rp.qty : (l.unitsPerCase || 1);
-        const effUnits = l.unitsOverride != null ? l.unitsOverride : parsedUnits;
-        const effCost = effUnits > 0 ? (l.caseCost || l.cost || 0) / effUnits : (l.cost || 0);
-        if(effCost <= 0) continue;
-        const dbKey = vk+'|'+l.catalogId;
-        if(!priceDB[dbKey]) priceDB[dbKey]=[];
-        priceDB[dbKey].push({
-          date:      inv.date||new Date().toISOString().split('T')[0],
-          caseCost:  l.caseCost||0,
-          unitCost:  effCost,
-          units:     effUnits,
-          invoiceNo: invNo,
-          docType:   'invoice',
-          size:      l.invoiceSize||'',
-          desc:      l.catalogName||l.invoiceText||'',
-          normDesc:  normDesc(l.catalogName||l.invoiceText||''),
-          cat:       'produce',
-          vendor:    inv.vendor||'Unknown',
-          _fromProduce: true,
-        });
-        dirty = true;
-      }
-      if(dirty){
-        Object.keys(priceDB).forEach(k=>{
-          priceDB[k].sort((a,b)=>new Date(a.date)-new Date(b.date));
-        });
+
+      if(hist.length > 50) hist.length = 50;
+      pcSaveHist(hist);
+      pcUpdateNavCount();
+      if(dbDirty){
+        Object.keys(priceDB).forEach(k => priceDB[k].sort((a,b) => new Date(a.date) - new Date(b.date)));
         saveDB(priceDB);
       }
     }catch(e){ console.warn('pcSaveAll: price update failed:', e); }
