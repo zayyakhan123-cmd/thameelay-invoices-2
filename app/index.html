@@ -5867,14 +5867,14 @@ function saveVendorMerge(){
   groups[key] = { canonical, aliases: checked };
   saveVendorGroups(groups);
   closeVendorMerge();
-  renderVendorDash();
+  renderVendors();
 }
 function deleteVendorGroup(canonical){
   const groups = loadVendorGroups();
   delete groups[normalizeVendor(canonical)];
   saveVendorGroups(groups);
   openVendorMerge(); // re-render modal in place
-  renderVendorDash();
+  renderVendors();
 }
 
 // Re-render the table without closing the modal — used by Show-retail toggle and SKU search.
