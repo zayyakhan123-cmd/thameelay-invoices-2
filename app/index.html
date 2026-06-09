@@ -1636,7 +1636,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- VENDORS -->
 <div class="pg" id="pg-vendors">
-  <div class="pgh"><div class="pgt">Vendor Dashboard</div><div class="pgs">Price trends and spend analysis by vendor</div></div>
+  <div class="pgh" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="flex:1"><div class="pgt">Vendor Dashboard</div><div class="pgs">Price trends and spend analysis by vendor</div></div>
+    <button onclick="openVendorMerge()" style="font-size:12px;padding:7px 13px;display:none" id="vnd-merge-btn"><i class="ti ti-git-merge" style="margin-right:6px"></i>Merge vendors</button>
+  </div>
   <div id="vnd-empty" class="card" style="text-align:center;padding:32px"><div style="font-size:13px;color:var(--text2);margin-bottom:12px">Save invoices to see vendor data</div><button class="bp" onclick="goTo('upload')">Upload invoice</button></div>
   <div id="vnd-content" style="display:none"><div id="vnd-list"></div></div>
 </div>
@@ -2641,6 +2644,32 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
 </div>
 
+<!-- Vendor merge modal -->
+<div id="vmerge-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9100;align-items:center;justify-content:center;padding:32px 16px" onclick="if(event.target===this)closeVendorMerge()">
+  <div style="background:var(--surface);border-radius:14px;max-width:540px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="flex:1;font-size:16px;font-weight:700">Merge vendors</div>
+      <button onclick="closeVendorMerge()" style="font-size:18px;padding:4px 10px;background:transparent;border:none;cursor:pointer;color:var(--text3)">×</button>
+    </div>
+    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;color:var(--text2)">Select two or more vendor names that refer to the same supplier. All their invoices will appear under one card.</div>
+      <div id="vmerge-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto"></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:12px;font-weight:600;color:var(--text2)">CANONICAL NAME (how it should appear)</label>
+        <input id="vmerge-canonical" type="text" placeholder="e.g. Gusto" style="padding:8px 11px;font-size:13px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text)">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="closeVendorMerge()" style="font-size:13px;padding:7px 16px;background:var(--bg3);border:1px solid var(--border2)">Cancel</button>
+        <button onclick="saveVendorMerge()" class="bp" style="font-size:13px;padding:7px 16px">Save group</button>
+      </div>
+    </div>
+    <div style="padding:0 22px 18px">
+      <div id="vmerge-groups-title" style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;display:none">EXISTING GROUPS</div>
+      <div id="vmerge-groups" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════ CONSTANTS ═══════════
 // Category system: built-in defaults + user-added categories.
@@ -2719,7 +2748,7 @@ function rebuildCatMaps(){
 }
 rebuildCatMaps();
 
-const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last',PC_HIST:'tm_pc_hist',PC_RULES:'tm_pc_rules',PROD_META:'tm_prod_meta'};
+const SK={HIST:'tm_h3',PRICE:'tm_p3',APPROV:'tm_a2',VENDOR:'tm_v2',METRICS:'tm_m2',PC_CAT:'tm_pc_cat',PC_MAP:'tm_pc_map',PC_LAST:'tm_pc_last',PC_HIST:'tm_pc_hist',PC_RULES:'tm_pc_rules',PROD_META:'tm_prod_meta',VGROUPS:'tm_vendor_groups'};
 
 // ═══════════ ROW CLASSIFICATION ENGINE ═══════════
 const RT={PURCHASED:'purchased',OOS:'oos',ZERO_DUP:'zero_dup',CHARGE:'charge',MALFORMED:'malformed'};
@@ -3053,6 +3082,19 @@ function normalizeVendor(v){
   // Strip trailing legal suffix once (handles the common case of one suffix)
   s = s.replace(_VENDOR_LEGAL_RE, '').trim();
   return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function loadVendorGroups(){ return lsGet(SK.VGROUPS) || {}; }
+function saveVendorGroups(g){ lsSet(SK.VGROUPS, g); cloudMark('vendor_groups'); }
+// Returns canonical display name if this vendor is an alias in a group, otherwise returns rawName.
+function resolveVendorName(rawName){
+  if(!rawName) return rawName;
+  const groups = loadVendorGroups();
+  for(const key in groups){
+    const g = groups[key];
+    if(g.aliases.some(a => normalizeVendor(a) === normalizeVendor(rawName))) return g.canonical;
+  }
+  return rawName;
 }
 
 // ═══════════ HTML/JS ESCAPING ═══════════
@@ -3452,6 +3494,7 @@ const CLOUD_PUSHERS = {
   produce_hist:    () => cloudReplaceProduceHist(),
   vendor_rules:    () => cloudReplaceVendorRules(),
   product_meta:    () => cloudReplaceProductMeta(),
+  vendor_groups:   () => cloudReplaceVendorGroups(),
 };
 
 // Pushers. We use "replace whole set" for small tables (categories, products,
@@ -3554,6 +3597,14 @@ async function cloudReplaceProduceMap(){
   await _supabase.from('produce_map').delete().eq('tenant_id', _USER.id);
   if(rows.length) await _supabase.from('produce_map').insert(rows);
 }
+async function cloudReplaceVendorGroups(){
+  const groups = lsGet(SK.VGROUPS) || {};
+  await _supabase.from('vendor_groups').delete().eq('tenant_id', _USER.id);
+  const rows = Object.values(groups);
+  if(rows.length) await _supabase.from('vendor_groups').insert(rows.map(g => ({
+    tenant_id: _USER.id, canonical: g.canonical, aliases: g.aliases,
+  })));
+}
 async function cloudReplaceVendorRules(){
   const rules = lsGet(SK.PC_RULES) || [];
   await _supabase.from('vendor_rules').delete().eq('tenant_id', _USER.id);
@@ -3584,7 +3635,7 @@ async function cloudPullAll(){
   if(!_USER || !_supabase) return;
   _CLOUD_PULLING = true;
   try {
-    const [invoicesR, obsR, catsR, productsR, linksR, pcCatR, pcMapR, pcHistR, rulesR, metaR] = await Promise.all([
+    const [invoicesR, obsR, catsR, productsR, linksR, pcCatR, pcMapR, pcHistR, rulesR, metaR, vgroupsR] = await Promise.all([
       _supabase.from('invoices').select('*').eq('tenant_id', _USER.id).order('saved_at', { ascending: false }),
       _supabase.from('price_observations').select('*').eq('tenant_id', _USER.id),
       _supabase.from('categories').select('*').eq('tenant_id', _USER.id).order('sort_order'),
@@ -3595,6 +3646,7 @@ async function cloudPullAll(){
       _supabase.from('produce_hist').select('*').eq('tenant_id', _USER.id).order('saved_at', { ascending: false }),
       _supabase.from('vendor_rules').select('*').eq('tenant_id', _USER.id),
       _supabase.from('product_meta').select('*').eq('tenant_id', _USER.id),
+      _supabase.from('vendor_groups').select('*').eq('tenant_id', _USER.id),
     ]);
     // If cloud is completely empty and local has data, this may be a first sign-in
     // for a user who'd been using the app pre-cloud. Only push if the data was
@@ -3707,6 +3759,14 @@ async function cloudPullAll(){
         };
       });
       _CACHE.prodMeta = meta; lsSet(SK.PROD_META, meta);
+    }
+    if(vgroupsR.data){
+      const groups = {};
+      vgroupsR.data.forEach(r => {
+        const key = normalizeVendor(r.canonical);
+        groups[key] = { canonical: r.canonical, aliases: r.aliases || [] };
+      });
+      lsSet(SK.VGROUPS, groups);
     }
   } finally {
     _CLOUD_PULLING = false;
@@ -5558,14 +5618,17 @@ function renderVendors(){
   const hist=loadHist();const db=loadDB();
   if(!hist.length){show('vnd-empty',true);show('vnd-content',false);return;}
   show('vnd-empty',false);show('vnd-content',true);
+  const mergeBtn = document.getElementById('vnd-merge-btn');
+  if(mergeBtn) mergeBtn.style.display = '';
   const V={};
   // normVtoNk: maps normV (20-char DB key prefix) → full normalizeVendor key in V.
   // Needed because DB keys use normV (truncated) but V is keyed by normalizeVendor (full).
   const normVtoNk={};
   hist.forEach(inv=>{
-    const nk=normalizeVendor(inv.vendor);
-    if(!V[nk])V[nk]={name:inv.vendor,lastDate:'',invs:[],spend:0,items:new Set(),up:0,dn:0};
-    if(inv.date>V[nk].lastDate){V[nk].name=inv.vendor;V[nk].lastDate=inv.date;}
+    const resolved=resolveVendorName(inv.vendor);
+    const nk=normalizeVendor(resolved);
+    if(!V[nk])V[nk]={name:resolved,lastDate:'',invs:[],spend:0,items:new Set(),up:0,dn:0};
+    if(inv.date>V[nk].lastDate){V[nk].name=resolved;V[nk].lastDate=inv.date;}
     normVtoNk[normV(inv.vendor)]=nk;
     const v=V[nk];v.invs.push(inv);v.spend+=inv.total||0;
     inv.items.forEach(i=>v.items.add(i.item));
@@ -5742,6 +5805,78 @@ function vendorOpen(vendorName){
   vendorRenderTable(vendorName);
   modal.style.display = 'flex';
 }
+function openVendorMerge(){
+  // Build list of all known raw vendor names from invoice history
+  const hist = loadHist();
+  const seen = {};
+  hist.forEach(inv => { if(inv.vendor) seen[inv.vendor] = true; });
+  const names = Object.keys(seen).sort((a,b) => a.localeCompare(b));
+
+  const groups = loadVendorGroups();
+
+  // Checkboxes for every raw vendor name
+  document.getElementById('vmerge-list').innerHTML = names.map(n => {
+    const isGrouped = Object.values(groups).some(g =>
+      g.aliases.some(a => normalizeVendor(a) === normalizeVendor(n)) ||
+      normalizeVendor(g.canonical) === normalizeVendor(n)
+    );
+    return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0">
+      <input type="checkbox" class="vmerge-chk" value="${esc(n)}" onchange="vmergeUpdateCanonical()">
+      <span>${esc(n)}</span>
+      ${isGrouped ? '<span style="font-size:10px;color:var(--text3);margin-left:4px">grouped</span>' : ''}
+    </label>`;
+  }).join('');
+
+  // Show existing groups so user can delete them
+  const groupList = Object.values(groups);
+  document.getElementById('vmerge-groups-title').style.display = groupList.length ? '' : 'none';
+  document.getElementById('vmerge-groups').innerHTML = groupList.map(g => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border-radius:7px;font-size:12px">
+      <span style="font-weight:600;color:var(--text)">${esc(g.canonical)}</span>
+      <span style="color:var(--text3)">← ${g.aliases.map(a=>esc(a)).join(', ')}</span>
+      <button onclick="deleteVendorGroup('${escJs(g.canonical)}')" style="margin-left:auto;font-size:11px;padding:3px 8px;background:transparent;border:1px solid var(--border2);color:var(--red)">Remove</button>
+    </div>`).join('');
+
+  document.getElementById('vmerge-canonical').value = '';
+  document.getElementById('vmerge-modal').style.display = 'flex';
+}
+function closeVendorMerge(){
+  document.getElementById('vmerge-modal').style.display = 'none';
+}
+function vmergeUpdateCanonical(){
+  // Auto-fill canonical with the first checked name if field is empty
+  const checked = [...document.querySelectorAll('.vmerge-chk:checked')].map(c => c.value);
+  const field = document.getElementById('vmerge-canonical');
+  if(!field.value && checked.length) field.value = checked[0];
+}
+function saveVendorMerge(){
+  const checked = [...document.querySelectorAll('.vmerge-chk:checked')].map(c => c.value);
+  if(checked.length < 2){ alert('Select at least two vendor names to merge.'); return; }
+  const canonical = document.getElementById('vmerge-canonical').value.trim();
+  if(!canonical){ alert('Enter a canonical name for this group.'); return; }
+
+  const groups = loadVendorGroups();
+  // Remove any existing group entries that contain these aliases to avoid duplicates
+  for(const key in groups){
+    groups[key].aliases = groups[key].aliases.filter(a =>
+      !checked.some(c => normalizeVendor(c) === normalizeVendor(a))
+    );
+    if(!groups[key].aliases.length) delete groups[key];
+  }
+  const key = normalizeVendor(canonical);
+  groups[key] = { canonical, aliases: checked };
+  saveVendorGroups(groups);
+  closeVendorMerge();
+  renderVendorDash();
+}
+function deleteVendorGroup(canonical){
+  const groups = loadVendorGroups();
+  delete groups[normalizeVendor(canonical)];
+  saveVendorGroups(groups);
+  openVendorMerge(); // re-render modal in place
+  renderVendorDash();
+}
+
 // Re-render the table without closing the modal — used by Show-retail toggle and SKU search.
 function vendorRerender(){
   const m = document.getElementById('vnd-modal');
