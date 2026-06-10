@@ -235,7 +235,7 @@ test('sign-out clears localStorage so no data bleeds to next user', async () => 
     await page.waitForTimeout(1000);
     await page.getByRole('textbox', { name: /email/i }).fill(EMAIL);
     await page.getByRole('textbox', { name: /password/i }).fill(PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.locator('#login-btn').click();
     await page.waitForSelector('#page-title', { timeout: 30_000 });
     await context.storageState({ path: AUTH_FILE });
     console.log('  ✓ Re-authenticated and session saved');
