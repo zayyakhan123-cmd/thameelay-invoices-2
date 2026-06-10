@@ -3372,6 +3372,12 @@ async function cloudInit(){
   if(!CLOUD_ENABLED) return;
   document.body.classList.add('cloud-active');
   document.body.classList.add('app-locked');
+  // Show password-reset success message on the login gate
+  if(new URLSearchParams(location.search).get('reset') === '1'){
+    const msg = document.getElementById('login-msg');
+    if(msg){ msg.className = 'login-msg success'; msg.textContent = 'Password updated — sign in with your new password.'; }
+    history.replaceState({}, '', location.pathname);
+  }
   try{
     // Try primary CDN (esm.sh), fall back to jsdelivr if it's down.
     const mod = await import('https://esm.sh/@supabase/supabase-js@2').catch(() =>

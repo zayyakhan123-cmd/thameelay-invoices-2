@@ -174,11 +174,11 @@ test('/signup loads without plan badge when no params', async () => {
   await expect(page.locator('#plan-badge')).toBeHidden({ timeout: 5000 });
 });
 
-test('/signin page loads with email and password fields', async () => {
+test('/signin redirects to /app and shows login gate', async () => {
   await page.goto('/signin');
-  await expect(page.locator('#signin-form')).toBeVisible({ timeout: 8000 });
-  await expect(page.locator('input[type="email"]')).toBeVisible();
-  await expect(page.locator('input[type="password"]')).toBeVisible();
+  await page.waitForURL('**/app', { timeout: 8000 });
+  await expect(page.locator('#login-email')).toBeVisible();
+  await expect(page.locator('#login-password')).toBeVisible();
 });
 
 test('/forgot-password shows success after email submit', async () => {
