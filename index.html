@@ -161,6 +161,15 @@
     @media(max-width:640px){#pmd-dialog{padding:24px 16px 20px;border-radius:18px}.pmd-grid{grid-template-columns:1fr}}
   </style>
 </head>
+<script>
+// If a Supabase auth hash lands on the homepage, bounce to the app so it can handle it.
+(function(){
+  var h = location.hash;
+  if(h && (h.indexOf('access_token=') !== -1 || h.indexOf('error=') !== -1)){
+    window.location.replace('/app' + h);
+  }
+})();
+</script>
 <body class="font-sans antialiased">
 
 <!-- ── Pricing selection modal ──────────────────────────────────── -->
