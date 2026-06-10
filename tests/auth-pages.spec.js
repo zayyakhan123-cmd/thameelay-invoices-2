@@ -52,7 +52,7 @@ test('invoice-manager login gate: "Forgot password?" visible in sign-in mode, hi
     return;
   }
 
-  const forgotLink = page.locator('#login-forgot');
+  const forgotLink = page.locator('#login-forgot-link');
 
   // Default mode is sign-in — link must be visible
   await expect(forgotLink).toBeVisible({ timeout: 5000 });
