@@ -88,6 +88,18 @@ When adding new code that mirrors an existing pattern (Supabase init, login form
 
 Report PASS/FAIL with the evidence (curl output, screenshot, or test result). Do not declare success without it. If you lack the tooling to verify, say so explicitly — don't paper over it.
 
+### Definition of done
+A task is NOT "done" until every box below is true. In your final summary, state which ones you actually verified — don't claim "done" on faith.
+
+- [ ] **Request fully implemented** — re-read the original ask and confirm each part is covered, not just the first thing.
+- [ ] **Relevant tests pass** — run the test file(s) covering the change and paste the pass/fail line (e.g. `26 passed`). The whole suite is slow + needs auth env vars, so a scoped run is fine — but say which you ran.
+- [ ] **No regressions** — nothing that was green before is now red. If you couldn't run the full suite, say so explicitly.
+- [ ] **Visible behavior verified live** — if behavior changed, check it against the live URL per "Self-verify after deploy" (curl status + content, or a browser/Playwright click-through).
+- [ ] **One concern per commit** — small-batch discipline; each commit independently revertable.
+- [ ] **Reported with evidence** — no "looks good", no unverified "done". If a box can't be checked, name which and why instead of declaring done.
+
+This checklist is the standing self-check. When asked to "grind until green," run it in a `/loop` until every box holds.
+
 ### Auto-iterate on test failures
 After making changes:
 1. Run `npm test`
@@ -96,6 +108,15 @@ After making changes:
 4. If still red, stop and report what's failing, what you tried, what you suspect
 
 Never push with failing tests. A red test you didn't write is still your problem — investigate before pushing. The `#login-forgot` selector miss (broken since its commit was shipped, caught two commits later) is the failure mode this rule prevents.
+
+### Self-check loop (`/loop`)
+For hands-off "grind until green," use the built-in `/loop` command — it repeats a task until done without re-prompting each round. Canonical invocation for this repo:
+
+```
+/loop run the smoke tests and fix any failures until 26/26 pass
+```
+
+`/loop` is user-triggered (started from the chat). Inside a loop, the **Definition of done** checklist above IS the exit condition — keep iterating until every box holds, then stop. The full Playwright suite runs against the live site and needs `TEST_EMAIL` / `TEST_PASSWORD` env vars; a scoped `npx playwright test tests/<file> --reporter=list` is the fast inner-loop check.
 
 ### Smoke test format
 Every commit shipping visible behavior includes a numbered SMOKE TEST AFTER PUSH section with explicit pass criteria per step. "Looks good" is not a pass criterion. "Tab title reads 'Forgot password — Track Aisle'" is.
