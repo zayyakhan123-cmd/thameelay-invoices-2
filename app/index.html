@@ -694,11 +694,47 @@ body.app-locked .login-gate{display:flex}
 .login-msg{font-size:12px;color:var(--text3);margin-top:12px;min-height:18px}
 .login-msg.success{color:var(--green)}
 .login-msg.error{color:var(--red)}
-.login-foot{font-size:11px;color:var(--text4);margin-top:18px;line-height:1.5}
-.login-toggle{background:none;border:none;color:var(--c1);font-size:12px;cursor:pointer;margin-top:12px;font-family:inherit;padding:4px;opacity:.8}
-.login-toggle:hover{opacity:1}
-.login-forgot{font-size:11.5px;color:var(--text4);display:block;text-align:right;margin-top:4px;margin-bottom:8px;transition:color .15s}
-.login-forgot:hover{color:var(--c1)}
+.login-foot{font-size:11px;color:rgba(255,255,255,.28);margin-top:20px;line-height:1.6;text-align:center}
+.login-foot a{color:rgba(34,211,238,.7);text-decoration:none}
+.login-foot a:hover{color:#22d3ee}
+.login-toggle{display:none}
+.login-forgot{font-size:12px;color:rgba(34,211,238,.75);text-decoration:none;transition:color .15s;white-space:nowrap}
+.login-forgot:hover{color:#22d3ee}
+/* Tab bar */
+.lg-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:24px}
+.lg-tab{flex:1;padding:12px 0;font-size:14px;font-weight:600;color:rgba(255,255,255,.35);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.lg-tab.on{color:#22d3ee;border-bottom-color:#22d3ee}
+.lg-tab:hover:not(.on){color:rgba(255,255,255,.6)}
+/* Form headings */
+.lg-form-title{font-size:20px;font-weight:700;color:#f1f5f9;letter-spacing:-.02em;margin-bottom:4px;text-align:left}
+.lg-form-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:22px;line-height:1.5;text-align:left}
+/* Input with icon */
+.lg-input-wrap{position:relative;margin-bottom:12px}
+.lg-input-wrap .lg-input-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:rgba(255,255,255,.3);pointer-events:none}
+.lg-input-wrap .login-input{padding-left:38px;margin-bottom:0;width:100%;box-sizing:border-box}
+.lg-input-wrap .lg-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:15px;color:rgba(255,255,255,.3);cursor:pointer;background:none;border:none;padding:2px;line-height:1;transition:color .15s}
+.lg-input-wrap .lg-eye:hover{color:rgba(255,255,255,.6)}
+/* Remember me row */
+.lg-remember-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.lg-remember{display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.45);cursor:pointer;user-select:none}
+.lg-remember input[type=checkbox]{width:14px;height:14px;accent-color:#22d3ee;cursor:pointer}
+/* SSO divider */
+.lg-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:rgba(255,255,255,.2);font-size:12px}
+.lg-or::before,.lg-or::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1)}
+/* SSO button */
+.lg-sso-btn{width:100%;padding:11px 14px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:border-color .15s,color .15s}
+.lg-sso-btn:hover{border-color:rgba(255,255,255,.28);color:rgba(255,255,255,.85)}
+/* Step 4: mobile — hide left panel, full-width right */
+@media(max-width:768px){
+  .lg-left{display:none}
+  .lg-right{flex:1;padding:24px 16px}
+  .login-card{padding:28px 22px}
+}
+@media(max-width:480px){
+  .login-card{border-radius:14px;padding:24px 18px}
+  .login-input{font-size:13px;padding:10px 12px 10px 36px}
+  .login-btn{font-size:13px;padding:11px}
+}
 .login-pending{display:none}
 body.pending-approval #login-pending{display:block}
 body.pending-approval #login-sub,
@@ -1042,26 +1078,47 @@ body.cloud-active [data-cloud-show]{display:block !important}
       </div>
     </div>
   </div>
-  <!-- Right panel: existing form, untouched -->
+  <!-- Right panel: polished form (Step 3) -->
   <div class="lg-right">
     <div class="login-card">
-      <div id="login-sub" class="login-sub" style="margin-top:6px">Sign in to your account.</div>
+      <!-- Tab bar — clicking calls loginToggleMode() to keep existing JS working -->
+      <div class="lg-tabs">
+        <button type="button" class="lg-tab on" id="lg-tab-signin" onclick="lgTabSwitch('signin')">Sign in</button>
+        <button type="button" class="lg-tab" id="lg-tab-create" onclick="lgTabSwitch('create')">Create account</button>
+      </div>
+      <!-- Form heading -->
+      <div class="lg-form-title" id="lg-form-title">Welcome back</div>
+      <div class="lg-form-sub" id="login-sub">Sign in to access your Track Aisle workspace.</div>
       <form id="login-form" onsubmit="loginSubmit(event)" autocomplete="on">
-        <input id="login-email" class="login-input" type="email" placeholder="Email address" required autocomplete="email">
-        <div style="position:relative">
-          <input id="login-password" class="login-input" type="password" placeholder="Password" required autocomplete="current-password" minlength="6" style="margin-bottom:0">
+        <!-- Email with icon -->
+        <div class="lg-input-wrap">
+          <i class="ti ti-user lg-input-icon"></i>
+          <input id="login-email" class="login-input" type="email" placeholder="you@company.com" required autocomplete="email">
+        </div>
+        <!-- Password with icon + eye toggle -->
+        <div class="lg-input-wrap">
+          <i class="ti ti-lock lg-input-icon"></i>
+          <input id="login-password" class="login-input" type="password" placeholder="Enter your password" required autocomplete="current-password" minlength="6">
+          <button type="button" class="lg-eye" id="lg-eye-btn" onclick="lgToggleEye()" title="Show/hide password"><i class="ti ti-eye" id="lg-eye-icon"></i></button>
+        </div>
+        <!-- Remember me + Forgot password -->
+        <div class="lg-remember-row">
+          <label class="lg-remember"><input type="checkbox" id="lg-remember"> Remember me</label>
           <a href="/forgot-password" class="login-forgot" id="login-forgot-link">Forgot password?</a>
         </div>
-        <div style="margin-bottom:4px"></div>
-        <button id="login-btn" class="login-btn" type="submit">Sign in</button>
+        <button id="login-btn" class="login-btn" type="submit">Sign in <i class="ti ti-arrow-right" style="margin-left:6px"></i></button>
       </form>
-      <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()">Don't have an account? Create one</button>
+      <!-- SSO -->
+      <div class="lg-or">or</div>
+      <button type="button" class="lg-sso-btn" disabled><i class="ti ti-shield-lock"></i> Sign in with SSO</button>
+      <!-- Hidden toggle (kept for JS compat) -->
+      <button type="button" id="login-toggle" class="login-toggle" onclick="loginToggleMode()" style="display:none">Don't have an account? Create one</button>
       <div id="login-msg" class="login-msg"></div>
       <div id="login-pending" class="login-pending">
         <div class="login-sub">Your account is pending approval.<br>The admin will let you in soon — check back later.</div>
         <button type="button" class="login-btn" onclick="cloudSignOut()">Sign out</button>
       </div>
-      <div class="login-foot">Each account is private. Your data is not visible to other users.</div>
+      <div class="login-foot">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</div>
     </div>
   </div>
 </div>
@@ -3380,19 +3437,42 @@ function loginToggleMode(){
   const msg = document.getElementById('login-msg');
   const forgotLink = document.getElementById('login-forgot-link');
   if(_LOGIN_MODE === 'signup'){
-    btn.textContent = 'Create account';
+    btn.innerHTML = 'Create account <i class="ti ti-arrow-right" style="margin-left:6px"></i>';
     toggle.textContent = 'Already have an account? Sign in';
     pwd.autocomplete = 'new-password';
     if(sub) sub.textContent = 'Create an account to get started.';
     if(forgotLink) forgotLink.style.display = 'none';
   } else {
-    btn.textContent = 'Sign in';
+    btn.innerHTML = 'Sign in <i class="ti ti-arrow-right" style="margin-left:6px"></i>';
     toggle.textContent = "Don't have an account? Create one";
     pwd.autocomplete = 'current-password';
-    if(sub) sub.textContent = 'Sign in to your account.';
+    if(sub) sub.textContent = 'Sign in to access your Track Aisle workspace.';
     if(forgotLink) forgotLink.style.display = '';
   }
   if(msg){ msg.className = 'login-msg'; msg.textContent = ''; }
+  // Sync tab UI with mode
+  const ts = document.getElementById('lg-tab-signin');
+  const tc = document.getElementById('lg-tab-create');
+  const ft = document.getElementById('lg-form-title');
+  if(ts && tc){
+    if(_LOGIN_MODE === 'signup'){
+      ts.classList.remove('on'); tc.classList.add('on');
+      if(ft) ft.textContent = 'Create your account';
+    } else {
+      tc.classList.remove('on'); ts.classList.add('on');
+      if(ft) ft.textContent = 'Welcome back';
+    }
+  }
+}
+function lgTabSwitch(mode){
+  if((_LOGIN_MODE === 'signin' && mode === 'create') || (_LOGIN_MODE === 'signup' && mode === 'signin')) loginToggleMode();
+}
+function lgToggleEye(){
+  const inp = document.getElementById('login-password');
+  const ico = document.getElementById('lg-eye-icon');
+  if(!inp) return;
+  if(inp.type === 'password'){ inp.type = 'text'; ico.className = 'ti ti-eye-off'; }
+  else { inp.type = 'password'; ico.className = 'ti ti-eye'; }
 }
 
 async function loginSubmit(ev){
