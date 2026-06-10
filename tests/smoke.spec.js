@@ -33,7 +33,8 @@ test.beforeAll(async () => {
   await page.waitForTimeout(2000);
 
   // Check if we still need to sign in (form visible means session missing/expired)
-  const signInBtn = page.getByRole('button', { name: 'Sign in' });
+  // Use #login-btn to avoid ambiguity with the "Sign in" tab button added in the redesign
+  const signInBtn = page.locator('#login-btn');
   const needsLogin = await signInBtn.isVisible({ timeout: 1000 }).catch(() => false);
 
   if (needsLogin) {
