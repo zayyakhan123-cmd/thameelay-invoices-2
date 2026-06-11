@@ -4639,7 +4639,7 @@ FOR EACH LINE ITEM extract ALL of these fields:
 - item: the item/product number or vendor SKU (e.g. "12006", "DCN161"). If the invoice has a separate "Barcode" column AND a separate SKU/item# column, put the SKU in item and the barcode in the barcode field below. If only a barcode is printed (no separate SKU), put the barcode in item and leave barcode blank.
 - barcode: the UPC/EAN/GTIN barcode number for this item — only if it appears as a SEPARATE column from the item/SKU number. Leave as empty string "" if not present or if it is the same as item.
 - desc: full product description, remove asterisks but keep all words
-- size: pack size EXACTLY as printed (e.g. "12X2LBS", "4 X (6X10.82", "1X50LBS", "30X14.9OZ")
+- size: pack size EXACTLY as printed (e.g. "12X2LBS", "4 X (6X10.82", "1X50LBS", "30X14.9OZ"). If the invoice has a WEIGHT/BOX or LBS/CASE column but no separate size/pack column: if the description already contains a count like "10CT" or "9CT", use that count as size (e.g. "Dragon Fruit Yellow 10CT" → size="10CT"); otherwise append "LB" to the weight value (e.g. WEIGHT/BOX=40 → size="40LB")
 - qty: cases ordered (use 0 if OOS or not shipped)
 - caseCost: the UNIT PRICE column (price per case), use 0 if blank
 - cat: ${ids}
@@ -9639,6 +9639,10 @@ function pcParseSize(str){
   if(m) return {qty:parseFloat(m[1]), unit:'kg'};
   m = s.match(/(\d+)\s*(?:BUNCHE?S?|BCH)\b/);
   if(m) return {qty:parseFloat(m[1]), unit:'bunch'};
+  // Bare integer with no unit suffix (e.g. "40" from a WEIGHT/BOX column) — treat as
+  // quantity so cost ÷ N works correctly instead of falling through to ÷ 1.
+  m = s.match(/^(\d+(?:\.\d+)?)$/);
+  if(m){ const n=parseFloat(m[1]); if(n>1) return {qty:n, unit:null}; }
   return {qty:1, unit:null};
 }
 
