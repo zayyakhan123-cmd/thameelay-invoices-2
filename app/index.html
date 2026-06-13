@@ -5951,7 +5951,9 @@ function vendorBuildItems(vendorName){
       }
       const e = byItem[key];
       const u = i._u || 1;
-      const cu = u > 0 ? i.caseCost / u : 0;
+      // Use the canonical weight-aware unitCost() so the same item shows ONE
+      // cost everywhere (the old caseCost/_u was up to 4x off for weight items).
+      const cu = unitCost(i);
       e.totalQty += i.qty || 0;
       e.totalSpend += (i.caseCost||0) * (i.qty||0);
       e.invoiceCount++;
