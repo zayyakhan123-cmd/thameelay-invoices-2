@@ -1,16 +1,15 @@
 -- ============================================================================
--- Free tier becomes a ONE-TIME free trial (10 invoices total), not monthly
+-- Card-required free trial: 'free' (no subscription) is blocked from extraction
 -- ============================================================================
--- Product model: a new account gets 10 free invoice extractions counted across
--- ALL time (no monthly reset). When those are used up it's upgrade-or-stop.
--- Paid plans keep their plan's allotment per calendar month.
+-- Product model: there is no free-to-extract tier. A new user starts a 14-day
+-- card-on-file trial via Stripe Checkout (stripe-checkout trial_period_days),
+-- which sets a non-free subscription_plan + invoice_limit — so trialing and
+-- paid users both get their plan's MONTHLY allotment. A 'free' profile means
+-- no active subscription/trial (or a cancelled one) and is blocked here.
 --
--- This replaces check_ai_monthly_quota (server-side enforcement called by the
--- ai edge function) so the trial cap can't be bypassed client-side. The client
--- mirrors this logic in _invoiceAllowance() in app/index.html.
---
--- resets_at is NULL for the free trial (a one-time allotment never resets);
--- for paid plans it's the first of next month, as before.
+-- This is the server-side enforcement called by the ai edge function so the
+-- gate can't be bypassed client-side. The client mirrors it in
+-- _invoiceAllowance() in app/index.html.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION check_ai_monthly_quota()
@@ -37,12 +36,9 @@ BEGIN
   plan := COALESCE(plan, 'free');
 
   IF plan = 'free' THEN
-    -- One-time free trial: 10 invoices total, counted across all time.
-    lim := 10;
-    SELECT COUNT(*)::int INTO cnt
-      FROM invoices
-      WHERE tenant_id = uid;
-    RETURN QUERY SELECT (cnt < lim), cnt, lim, NULL::date;
+    -- No active subscription/trial: extraction requires the card-on-file free
+    -- trial (a trialing/paid subscription sets a non-free plan + invoice_limit).
+    RETURN QUERY SELECT false, 0, 0, NULL::date;
   ELSE
     -- Paid plan: plan allotment per calendar month.
     lim := COALESCE(lim, 10);

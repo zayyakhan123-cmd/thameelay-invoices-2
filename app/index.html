@@ -4196,20 +4196,23 @@ async function _totalInvoiceCount(){
 // Free → 10 total (the trial); paid → plan's invoice_limit this month.
 async function _invoiceAllowance(){
   if(!_sPro) await loadProfile();
-  // Fail OPEN if the profile is unknown — never default a missing profile to the
-  // most-restrictive lifetime-trial branch, which would wrongly block a paying
-  // customer on a transient load error. The server quota RPC is the real backstop.
-  if(!_sPro) return { isTrial:false, limit: Infinity, used: 0, unknown:true };
-  const isTrial = (_sPro?.subscription_plan || 'free') === 'free';
-  const limit = isTrial ? FREE_TRIAL_INVOICES : (_sPro?.invoice_limit ?? 10);
-  const used = isTrial ? await _totalInvoiceCount() : await _monthlyInvoiceCount();
-  return { isTrial, limit, used };
+  // Fail OPEN if the profile is unknown — never block on a transient load error;
+  // the server quota RPC is the real backstop.
+  if(!_sPro) return { needsTrial:false, limit: Infinity, used: 0, unknown:true };
+  const plan = _sPro?.subscription_plan || 'free';
+  // 'free' = no active subscription/trial → extraction requires starting the
+  // card-on-file free trial. Trialing or paid → the plan's monthly allotment.
+  if(plan === 'free') return { needsTrial:true, limit: 0, used: 0 };
+  const limit = _sPro?.invoice_limit ?? 10;
+  const used = await _monthlyInvoiceCount();
+  return { needsTrial:false, limit, used };
 }
 
 async function checkMonthlyInvoiceLimit(){
   if(!_supabase || !_USER) return true;
-  const { limit, used } = await _invoiceAllowance();
-  if(limit <= 0) return true;
+  const { needsTrial, limit, used } = await _invoiceAllowance();
+  if(needsTrial){ openUpgradeModal(); return false; } // no active plan — must start the trial
+  if(limit <= 0) return true; // unlimited (comp'd account)
   if(used === null) return true; // on error, don't block
   if(used >= limit){
     openUpgradeModal();
@@ -4223,8 +4226,9 @@ async function checkMonthlyInvoiceLimit(){
 async function trimInvsToLimit(invs){
   if(!invs || !invs.length) return invs;
   if(!_supabase || !_USER) return invs;
-  const { isTrial, limit, used } = await _invoiceAllowance();
-  if(limit <= 0) return invs;
+  const { needsTrial, limit, used } = await _invoiceAllowance();
+  if(needsTrial){ openUpgradeModal(); return []; } // no active plan — block all
+  if(limit <= 0) return invs; // unlimited
   if(used === null) return invs; // on error, allow
   const remaining = Math.max(0, limit - used);
   if(remaining <= 0){
@@ -4233,10 +4237,7 @@ async function trimInvsToLimit(invs){
   }
   if(invs.length > remaining){
     const total = invs.length;
-    const note = isTrial
-      ? `Saved ${remaining} of ${total} — that's the end of your ${limit}-invoice free trial. Upgrade to save the rest.`
-      : `Saved ${remaining} of ${total} — you've hit your ${limit}/mo limit. Upgrade from the Plans page to save the rest.`;
-    showToast('warn', note, 10000);
+    showToast('warn', `Saved ${remaining} of ${total} — you've hit your ${limit}/mo limit. Upgrade from the Plans page to save the rest.`, 10000);
     openUpgradeModal();
     return invs.slice(0, remaining);
   }
@@ -10572,18 +10573,17 @@ async function renderSettings(){
   badge.className = 's-badge ' + (plan !== 'free' ? 's-badge-pro' : 's-badge-neutral');
   document.getElementById('s-plan-label').textContent =
     plan === 'free' ? "You're on the free plan" : `Active ${plan} subscription`;
-  // Free tier = one-time free-trial allotment (counted across all time); paid =
-  // plan's monthly allotment. Either way, count the source the gate enforces —
-  // not the all-time localStorage length.
-  const _isTrial = (data.subscription_plan || 'free') === 'free';
-  const invLimit = _isTrial ? FREE_TRIAL_INVOICES : (data.invoice_limit || 100);
-  const _usedCount = _isTrial ? await _totalInvoiceCount() : await _monthlyInvoiceCount();
+  // Free = no active subscription/trial → prompt the trial, not a usage count.
+  // Trialing/paid → the plan's monthly allotment.
+  const _noPlan = (data.subscription_plan || 'free') === 'free';
+  const invLimit = data.invoice_limit || 100;
+  const _usedCount = _noPlan ? 0 : await _monthlyInvoiceCount();
   const invUsed  = _usedCount === null ? 0 : _usedCount;
-  const usagePct = invLimit > 0 ? Math.min(100, Math.round(invUsed / invLimit * 100)) : 0;
+  const usagePct = _noPlan ? 0 : (invLimit > 0 ? Math.min(100, Math.round(invUsed / invLimit * 100)) : 0);
   const usageLblEl  = document.getElementById('s-usage-label');
   const usageFillEl = document.getElementById('s-usage-fill');
   const usagePctEl  = document.getElementById('s-usage-pct');
-  if(usageLblEl)  usageLblEl.textContent  = _isTrial ? `${invUsed} of ${invLimit} free trial invoices used` : `${invUsed} of ${invLimit} invoices this month`;
+  if(usageLblEl)  usageLblEl.textContent  = _noPlan ? 'No active plan — start your free trial' : `${invUsed} of ${invLimit} invoices this month`;
   if(usagePctEl)  usagePctEl.textContent  = usagePct + '%';
   if(usageFillEl){
     usageFillEl.style.width = usagePct + '%';
@@ -10814,16 +10814,18 @@ function openUpgradeModal(){
   const body = document.getElementById('upgrade-modal-body');
   if(!m || !body) return;
   const plan = _sPro?.subscription_plan || 'free';
-  const isTrial = (plan === 'free');
-  const limit = isTrial ? FREE_TRIAL_INVOICES : (_sPro?.invoice_limit ?? 10);
+  const needsTrial = (plan === 'free');
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-  const next = ({ free:'starter', starter:'growth', growth:'pro' })[plan] || null;
-  const intro = isTrial
-    ? `You've used all <strong style="color:var(--text)">${limit}</strong> invoices in your free trial. Upgrade to keep extracting — your trial invoices and price history stay exactly where they are.`
+  // Free (no active plan) → start the trial on Starter; paid at the monthly cap → next tier up.
+  const next = needsTrial ? 'starter' : (({ starter:'growth', growth:'pro' })[plan] || null);
+  const limit = needsTrial ? 0 : (_sPro?.invoice_limit ?? 10);
+  const intro = needsTrial
+    ? `Start your <strong style="color:var(--text)">14-day free trial</strong> to extract invoices — full access, cancel anytime. A card keeps trials fair; you won't be charged until the trial ends.`
     : `You've used all <strong style="color:var(--text)">${limit}</strong> invoices this month on the <strong style="color:var(--text)">${cap(plan)}</strong> plan. Upgrade to keep extracting — your saved invoices and price history stay exactly where they are.`;
   let html = `<div style="font-size:14px;color:var(--text2);line-height:1.55">${intro}</div>`;
   if(next && PLAN_DATA[next]){
-    html += `<button class="bp" style="font-size:14px;padding:11px 16px;width:100%" onclick="closeUpgradeModal();sStartCheckout('${next}')">Upgrade to ${cap(next)} — $${PLAN_DATA[next].monthly}/mo</button>`;
+    const label = needsTrial ? `Start free trial — then $${PLAN_DATA[next].monthly}/mo` : `Upgrade to ${cap(next)} — $${PLAN_DATA[next].monthly}/mo`;
+    html += `<button class="bp" style="font-size:14px;padding:11px 16px;width:100%" onclick="closeUpgradeModal();sStartCheckout('${next}')">${label}</button>`;
   }
   html += `<div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
     <button onclick="closeUpgradeModal();goTo('plans')" style="font-size:13px;padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);cursor:pointer">See all plans</button>
