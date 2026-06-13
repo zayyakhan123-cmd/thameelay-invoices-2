@@ -3453,8 +3453,13 @@ async function cloudInit(){
       // Handle Stripe checkout return
       const params = new URLSearchParams(location.search);
       if(params.get('checkout') === 'success'){
-        showToast('Subscription activated! Your plan has been updated.', 'success');
+        showToast('success', 'Subscription activated! Your plan has been updated.');
         history.replaceState({}, '', location.pathname);
+        // Refresh the cached profile so the just-purchased plan/limit applies
+        // immediately — poll briefly to absorb Stripe webhook lag, otherwise the
+        // user is still seen as 'free' and gets wrongly hit by the trial gate.
+        _sPro = null;
+        for(let i=0;i<6;i++){ await loadProfile(); if(_sPro && _sPro.subscription_plan && _sPro.subscription_plan !== 'free') break; await new Promise(r=>setTimeout(r,700)); }
         goTo('dashboard');
       } else if(params.get('checkout') === 'cancel'){
         showToast('Checkout cancelled. Your plan was not changed.', 'info');
@@ -4191,6 +4196,10 @@ async function _totalInvoiceCount(){
 // Free → 10 total (the trial); paid → plan's invoice_limit this month.
 async function _invoiceAllowance(){
   if(!_sPro) await loadProfile();
+  // Fail OPEN if the profile is unknown — never default a missing profile to the
+  // most-restrictive lifetime-trial branch, which would wrongly block a paying
+  // customer on a transient load error. The server quota RPC is the real backstop.
+  if(!_sPro) return { isTrial:false, limit: Infinity, used: 0, unknown:true };
   const isTrial = (_sPro?.subscription_plan || 'free') === 'free';
   const limit = isTrial ? FREE_TRIAL_INVOICES : (_sPro?.invoice_limit ?? 10);
   const used = isTrial ? await _totalInvoiceCount() : await _monthlyInvoiceCount();
