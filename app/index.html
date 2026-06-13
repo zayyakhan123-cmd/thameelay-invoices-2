@@ -3373,6 +3373,19 @@ async function checkApprovalAndGate(){
   }catch(e){ console.warn('Approval check failed:', e); }
 }
 
+// Load the signed-in user's profile (plan + invoice_limit + business fields)
+// into the _sPro cache. Without this, upload/limit/plan checks fall back to the
+// most-restrictive default (?? 10 / 'free') until the user happens to open
+// Account Settings — wrongly throttling free users and nagging paying ones.
+async function loadProfile(){
+  if(!_supabase || !_USER) return;
+  try{
+    const { data, error } = await _supabase
+      .from('user_profiles').select('*').eq('user_id', _USER.id).single();
+    if(!error && data) _sPro = data;
+  }catch(e){ /* keep prior _sPro on error — never block on profile load */ }
+}
+
 async function cloudInit(){
   if(!CLOUD_ENABLED) return;
   document.body.classList.add('cloud-active');
@@ -3398,11 +3411,11 @@ async function cloudInit(){
     _supabase = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: { session } } = await _supabase.auth.getSession();
     _USER = session?.user || null;
-    if(_USER) await checkApprovalAndGate();
+    if(_USER){ await checkApprovalAndGate(); await loadProfile(); }
     _supabase.auth.onAuthStateChange(async (_evt, sess) => {
       const wasUser = _USER;
       _USER = sess?.user || null;
-      if(_USER) await checkApprovalAndGate();
+      if(_USER){ await checkApprovalAndGate(); await loadProfile(); }
       else {
         document.body.classList.add('app-locked');
         document.body.classList.remove('pending-approval');
@@ -4149,6 +4162,7 @@ async function _monthlyInvoiceCount(){
 
 async function checkMonthlyInvoiceLimit(){
   if(!_supabase || !_USER) return true;
+  if(!_sPro) await loadProfile(); // never gate on the ?? 10 fallback due to a load race
   const limit = _sPro?.invoice_limit ?? 10;
   if(limit <= 0) return true;
   const used = await _monthlyInvoiceCount();
@@ -4164,6 +4178,7 @@ async function checkMonthlyInvoiceLimit(){
 // Prevents combining multiple invoices into one file to bypass the monthly cap.
 async function trimInvsToLimit(invs){
   if(!invs || !invs.length) return invs;
+  if(!_sPro) await loadProfile();
   const limit = _sPro?.invoice_limit ?? 10;
   if(!_supabase || !_USER || limit <= 0) return invs;
   const used = await _monthlyInvoiceCount();
