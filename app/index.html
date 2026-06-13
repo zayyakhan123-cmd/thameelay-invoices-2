@@ -5704,8 +5704,10 @@ function renderItemMaster(){
   const filterGroup = document.getElementById('im-filter-group')?.value || '';
 
   // Group observations by (desc, vendor)
+  // loadDB() returns an object keyed "vendor|catalogId" → array of observations,
+  // so flatten the value arrays before iterating (for...of over the object throws).
   const map = {};
-  for(const obs of db){
+  for(const obs of Object.values(db).flat()){
     if(!obs.desc || !obs.vendor) continue;
     const k = prodMetaKey(obs.desc, obs.vendor);
     if(!map[k]) map[k] = { desc:obs.desc, vendor:obs.vendor, cat:obs.cat||'other', entries:[] };
