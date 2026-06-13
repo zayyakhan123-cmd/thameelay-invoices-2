@@ -10503,14 +10503,18 @@ async function renderSettings(){
   badge.className = 's-badge ' + (plan !== 'free' ? 's-badge-pro' : 's-badge-neutral');
   document.getElementById('s-plan-label').textContent =
     plan === 'free' ? "You're on the free plan" : `Active ${plan} subscription`;
-  const invs = JSON.parse(localStorage.getItem('tm_h3') || '[]');
   const invLimit = data.invoice_limit || 100;
-  const invUsed  = invs.length;
-  const usagePct = Math.min(100, Math.round(invUsed / invLimit * 100));
+  // Count invoices saved THIS MONTH (what the limit actually enforces), not the
+  // all-time localStorage length — otherwise a long-time user sees a permanent
+  // "100 of 100 (100%)" red bar while their monthly quota is fresh and uploads
+  // still work, which is the opposite of useful for an upgrade decision.
+  const monthlyUsed = await _monthlyInvoiceCount();
+  const invUsed  = monthlyUsed === null ? 0 : monthlyUsed;
+  const usagePct = invLimit > 0 ? Math.min(100, Math.round(invUsed / invLimit * 100)) : 0;
   const usageLblEl  = document.getElementById('s-usage-label');
   const usageFillEl = document.getElementById('s-usage-fill');
   const usagePctEl  = document.getElementById('s-usage-pct');
-  if(usageLblEl)  usageLblEl.textContent  = `${invUsed} of ${invLimit} invoices used`;
+  if(usageLblEl)  usageLblEl.textContent  = `${invUsed} of ${invLimit} invoices this month`;
   if(usagePctEl)  usagePctEl.textContent  = usagePct + '%';
   if(usageFillEl){
     usageFillEl.style.width = usagePct + '%';
