@@ -143,9 +143,9 @@ async function resetToFree(
     .from("user_profiles")
     .update({
       subscription_plan: "free",
-      subscription_status: "active",
+      subscription_status: "canceled",
       billing_period_end: null,
-      invoice_limit: 10,
+      invoice_limit: 0,
     })
     .eq("stripe_customer_id", customerId);
 }

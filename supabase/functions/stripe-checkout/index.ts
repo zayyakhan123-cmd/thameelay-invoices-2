@@ -130,6 +130,7 @@ serve(async (req) => {
     allow_promotion_codes: true,
     billing_address_collection: "auto",
     subscription_data: {
+      trial_period_days: 14,
       metadata: { supabase_user_id: user.id },
     },
   });
