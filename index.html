@@ -178,6 +178,8 @@
     .pmd-cta{display:flex;align-items:center;justify-content:center;border-radius:12px;padding:11px 18px;font-size:14px;font-weight:600;margin-top:auto;background:linear-gradient(180deg,#22d3ee 0%,#06b6d4 100%);color:#042630;box-shadow:0 0 20px -4px rgba(34,211,238,.35);transition:filter .15s,transform .15s}
     .pmd-cta:hover{filter:brightness(1.08);transform:translateY(-1px)}
     @media(max-width:640px){#pmd-dialog{padding:24px 16px 20px;border-radius:18px}.pmd-grid{grid-template-columns:1fr}#pmd-tog-m,#pmd-tog-a{padding:7px 11px !important}}
+    /* Visible keyboard focus (WCAG 2.4.7) */
+    :focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
   </style>
 </head>
 <script>
@@ -190,6 +192,7 @@
 })();
 </script>
 <body class="font-sans antialiased">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 focus:rounded-lg focus:bg-ink-900 focus:px-4 focus:py-2 focus:text-cyan-300">Skip to main content</a>
 
 <!-- ── Pricing selection modal ──────────────────────────────────── -->
 <div id="pmd-overlay" aria-modal="true" role="dialog" aria-labelledby="pmd-title">
@@ -298,7 +301,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13,6 19,12 13,18"/></svg>
       </button>
     </nav>
-    <button id="menu-btn" aria-label="Open menu" aria-expanded="false" class="grid h-10 w-10 place-items-center rounded-lg border border-white/10 text-slate-200 md:hidden">
+    <button id="menu-btn" aria-label="Menu" aria-controls="mobile-menu" aria-expanded="false" class="grid h-10 w-10 place-items-center rounded-lg border border-white/10 text-slate-200 md:hidden">
       <svg id="menu-icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
       <svg id="menu-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5 hidden"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
     </button>
@@ -317,7 +320,7 @@
   </div>
 </header>
 
-<main>
+<main id="main-content">
 <!-- HERO -->
 <section id="top" class="relative overflow-hidden mesh-hero pt-32 pb-20 sm:pt-36 sm:pb-28 lg:pt-40 lg:pb-32">
   <div class="absolute inset-0 grid-bg opacity-[0.55] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]"></div>
@@ -483,11 +486,11 @@
           <table class="min-w-full text-left text-[13.5px]">
             <thead>
               <tr class="text-[10.5px] font-medium uppercase tracking-[0.14em] text-cyan-300">
-                <th class="px-5 py-3 font-medium">Item</th>
-                <th class="px-3 py-3 text-right font-medium">Last cost</th>
-                <th class="px-3 py-3 text-right font-medium">New cost</th>
-                <th class="px-3 py-3 text-right font-medium">Cost change</th>
-                <th class="px-5 py-3 text-right font-medium">Action</th>
+                <th class="px-5 py-3 font-medium" scope="col">Item</th>
+                <th class="px-3 py-3 text-right font-medium" scope="col">Last cost</th>
+                <th class="px-3 py-3 text-right font-medium" scope="col">New cost</th>
+                <th class="px-3 py-3 text-right font-medium" scope="col">Cost change</th>
+                <th class="px-5 py-3 text-right font-medium" scope="col">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -1093,7 +1096,9 @@
   // ── Pricing selection modal ────────────────────────────────────
   var _pmdAnnual = false;
 
+  let _pmdOpener = null;
   function openPricingModal() {
+    _pmdOpener = document.activeElement;
     document.getElementById('pmd-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     document.getElementById('pmd-close').focus();
@@ -1102,6 +1107,7 @@
   function closePricingModal() {
     document.getElementById('pmd-overlay').classList.remove('open');
     document.body.style.overflow = '';
+    if (_pmdOpener && _pmdOpener.focus) _pmdOpener.focus();
   }
 
   function setPmdInterval(annual) {

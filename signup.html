@@ -47,8 +47,9 @@
     .btn-cyan:disabled{opacity:.5;cursor:not-allowed;filter:none;transform:none}
     .btn-cyan{transition:filter .15s,transform .15s,box-shadow .15s}
     .auth-input{width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:10px;padding:12px 14px;font-size:14px;color:#f1f5f9;outline:none;transition:border-color .15s,background .15s,box-shadow .15s}
-    .auth-input::placeholder{color:#4e596b}
-    .auth-input:focus{border-color:rgba(34,211,238,.55);background:rgba(34,211,238,.04);box-shadow:0 0 0 3px rgba(34,211,238,.08)}
+    .auth-input::placeholder{color:#7a8899}
+    .auth-input:focus{border-color:rgba(34,211,238,.8);background:rgba(34,211,238,.04);box-shadow:0 0 0 3px rgba(34,211,238,.45);outline:none}
+    :focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
     .auth-input.error{border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.04)}
     .auth-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,0.03) inset;position:relative;z-index:1}
     .auth-card::before{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(34,211,238,.04) 0%,transparent 60%);pointer-events:none}
@@ -100,29 +101,34 @@
       <form id="signup-form" novalidate>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <input class="auth-input" id="first-name" type="text" placeholder="First name" autocomplete="given-name" />
-            <div class="field-error" id="err-first-name">Required</div>
+            <label for="first-name" class="sr-only">First name</label>
+            <input class="auth-input" id="first-name" type="text" placeholder="First name" autocomplete="given-name" aria-required="true" aria-describedby="err-first-name" />
+            <div class="field-error" id="err-first-name" role="alert">Required</div>
           </div>
           <div>
-            <input class="auth-input" id="last-name" type="text" placeholder="Last name" autocomplete="family-name" />
-            <div class="field-error" id="err-last-name">Required</div>
+            <label for="last-name" class="sr-only">Last name</label>
+            <input class="auth-input" id="last-name" type="text" placeholder="Last name" autocomplete="family-name" aria-required="true" aria-describedby="err-last-name" />
+            <div class="field-error" id="err-last-name" role="alert">Required</div>
           </div>
         </div>
         <div class="mb-3">
-          <input class="auth-input" id="business-name" type="text" placeholder="Business name" autocomplete="organization" />
-          <div class="field-error" id="err-business-name">Required</div>
+          <label for="business-name" class="sr-only">Business name</label>
+          <input class="auth-input" id="business-name" type="text" placeholder="Business name" autocomplete="organization" aria-required="true" aria-describedby="err-business-name" />
+          <div class="field-error" id="err-business-name" role="alert">Required</div>
         </div>
         <div class="mb-3">
-          <input class="auth-input" id="email" type="email" placeholder="Work email" autocomplete="email" />
-          <div class="field-error" id="err-email">Enter a valid email</div>
+          <label for="email" class="sr-only">Work email</label>
+          <input class="auth-input" id="email" type="email" placeholder="Work email" autocomplete="email" aria-required="true" aria-describedby="err-email" />
+          <div class="field-error" id="err-email" role="alert">Enter a valid email</div>
         </div>
         <div class="mb-5">
-          <input class="auth-input" id="password" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" oninput="onPwInput(this.value)" />
+          <label for="password" class="sr-only">Password</label>
+          <input class="auth-input" id="password" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" oninput="onPwInput(this.value)" aria-required="true" aria-describedby="err-password" />
           <div class="pw-bar-wrap mt-2"><div class="pw-bar" id="pw-bar"></div></div>
           <div class="flex justify-between mt-1">
             <span class="text-[11px] text-slate-500" id="pw-label"></span>
           </div>
-          <div class="field-error" id="err-password">Must be at least 8 characters</div>
+          <div class="field-error" id="err-password" role="alert">Must be at least 8 characters</div>
         </div>
         <button type="submit" class="btn-cyan w-full rounded-xl px-5 py-3 text-[14px] transition" id="submit-btn">
           Create account
