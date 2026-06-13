@@ -2800,6 +2800,17 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
 </div>
 
+<!-- Upgrade paywall modal — shown at the monthly-invoice limit (replaces the old vanishing toast) -->
+<div id="upgrade-modal" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9200;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeUpgradeModal()">
+  <div style="background:var(--surface);border-radius:14px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="flex:1;font-size:16px;font-weight:700">You've hit this month's limit</div>
+      <button onclick="closeUpgradeModal()" style="font-size:18px;padding:4px 10px;background:transparent;border:none;cursor:pointer;color:var(--text3)">×</button>
+    </div>
+    <div id="upgrade-modal-body" style="padding:20px 22px;display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+</div>
+
 <script>
 // ═══════════ CONSTANTS ═══════════
 // Category system: built-in defaults + user-added categories.
@@ -4168,7 +4179,7 @@ async function checkMonthlyInvoiceLimit(){
   const used = await _monthlyInvoiceCount();
   if(used === null) return true; // on error, don't block
   if(used >= limit){
-    showToast(`Monthly limit reached (${limit} invoices). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to process more.`, 'error');
+    openUpgradeModal();
     return false;
   }
   return true;
@@ -4185,12 +4196,13 @@ async function trimInvsToLimit(invs){
   if(used === null) return invs; // on error, allow
   const remaining = Math.max(0, limit - used);
   if(remaining <= 0){
-    showToast(`Monthly limit reached (${limit} invoices). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to process more.`, 'error', 8000);
+    openUpgradeModal();
     return [];
   }
   if(invs.length > remaining){
     const total = invs.length;
-    showToast(`Saved ${remaining} of ${total} invoices — monthly limit reached (${limit}/month). <a onclick="goTo('plans')" style="color:var(--c1);cursor:pointer;text-decoration:underline">Upgrade your plan</a> to save the rest.`, 'warn', 10000);
+    showToast('warn', `Saved ${remaining} of ${total} — you've hit your ${limit}/mo limit. Upgrade from the Plans page to save the rest.`, 10000);
+    openUpgradeModal();
     return invs.slice(0, remaining);
   }
   return invs;
@@ -10754,6 +10766,28 @@ const PLAN_DATA = {
 };
 
 let _plansAnnual = false;
+
+// ── Upgrade modal (shown at the monthly-invoice limit wall) ──────
+function closeUpgradeModal(){ const m=document.getElementById('upgrade-modal'); if(m) m.style.display='none'; }
+function openUpgradeModal(){
+  const m = document.getElementById('upgrade-modal');
+  const body = document.getElementById('upgrade-modal-body');
+  if(!m || !body) return;
+  const plan = _sPro?.subscription_plan || 'free';
+  const limit = _sPro?.invoice_limit ?? 10;
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const next = ({ free:'starter', starter:'growth', growth:'pro' })[plan] || null;
+  let html = `<div style="font-size:14px;color:var(--text2);line-height:1.55">You've used all <strong style="color:var(--text)">${limit}</strong> invoices this month on the <strong style="color:var(--text)">${cap(plan)}</strong> plan. Upgrade to keep extracting — your saved invoices and price history stay exactly where they are.</div>`;
+  if(next && PLAN_DATA[next]){
+    html += `<button class="bp" style="font-size:14px;padding:11px 16px;width:100%" onclick="closeUpgradeModal();sStartCheckout('${next}')">Upgrade to ${cap(next)} — $${PLAN_DATA[next].monthly}/mo</button>`;
+  }
+  html += `<div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
+    <button onclick="closeUpgradeModal();goTo('plans')" style="font-size:13px;padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);cursor:pointer">See all plans</button>
+    <button onclick="closeUpgradeModal()" style="font-size:13px;padding:7px 14px;background:transparent;border:none;color:var(--text3);cursor:pointer">Maybe later</button>
+  </div>`;
+  body.innerHTML = html;
+  m.style.display = 'flex';
+}
 
 function sPlansToggle(annual){
   _plansAnnual = annual;
