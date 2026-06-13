@@ -2475,7 +2475,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
               <div class="settings-card-meta">Managed securely via Stripe</div>
             </div>
           </div>
-          <div style="font-size:13px;color:var(--text3)">No payment method on file. Add one by upgrading your plan.</div>
+          <div id="s-payment-method-text" style="font-size:13px;color:var(--text3)">No payment method on file. Add one by upgrading your plan.</div>
         </div>
       </div>
 
@@ -2605,10 +2605,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div class="plan-invoices"><strong>50</strong> invoices / month</div>
         <div class="plan-cpi">$1.18 per invoice</div>
         <ul class="plan-features">
-          <li><i class="ti ti-check"></i>AI-powered extraction</li>
-          <li><i class="ti ti-check"></i>Price tracker</li>
-          <li><i class="ti ti-check"></i>Vendor insights</li>
-          <li><i class="ti ti-check"></i>Export to JSON / CSV</li>
+          <li><i class="ti ti-check"></i>AI reads your supplier PDFs — no manual entry</li>
+          <li><i class="ti ti-check"></i>Track every product's cost over time</li>
+          <li><i class="ti ti-check"></i>See spend &amp; invoice history by vendor</li>
+          <li><i class="ti ti-check"></i>Export to CSV for your accountant or POS</li>
         </ul>
         <button class="plan-cta sbtn sbtn-primary" id="plan-cta-starter" onclick="sStartCheckout('starter')">Upgrade to Starter</button>
       </div>
@@ -2627,10 +2627,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div class="plan-invoices"><strong>150</strong> invoices / month</div>
         <div class="plan-cpi">$1.19 per invoice</div>
         <ul class="plan-features">
-          <li><i class="ti ti-check"></i>Everything in Starter</li>
-          <li><i class="ti ti-check"></i>Price alerts</li>
-          <li><i class="ti ti-check"></i>Produce matcher</li>
-          <li><i class="ti ti-check"></i>Advanced pricing rules</li>
+          <li><i class="ti ti-check"></i>All Starter features, plus:</li>
+          <li><i class="ti ti-check"></i>Alerts when a supplier raises a price</li>
+          <li><i class="ti ti-check"></i>Auto-match produce across invoices</li>
+          <li><i class="ti ti-check"></i>Auto-set retail from cost + your margin</li>
         </ul>
         <button class="plan-cta sbtn sbtn-primary" id="plan-cta-growth" onclick="sStartCheckout('growth')">Upgrade to Growth</button>
       </div>
@@ -2648,10 +2648,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div class="plan-invoices"><strong>400</strong> invoices / month</div>
         <div class="plan-cpi">$1.00 per invoice</div>
         <ul class="plan-features">
-          <li><i class="ti ti-check"></i>Everything in Growth</li>
-          <li><i class="ti ti-check"></i>Priority AI processing</li>
-          <li><i class="ti ti-check"></i>Dedicated support</li>
-          <li><i class="ti ti-check"></i>API access (coming soon)</li>
+          <li><i class="ti ti-check"></i>All Growth features, plus:</li>
+          <li><i class="ti ti-check"></i>Priority processing — results in seconds</li>
+          <li><i class="ti ti-check"></i>Priority support from a real person</li>
+          <li><i class="ti ti-check"></i>API access for POS integration (soon)</li>
         </ul>
         <button class="plan-cta sbtn sbtn-primary" id="plan-cta-pro" onclick="sStartCheckout('pro')">Upgrade to Pro</button>
       </div>
@@ -10617,6 +10617,15 @@ async function renderSettings(){
     ? 'Upgrade to process more invoices each month.'
     : '';
 
+  // Payment-method line reflects real card state — a card is on file for any
+  // trialing/paid user, so never show "no card" to someone who has one.
+  const payEl = document.getElementById('s-payment-method-text');
+  if(payEl) payEl.textContent = _noPlan
+    ? 'No card on file yet — a card is required to start your free trial.'
+    : (_trialing
+        ? "Card on file — you won't be charged until you continue past your 10 free extractions."
+        : 'Card on file · managed securely via Stripe.');
+
   // Show the right CTA button based on plan
   const viewPlansBtn = document.getElementById('s-view-plans-btn');
   const manageBillingBtn = document.getElementById('s-billing-btn');
@@ -10837,6 +10846,7 @@ function openUpgradeModal(){
     const mo = PLAN_DATA[plan] ? PLAN_DATA[plan].monthly : null;
     html += `<div style="font-size:14px;color:var(--text2);line-height:1.55">You've used all <strong style="color:var(--text)">${FREE_TRIAL_INVOICES}</strong> free trial extractions on the <strong style="color:var(--text)">${cap(plan)}</strong> plan. Continue now to keep extracting${mo ? ` — your card is charged <strong style="color:var(--text)">$${mo}</strong> today` : ''} and you switch to ${cap(plan)}'s monthly allotment. Your saved invoices and price history stay exactly where they are.</div>`;
     html += `<button class="bp" style="font-size:14px;padding:11px 16px;width:100%" onclick="sConvertTrial(this)">Continue on ${cap(plan)}${mo ? ` — $${mo}/mo` : ''}</button>`;
+    html += `<div style="font-size:11px;color:var(--text4);text-align:center;line-height:1.5">Billed monthly via Stripe · cancel anytime in Billing settings · no hidden fees</div>`;
   } else {
     // Free (no active plan) → start the trial on Starter; paid at the monthly cap → next tier up.
     const next = needsTrial ? 'starter' : (({ starter:'growth', growth:'pro' })[plan] || null);
