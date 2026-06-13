@@ -1182,6 +1182,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <!-- DASHBOARD (HOME) -->
 <div class="pg on" id="pg-dashboard">
 
+  <!-- First-run welcome: shown only when no invoice is loaded and no history exists yet -->
+  <div id="db-first-run" style="display:none;border:1px solid var(--border2);border-left:4px solid var(--c1);background:var(--surface);padding:16px 18px;margin-bottom:16px;border-radius:12px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:5px">Welcome — upload your first invoice to get started</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.5">Drop a supplier invoice (PDF or photo) into the <strong>Upload Invoice</strong> box below. Track Aisle's AI reads every product and price automatically — then these cards fill with your real costs.</div>
+  </div>
+
   <!-- KPI CARDS -->
   <div class="db2-kpi-grid">
     <div class="db2-kpi-card">
@@ -1231,7 +1237,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <svg class="db2-kpi-spark" id="spark-loss" viewBox="0 0 64 28" preserveAspectRatio="none"></svg>
       </div>
       <div class="db2-kpi-val mn" id="db-loss" style="color:var(--red)">$0</div>
-      <div class="db2-kpi-lbl">Est. Margin Loss</div>
+      <div class="db2-kpi-lbl" title="Extra cost you'll absorb on items whose cost rose, if you keep your current shelf prices (cost increase × quantity).">Est. Margin Loss</div>
       <div class="db2-kpi-sub">If no action taken</div>
     </div>
     <div class="db2-kpi-card">
@@ -1241,7 +1247,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <svg class="db2-kpi-spark" id="spark-gain" viewBox="0 0 64 28" preserveAspectRatio="none"></svg>
       </div>
       <div class="db2-kpi-val mn" id="db-gain" style="color:var(--green)">$0</div>
-      <div class="db2-kpi-lbl">Projected Profit Gain</div>
+      <div class="db2-kpi-lbl" title="Margin you recover by repricing to your new cost — plus extra margin kept when a cost drops and you hold your shelf price.">Projected Profit Gain</div>
       <div class="db2-kpi-sub">After applying changes</div>
     </div>
   </div>
@@ -4354,7 +4360,7 @@ async function processSingleFile(file){
     setTimeout(() => detectAndOfferProduceMatch(invs), 0);
   }
   catch(err){
-    if(err.message==='no_api_key'){ finishUploadProgress(false); show('dz-wrap',true); return; }
+    if(err.message==='no_api_key'){ finishUploadProgress(false, 'Extraction isn’t connected yet — open API settings to enable it.'); show('dz-wrap',true); showToast('error', 'Extraction isn’t connected yet. Open API settings to enable invoice extraction.', 10000); return; }
     // Session-expired errors come back as "Invalid session" or "not_authenticated" from the edge
     // function. Show a specific message so the user knows to sign out and sign back in.
     if(/invalid.?session|not_authenticated/i.test(err.message)){
@@ -4363,9 +4369,10 @@ async function processSingleFile(file){
       showToast('error', 'Your session has expired — please sign out and sign back in, then try again.', 12000);
       return;
     }
-    finishUploadProgress(false, err.message);
+    const _friendly = friendlyExtractErr(err.message);
+    finishUploadProgress(false, _friendly);
     show('dz-wrap',true);
-    showToast('error', 'Extraction failed: '+err.message, 8000);
+    showToast('error', _friendly, 8000);
   }
 }
 
@@ -6838,13 +6845,29 @@ function finishUploadProgress(success, errMsg){
     setTimeout(()=>{ box.style.display='none'; }, 700);
   } else {
     const errEl = document.getElementById('db-up-err');
-    if(errEl && errMsg){
+    if(errEl){
+      const safe = String(errMsg || 'Extraction failed').replace(/</g,'&lt;');
       errEl.style.display = 'block';
-      errEl.textContent = '⚠ ' + errMsg;
+      errEl.innerHTML = '⚠ ' + safe + ' <a onclick="document.getElementById(\'db-extracting\').style.display=\'none\'" style="color:var(--c1);cursor:pointer;text-decoration:underline;margin-left:6px">Dismiss</a>';
     }
-    setTimeout(()=>{ box.style.display='none'; }, 4000);
+    const meta = document.getElementById('db-up-meta');
+    if(meta) meta.textContent = 'Extraction failed';
+    // Stop the spinner but KEEP the box + message visible (no auto-hide) so the
+    // user can actually read and act on the error.
+    box.querySelectorAll('.up-step').forEach(s=>{ s.classList.remove('active'); });
   }
   show('extracting', false);
+}
+
+// Map raw extraction errors to a calm, actionable message for non-technical users.
+function friendlyExtractErr(msg){
+  msg = String(msg || '');
+  if(/fetch|network|connect|disconnect|reset|offline/i.test(msg)) return 'Network error — check your connection and try again.';
+  if(/timeout|timed out|deadline/i.test(msg)) return 'That took too long — try a smaller or clearer file and try again.';
+  if(/rate.?limit|429|too many/i.test(msg)) return 'Too many requests right now — wait a moment and try again.';
+  if(/invalid.?image|unsupported|format|corrupt|decode/i.test(msg)) return 'That file couldn’t be read — try a clear PDF or photo.';
+  if(/quota|insufficient|billing|credit/i.test(msg)) return 'Extraction is temporarily unavailable — please try again shortly.';
+  return 'Extraction failed — please try again. If it keeps happening, try a clearer photo or PDF.';
 }
 
 function checkApiOnLoad(){
@@ -7902,12 +7925,16 @@ function renderSummaryBanner(){
     const el = document.getElementById(id);
     if(el){ el.textContent = val; if(color) el.style.color = color; }
   };
-  
+  const _fr = document.getElementById('db-first-run');
+  if(_fr) _fr.style.display = 'none';
+
   if(!INV){
     // No invoice loaded → show aggregate stats from history
     const hist = loadHist();
     const db = loadDB();
     const totalItems = Object.keys(db).length;
+    // Brand-new account (no invoices, no items) → a welcome prompt instead of a wall of zeros.
+    if(_fr && hist.length === 0 && totalItems === 0) _fr.style.display = 'block';
     set('db-items', totalItems);
     set('db-items-sub', `Across ${hist.length} invoice${hist.length!==1?'s':''}`);
     set('db-safe', '—');
@@ -7944,13 +7971,17 @@ function renderSummaryBanner(){
     if(item._conf < 0.7) return;
     if(ch.status === 'increase' && Math.abs(ch.pct)>2){
       changes++;
-      // estimated loss = pct change * volume * cost
-      estLoss += Math.abs(ch.diff) * item.qty * (item._u||1);
-      projGain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3; // markup adjustment
+      // Both figures share one basis (cost change × volume) so they reconcile:
+      // the margin you LOSE by absorbing the higher cost is exactly what you
+      // RECOVER by repricing to pass it through. No hidden markup multiplier.
+      const delta = Math.abs(ch.diff) * item.qty * (item._u||1);
+      estLoss  += delta;
+      projGain += delta;
     }
     else if(ch.status === 'decrease' && Math.abs(ch.pct)>2){
       changes++;
-      projGain += Math.abs(ch.diff) * item.qty * (item._u||1) * 1.3;
+      // Cost dropped — extra margin you keep by holding your shelf price.
+      projGain += Math.abs(ch.diff) * item.qty * (item._u||1);
     }
   });
 
