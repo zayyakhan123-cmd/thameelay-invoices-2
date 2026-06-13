@@ -179,9 +179,13 @@ serve(async (req) => {
     }
     const quota = Array.isArray(quotaRows) ? quotaRows[0] : quotaRows;
     if (!quota?.allowed) {
+      // resets_at is null for the one-time free trial — don't render "Resets null".
+      const msg = quota.resets_at
+        ? `Monthly limit reached (${quota.current_count}/${quota.monthly_limit} invoices). Resets ${quota.resets_at}.`
+        : `Free trial used up (${quota.current_count}/${quota.monthly_limit} invoices). Upgrade to keep extracting.`;
       return json(
         {
-          error: `Monthly limit reached (${quota.current_count}/${quota.monthly_limit} invoices). Resets ${quota.resets_at}.`,
+          error: msg,
           code: "rate_limited",
           used: quota.current_count,
           limit: quota.monthly_limit,
