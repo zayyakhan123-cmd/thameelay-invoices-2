@@ -1188,6 +1188,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div style="font-size:13px;color:var(--text2);line-height:1.5">Drop a supplier invoice (PDF or photo) into the <strong>Upload Invoice</strong> box below. Track Aisle's AI reads every product and price automatically — then these cards fill with your real costs.</div>
   </div>
 
+  <!-- Trial nudge: shown while on the free trial so the 10-invoice wall never surprises -->
+  <div id="db-trial-nudge" style="display:none;border:1px solid var(--border2);border-left:4px solid var(--c1);background:var(--surface);padding:12px 16px;margin-bottom:16px;border-radius:12px"></div>
+
   <!-- KPI CARDS -->
   <div class="db2-kpi-grid">
     <div class="db2-kpi-card">
@@ -7188,6 +7191,7 @@ function dbSetStripFilter(type){
 
 function renderDashboard(){
   renderSummaryBanner();
+  renderTrialNudge();
   if(isNewEditActive()) renderNewEditShell();
   else renderDashboardTable();
   renderDashboardAlerts();
@@ -7198,6 +7202,30 @@ function renderDashboard(){
   renderKpiSparklines();
   updateNavCounts();
   updateDataFreshness();
+}
+
+// Proactive free-trial status banner on the dashboard so the 10-invoice wall
+// never arrives as a surprise. Reuses _invoiceAllowance() (single source of
+// truth) and escalates in urgency as the remaining count drops.
+async function renderTrialNudge(){
+  const el = document.getElementById('db-trial-nudge');
+  if(!el) return;
+  let a;
+  try { a = await _invoiceAllowance(); } catch { el.style.display = 'none'; return; }
+  if(!a || !a.trialing){ el.style.display = 'none'; return; }
+  const limit = a.limit || FREE_TRIAL_INVOICES;
+  const u = (a.used === null || a.used === undefined) ? 0 : a.used;
+  const left = Math.max(0, limit - u);
+  const accent = left === 0 ? 'var(--red)' : (left <= 3 ? '#eab308' : 'var(--c1)');
+  const msg = left === 0
+    ? `You've used all <strong style="color:var(--text)">${limit}</strong> free trial extractions. Continue on your plan to keep extracting.`
+    : `Free trial — <strong style="color:var(--text)">${u} of ${limit}</strong> extractions used, <strong style="color:var(--text)">${left}</strong> left. No charge until you continue.`;
+  el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--text2);line-height:1.5">${msg}</div>
+      <button class="bp" style="font-size:12.5px;padding:7px 14px;white-space:nowrap" onclick="goTo('plans')">${left === 0 ? 'Choose a plan' : 'See plans'}</button>
+    </div>`;
+  el.style.borderLeftColor = accent;
+  el.style.display = 'block';
 }
 
 function renderKpiSparklines(){
