@@ -8000,16 +8000,21 @@ function renderDashboardTable(){
     const ru = Number.isFinite(apRetail) && apRetail > 0 ? apRetail : resolved.retail;
     const projMargin = ru>0 ? ((ru-cu)/ru)*100 : 0;
     
-    // Current margin = if we had prior retail, calculate based on it. Otherwise use current.
-    // For demo, assume current margin is 5% lower than projected if cost went up
+    // Current margin: if the owner has a real last shelf price on file (resolved
+    // from memory), compute the true figure from it. Otherwise it's an ESTIMATE
+    // reconstructed from standard markup on the prior cost — flag it so we never
+    // present a guessed number as fact.
     let curMargin = projMargin;
-    if(ch.status === 'increase' && ch.prev > 0){
-      // Assume retail wasn't updated — current margin is based on old retail / new cost
+    let marginEst = true;
+    if(resolved.source === 'memory' && resolved.retail > 0){
+      curMargin = ((resolved.retail - cu)/resolved.retail)*100;
+      marginEst = false;
+    } else if(ch.status === 'increase' && ch.prev > 0){
       const oldRetail = ch.prev * (1 + getTgt(item.cat)/100);
       curMargin = oldRetail>0 ? ((oldRetail - cu)/oldRetail)*100 : 0;
     }
-    
-    return { item, ch, cu, ru, curMargin, projMargin, resolved };
+
+    return { item, ch, cu, ru, curMargin, projMargin, resolved, marginEst };
   });
   
   if(search){
@@ -8059,7 +8064,7 @@ function renderDashboardTable(){
   const pageRows = rows.slice(start, start + DB_PAGE_SIZE);
   
   tbody.innerHTML = pageRows.map(r=>{
-    const {item, ch, cu, ru, curMargin, projMargin, resolved} = r;
+    const {item, ch, cu, ru, curMargin, projMargin, resolved, marginEst} = r;
     // Declare escKey at the top of the row callback so every section can use it
     const escKey = cssEscapeId(item.item);
 
@@ -8088,7 +8093,7 @@ function renderDashboardTable(){
       reasonHtml = `Cost increased ${ch.pct.toFixed(1)}% from vendor; margin below target`;
       riskClass = 'risk-high';
       riskTag = 'HIGH';
-      riskMsg = `Margin will drop to ${curMargin.toFixed(1)}%`;
+      riskMsg = `Margin will drop to ${curMargin.toFixed(1)}%${marginEst ? ' (est.)' : ''}`;
     } else if(ch.status === 'decrease' && Math.abs(ch.pct) > 2){
       actHtml = '<span class="act-tag act-dn">Decrease Price</span>';
       reasonHtml = `Cost decreased ${Math.abs(ch.pct).toFixed(1)}%; pass on benefit`;
@@ -8263,7 +8268,7 @@ function renderDashboardTable(){
       <td style="text-align:center;width:28px"><span title="${esc(reasonHtml)}" style="cursor:help;font-size:13px;opacity:.5;user-select:none">ℹ</span></td>
       <td id="db-pmar-${cssEscapeId(item.item)}">
         <div style="display:flex;flex-direction:column;gap:1px">
-          <span class="margin-num" style="color:${curColor};font-size:11px">${curMargin.toFixed(1)}%</span>
+          <span class="margin-num" style="color:${curColor};font-size:11px" title="${marginEst ? 'Estimated from standard markup — set this item’s shelf price to track real margin' : 'Based on your last shelf price'}">${curMargin.toFixed(1)}%${marginEst ? '~' : ''}</span>
           <span style="font-size:9px;color:var(--text4)">→ <span class="margin-num" style="color:${projColor};font-size:11px">${projMargin.toFixed(1)}%</span></span>
         </div>
       </td>
