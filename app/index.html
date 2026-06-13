@@ -1137,7 +1137,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="h-r">
     <div class="h-data"><span class="live-dot"></span><span id="data-fresh">Live · just now</span></div>
     <div class="h-icon-btn h-bell" title="Notifications" onclick="goTo('alerts')" style="cursor:pointer"><i class="ti ti-bell"></i><span class="h-bell-cnt" id="bell-cnt">0</span></div>
-    <div class="h-icon-btn" title="Help" onclick="showToast('info','Help and support coming soon.')" style="cursor:pointer">?</div>
+    <div class="h-icon-btn" title="Help &amp; support" onclick="window.open('mailto:hello@trackaisle.com?subject=Help%20request','_blank')" style="cursor:pointer">?</div>
     <div class="h-user">
       <div class="h-avatar" id="h-avatar">?</div>
       <div>
@@ -1162,7 +1162,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <a data-pg="tracker"><i class="sico ti ti-trending-up"></i>Price Tracker</a>
     <a data-pg="vendors"><i class="sico ti ti-building-store"></i>Vendor Insights</a>
     <a data-pg="alerts"><i class="sico ti ti-bell"></i>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
-    <a data-pg="produce"><i class="sico ti ti-leaf"></i>Produce Matcher <span class="scnt" id="pc-cnt">0</span></a>
+    <a data-pg="produce" title="Produce items matched across all your invoices"><i class="sico ti ti-leaf"></i>Produce Matcher <span class="scnt" id="pc-cnt" style="display:none">0</span></a>
   </div>
   <div class="sg"><div class="slabel">History</div>
     <a data-pg="history"><i class="sico ti ti-folder"></i>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
@@ -1207,7 +1207,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <svg class="db2-kpi-spark" id="spark-safe" viewBox="0 0 64 28" preserveAspectRatio="none"></svg>
       </div>
       <div class="db2-kpi-val mn" id="db-safe" style="color:var(--green)">0</div>
-      <div class="db2-kpi-lbl">Safe to Approve</div>
+      <div class="db2-kpi-lbl" title="Items where the AI is confident and the cost hasn't moved more than ~5% since last time — fine to approve in bulk.">Safe to Approve</div>
       <div class="db2-kpi-sub" id="db-safe-sub">0%</div>
     </div>
     <div class="db2-kpi-card">
@@ -1325,7 +1325,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
             <input type="text" placeholder="Search items..." id="db-search" oninput="dbSearchDebounced()">
           </div>
           <button class="tbl-btn" id="db-export-open-btn" onclick="openExportPanel()"><i class="ti ti-download" style="margin-right:6px"></i>Export</button>
-          <button class="db-save-btn" id="db-save-btn" onclick="dbSaveAll()" disabled><i class="ti ti-device-floppy"></i>Save</button>
+          <button class="db-save-btn" id="db-save-btn" onclick="dbSaveAll()" title="Upload and review an invoice before saving" disabled><i class="ti ti-device-floppy"></i>Save</button>
         </div>
       </div>
       <div class="db-strip" id="db-bulk-bar" style="display:none">
@@ -1337,7 +1337,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
             <thead><tr>
               <th>Item</th>
               <th>Case Cost</th>
-              <th>Units</th>
+              <th title="Number of items in each case — edit if the AI parsed the wrong pack size">Units/Case</th>
               <th>Unit Cost</th>
               <th>Change</th>
               <th>Recommendation</th>
@@ -5870,7 +5870,11 @@ function renderItemMaster(){
 // ═══════════ VENDORS ═══════════
 function renderVendors(){
   const hist=loadHist();const db=loadDB();
-  if(!hist.length){show('vnd-empty',true);show('vnd-content',false);return;}
+  if(!hist.length){
+    const em = document.querySelector('#vnd-empty div');
+    if(em) em.innerHTML = INV ? 'An invoice is loaded — click <strong>Save</strong> on the dashboard to add it to Vendor Insights.' : 'Save invoices to see vendor trends here.';
+    show('vnd-empty',true);show('vnd-content',false);return;
+  }
   show('vnd-empty',false);show('vnd-content',true);
   const mergeBtn = document.getElementById('vnd-merge-btn');
   if(mergeBtn) mergeBtn.style.display = '';
@@ -6514,7 +6518,7 @@ function renderHistory(){
   }).join('');
 }
 function deleteHistory(idx){
-  if(!confirm('Delete this invoice?'))return;
+  if(!confirm('Delete this invoice from your history?\n\nThis removes the invoice and the price-change records it contributed for this vendor. This cannot be undone.'))return;
   const h = loadHist();
   const deleted = h[idx]; // capture before splice
   h.splice(idx,1);
@@ -7739,7 +7743,7 @@ function renderNewEditShell(){
     } else if(apStatus==='rejected'){
       actionHtml=`<div style="display:flex;flex-direction:column;gap:3px"><span class="apr-act-btn rejected">✕ Rejected</span><span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="setAp('${escKey}','pending');renderNewEditShell()">Undo</span></div>`;
     } else {
-      actionHtml=`<div style="display:flex;gap:4px"><button type="button" class="apr-act-btn approve" onclick="setAp('${escKey}','approved');showToast('success','✓ Item approved');renderNewEditShell()">✓</button><button type="button" class="apr-act-btn reject" onclick="setAp('${escKey}','rejected');renderNewEditShell()">✕</button></div>`;
+      actionHtml=`<div style="display:flex;gap:4px"><button type="button" class="apr-act-btn approve" onclick="setAp('${escKey}','approved');showToast('success','✓ Item approved');renderNewEditShell()">✓</button><button type="button" class="apr-act-btn reject" title="Reject — excludes this item from the price-change export. You can undo." onclick="setAp('${escKey}','rejected');renderNewEditShell()">✕</button></div>`;
     }
 
     return `<tr>
@@ -7763,7 +7767,7 @@ function renderNewEditShell(){
                  oninput="onRetailInput('${escKey}',this)"
                  onchange="onRetailCommit('${escKey}',this);renderNewEditShell()">
           ${srcPill}${custPill}
-          <button type="button" class="retail-reset" onclick="resetRetail('${escKey}');renderNewEditShell()" title="Revert to calculated">↺</button>
+          <button type="button" class="retail-reset" onclick="resetRetail('${escKey}');renderNewEditShell()" title="Reset to the formula price for this invoice only — your saved retail returns on your next visit">↺</button>
         </div>
       </td>
       <td style="text-align:right;min-width:80px">
@@ -8030,7 +8034,7 @@ function renderDashboardTable(){
     document.getElementById('db-pager').style.display='none';
     if(bulkBar) bulkBar.style.display='none';
     const saveBtn = document.getElementById('db-save-btn');
-    if(saveBtn) saveBtn.disabled = true;
+    if(saveBtn){ saveBtn.disabled = true; saveBtn.title = 'Upload and review an invoice before saving'; }
     const pill = document.getElementById('db-action-pill');
     if(pill) pill.textContent = '0 Action Required';
     return;
@@ -8043,7 +8047,7 @@ function renderDashboardTable(){
   // Update status strip
   if(bulkBar) bulkBar.style.display = 'flex';
   const saveBtn = document.getElementById('db-save-btn');
-  if(saveBtn) saveBtn.disabled = false;
+  if(saveBtn){ saveBtn.disabled = false; saveBtn.title = 'Save all approvals to your history'; }
   
   let rows = purch.map(item=>{
     const ap = APPROVALS[item.item];
@@ -8211,7 +8215,7 @@ function renderDashboardTable(){
                oninput="onRetailInput('${escJs(item.item)}', this)"
                onchange="onRetailCommit('${escJs(item.item)}', this)">
         ${srcBadge}${custBadge}
-        <button type="button" class="retail-reset" title="Revert to calculated cost × markup"
+        <button type="button" class="retail-reset" title="Reset to the formula price for this invoice only — your saved retail returns on your next visit"
                 onclick="resetRetail('${escJs(item.item)}')">↺</button>
       </div>
       ${wasLine}`;
@@ -8232,7 +8236,7 @@ function renderDashboardTable(){
     } else {
       actionCell = `<div class="db-act-cell">
         <button class="db-act-btn approve" onclick="setAp('${escJs(item.item)}','approved')"><i class="ti ti-check" style="margin-right:4px"></i>Approve</button>
-        <button class="db-act-btn reject" onclick="setAp('${escJs(item.item)}','rejected')"><i class="ti ti-x" style="margin-right:4px"></i>Reject</button>
+        <button class="db-act-btn reject" title="Reject — excludes this item from the price-change export. You can undo." onclick="setAp('${escJs(item.item)}','rejected')"><i class="ti ti-x" style="margin-right:4px"></i>Reject</button>
       </div>`;
     }
 
@@ -8713,7 +8717,7 @@ function pcOpenPage(){
 
 function pcUpdateNavCount(){
   const n = pcLoadCatalog().length;
-  const a = document.getElementById('pc-cnt'); if(a) a.textContent = n;
+  const a = document.getElementById('pc-cnt'); if(a){ a.textContent = n; a.style.display = (n>0)?'':'none'; }
   const b = document.getElementById('pc-cat-cnt'); if(b) b.textContent = n;
   const c = document.getElementById('pc-cat-summary'); if(c) c.textContent = `${n} item${n!==1?'s':''}`;
   const hCnt = pcLoadHist().length;
@@ -9843,7 +9847,7 @@ function pcRenderResults(){
     list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3)">
       <div style="font-size:32px;opacity:.5;margin-bottom:8px"><i class="ti ti-search"></i></div>
       <div style="font-weight:600;color:var(--text2);margin-bottom:4px">No produce items found in this invoice</div>
-      <div style="font-size:11px">Either the invoice didn't contain recognizable produce lines, or extraction failed. Try the demo invoice button to verify the matcher is working.</div>
+      <div style="font-size:11px">This invoice doesn't appear to contain fresh produce lines — or the items couldn't be matched to the catalog. If you expected produce, try a clearer photo or check the item names on the invoice.</div>
     </div>`;
     return;
   }
