@@ -6673,6 +6673,11 @@ function showBanner(msg,bg,color){
 
 // ── Toast notifications ─────────────────────────
 function showToast(kind, msg, dur){
+  // Tolerate reversed args: several call sites pass (msg, kind). If the first
+  // arg isn't a known kind but the second one is, swap them — so the severity
+  // icon/color AND the message body are both correct regardless of call order.
+  const _KINDS = ['success','error','warn','info'];
+  if(!_KINDS.includes(kind) && _KINDS.includes(msg)){ const _sw = kind; kind = msg; msg = _sw; }
   const wrap = document.getElementById('toast-wrap');
   if(!wrap) return;
   const icoCls = {success:'ti-circle-check', error:'ti-alert-triangle', warn:'ti-bolt', info:'ti-info-circle'}[kind] || 'ti-info-circle';
