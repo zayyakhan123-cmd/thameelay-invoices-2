@@ -3291,10 +3291,12 @@ const AUTO_MIGRATE_LEGACY_LOCAL = false;
 //   helper then picks up the UUID match.
 const ZAY_UUID = '88b1cebf-d594-46b0-875d-4ea3f50daafc';
 function isNewEditActive(){
+  // The redesigned per-row Approve/Undo editor is now the default for every
+  // user (was gated to one developer UUID). ?newedit=0 forces the legacy
+  // dashboard table — kept as an instant escape hatch / rollback lever.
   const p = new URLSearchParams(location.search).get('newedit');
   if(p === '0') return false;
-  if(p === '1') return true;
-  return _USER?.id === ZAY_UUID;
+  return true;
 }
 
 // Phase A commit 5 — extraction log state. MutationObserver watches the
