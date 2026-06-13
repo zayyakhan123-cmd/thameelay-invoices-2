@@ -2461,7 +2461,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
           <div class="settings-card-head">
             <div>
               <div class="settings-card-title">Usage</div>
-              <div class="settings-card-meta">Invoice processing this billing period</div>
+              <div class="settings-card-meta" id="s-usage-meta">Invoice processing this billing period</div>
             </div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:4px">
@@ -2590,6 +2590,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     <div class="plans-header">
       <h1 class="plans-title">Choose your plan</h1>
       <p class="plans-sub">Upgrade, downgrade, or cancel anytime.</p>
+      <div id="plans-context" style="display:none;font-size:13px;color:var(--text2);background:var(--surface);border:1px solid var(--border2);border-left:3px solid var(--c1);border-radius:8px;padding:10px 14px;margin:0 0 18px"></div>
       <div class="billing-toggle">
         <button class="btoggle-opt on" id="btog-monthly" onclick="sPlansToggle(false)">Monthly</button>
         <button class="btoggle-opt" id="btog-annual" onclick="sPlansToggle(true)">Annual <span class="btog-save">Save 10%</span></button>
@@ -10628,6 +10629,8 @@ async function renderSettings(){
   const usageFillEl = document.getElementById('s-usage-fill');
   const usagePctEl  = document.getElementById('s-usage-pct');
   if(usageLblEl)  usageLblEl.textContent  = _noPlan ? 'No active plan — start your free trial' : (_trialing ? `${invUsed} of ${invLimit} free trial invoices` : `${invUsed} of ${invLimit} invoices this month`);
+  const usageMetaEl = document.getElementById('s-usage-meta');
+  if(usageMetaEl) usageMetaEl.textContent = _noPlan ? 'No active plan' : (_trialing ? 'Free trial — 10 extractions total, no monthly reset' : 'Invoice processing this billing period');
   if(usagePctEl)  usagePctEl.textContent  = usagePct + '%';
   if(usageFillEl){
     usageFillEl.style.width = usagePct + '%';
@@ -10646,7 +10649,9 @@ async function renderSettings(){
   const note = document.getElementById('s-billing-note');
   if(note) note.textContent = plan === 'free'
     ? 'Upgrade to process more invoices each month.'
-    : '';
+    : (_trialing
+        ? `Free trial: ${invUsed} of ${FREE_TRIAL_INVOICES} extractions used. At ${FREE_TRIAL_INVOICES}, your card is charged and your plan begins.`
+        : '');
 
   // Payment-method line reflects real card state — a card is on file for any
   // trialing/paid user, so never show "no card" to someone who has one.
@@ -10660,8 +10665,8 @@ async function renderSettings(){
   // Show the right CTA button based on plan
   const viewPlansBtn = document.getElementById('s-view-plans-btn');
   const manageBillingBtn = document.getElementById('s-billing-btn');
-  if(viewPlansBtn)    viewPlansBtn.style.display    = plan === 'free' ? '' : 'none';
-  if(manageBillingBtn) manageBillingBtn.style.display = plan !== 'free' ? '' : 'none';
+  if(viewPlansBtn)    viewPlansBtn.style.display    = (plan === 'free' || _trialing) ? '' : 'none';
+  if(manageBillingBtn) manageBillingBtn.style.display = (plan !== 'free' && !_trialing) ? '' : 'none';
 }
 
 function sRenderAvatar(profile){
@@ -10907,7 +10912,33 @@ function sPlansToggle(annual){
 }
 
 function renderPlanCards(){
+  // Wait for the profile before rendering CTAs — otherwise we flash "Upgrade" on
+  // the user's own plan, mis-order tiers, or let a paid user start a lower-tier checkout.
+  if(!_sPro){
+    document.querySelectorAll('.plan-cta').forEach(b=>{ b.textContent='Loading…'; b.disabled=true; });
+    loadProfile().then(()=>{ if(_sPro) renderPlanCards(); });
+    return;
+  }
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const order = ['starter','growth','pro'];
   const currentPlan = _sPro?.subscription_plan ?? 'free';
+  const trialing = currentPlan !== 'free' && (_sPro?.subscription_status === 'trialing');
+  const curIdx = order.indexOf(currentPlan);
+
+  // Context bar above the cards reflects the user's trial/plan state.
+  const ctx = document.getElementById('plans-context');
+  if(ctx){
+    if(currentPlan === 'free'){
+      ctx.style.display = 'none';
+    } else if(trialing){
+      ctx.innerHTML = `You're trialing <strong>${cap(currentPlan)}</strong> — your first ${FREE_TRIAL_INVOICES} invoices are free. Continue on your plan or pick another; your card is only charged when you continue.`;
+      ctx.style.display = '';
+    } else {
+      ctx.innerHTML = `You're on the <strong>${cap(currentPlan)}</strong> plan.`;
+      ctx.style.display = '';
+    }
+  }
+
   for(const [plan, prices] of Object.entries(PLAN_DATA)){
     const priceEl  = document.getElementById('plan-price-' + plan);
     const billedEl = document.getElementById('plan-billed-' + plan);
@@ -10915,9 +10946,9 @@ function renderPlanCards(){
     if(!priceEl || !ctaEl) continue;
 
     if(_plansAnnual){
+      const saved = prices.monthly*12 - prices.annual;
       priceEl.textContent  = '$' + prices.annual.toLocaleString();
-      billedEl.textContent = 'Billed annually ($' + prices.monthlyEq + '/mo)';
-      // Swap /mo to /yr
+      billedEl.textContent = `Billed annually — $${Math.round(prices.monthlyEq)}/mo · save $${saved}/yr`;
       priceEl.nextElementSibling.textContent = '/yr';
     } else {
       priceEl.textContent  = '$' + prices.monthly;
@@ -10925,13 +10956,27 @@ function renderPlanCards(){
       priceEl.nextElementSibling.textContent = '/mo';
     }
 
-    // CTA state
+    // Tier-aware CTA: current plan disabled (or "Continue" while trialing); a lower
+    // tier downgrades via the billing portal; a higher tier upgrades via checkout.
+    const planIdx = order.indexOf(plan);
     if(currentPlan === plan){
-      ctaEl.textContent = 'Current Plan';
-      ctaEl.disabled    = true;
+      if(trialing){
+        ctaEl.textContent = 'Continue on ' + cap(plan);
+        ctaEl.disabled = false;
+        ctaEl.onclick = () => sConvertTrial(ctaEl);
+      } else {
+        ctaEl.textContent = 'Current Plan';
+        ctaEl.disabled = true;
+        ctaEl.onclick = null;
+      }
+    } else if(curIdx >= 0 && planIdx < curIdx){
+      ctaEl.textContent = 'Downgrade to ' + cap(plan);
+      ctaEl.disabled = false;
+      ctaEl.onclick = () => sOpenBillingPortal();
     } else {
-      ctaEl.textContent = 'Upgrade to ' + plan.charAt(0).toUpperCase() + plan.slice(1);
-      ctaEl.disabled    = false;
+      ctaEl.textContent = 'Upgrade to ' + cap(plan);
+      ctaEl.disabled = false;
+      ctaEl.onclick = () => sStartCheckout(plan);
     }
   }
 }
