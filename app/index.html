@@ -10944,6 +10944,10 @@ function openUpgradeModal(){
   const plan = _sPro?.subscription_plan || 'free';
   const status = _sPro?.subscription_status || '';
   const needsTrial = (plan === 'free');
+  // INVARIANT: every caller of openUpgradeModal() invokes it only at/just-as the cap is
+  // hit (checkMonthlyInvoiceLimit at used>=limit; trimInvsToLimit at remaining<=0 or when
+  // the batch fills the last slots) — so a 'trialing' user reaching here has spent their 10.
+  // If you ever call this elsewhere for a trialing user below the cap, gate on the count.
   const trialExhausted = !needsTrial && status === 'trialing';
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   let html = '';
@@ -11109,7 +11113,13 @@ async function sConvertTrial(btn){
     }
     closeUpgradeModal();
     await renderSettings();
-    showToast('success', `You're on the ${_sPro?.subscription_plan || 'paid'} plan — extract away.`);
+    // The webhook may not have flipped status to active within the poll window —
+    // don't claim success if we're still trialing; tell them it's processing.
+    if(!_sPro || _sPro.subscription_status === 'trialing'){
+      showToast('warn', 'Payment is processing — give it a moment, then refresh if the trial banner is still up.', 8000);
+    } else {
+      showToast('success', `You're on the ${_sPro?.subscription_plan || 'paid'} plan — extract away.`);
+    }
   } catch(e){
     if(btn){ btn.textContent = orig; btn.disabled = false; }
     showToast('error', 'Could not start your plan: ' + e.message);
