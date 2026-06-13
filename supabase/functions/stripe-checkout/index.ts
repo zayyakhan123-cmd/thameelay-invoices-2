@@ -130,7 +130,12 @@ serve(async (req) => {
     allow_promotion_codes: true,
     billing_address_collection: "auto",
     subscription_data: {
-      trial_period_days: 14,
+      // The trial is gated by INVOICE COUNT (10 lifetime) in app code + the
+      // check_ai_monthly_quota RPC. This day count is only Stripe's backstop:
+      // if a user starts the trial but never spends their 10 invoices, the card
+      // is auto-charged after this many days. Conversion normally happens sooner
+      // — when they hit 10 and click "Continue" (stripe-end-trial).
+      trial_period_days: 30,
       metadata: { supabase_user_id: user.id },
     },
   });
