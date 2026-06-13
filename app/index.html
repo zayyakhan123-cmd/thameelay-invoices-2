@@ -1025,6 +1025,42 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 @media(max-width:1200px){.db2-kpi-grid{grid-template-columns:repeat(3,1fr)}.db2-body{grid-template-columns:1fr}.db2-analytics{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.db2-kpi-grid{grid-template-columns:repeat(2,1fr)}.db2-analytics{grid-template-columns:1fr}}
+
+/* ── Mobile / phone refinements (≤700px + ≤480px) ── */
+@media(max-width:700px){
+  /* Approval table: drop the 900px floor so it fits + scrolls naturally */
+  table{min-width:0}
+  /* Stack the PDF pane out of the way so the table isn't squeezed to ~80px */
+  .apr-wrap{grid-template-columns:1fr}
+  .apr-pdf-pane{display:none}
+  /* 44px touch targets for the most-used controls */
+  .apr-act-btn{padding:10px 14px;font-size:13px;min-height:44px}
+  .apr-retail-input{padding:9px 8px;font-size:14px;width:92px}
+  .apr-field-input{padding:9px 6px;font-size:13px}
+  .tinput{padding:9px 10px;font-size:14px;width:104px}
+  /* Approvals card header stacks; search goes full width */
+  .db2-approvals-hd{flex-direction:column;align-items:stretch;gap:8px;padding:12px 14px}
+  .db2-approvals-search,.db2-approvals-search input{width:100%}
+  /* Settings: sidebar above content, single-column form rows */
+  .settings-wrap{flex-direction:column}
+  .settings-sidebar{width:100%;position:static;border-right:none;border-bottom:1px solid var(--border);padding:12px 14px}
+  .settings-main{padding:20px 16px 40px}
+  .settings-row,.settings-row.triple{grid-template-columns:1fr}
+  /* Comfortable header-icon + pagination tap sizes */
+  .h-icon-btn{width:42px;height:42px}
+  .page-btn{width:40px;height:40px;font-size:13px}
+}
+@media(max-width:480px){
+  .main{padding:12px 10px}
+  /* Header: hide decorative text so the cluster never overflows on a narrow phone */
+  header{padding:0 12px;gap:8px}
+  .h-r{gap:8px}
+  .h-data,.h-sub{display:none}
+  .h-name{font-size:15px}
+  /* Smaller KPI value type so 2-up cards never clip */
+  .db2-kpi-val{font-size:22px}
+  .db2-kpi-card{padding:12px 10px 10px}
+}
 </style>
 </head>
 <body>
@@ -2812,12 +2848,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- Upgrade paywall modal — shown at the monthly-invoice limit (replaces the old vanishing toast) -->
 <div id="upgrade-modal" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9200;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeUpgradeModal()">
-  <div style="background:var(--surface);border-radius:14px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden">
-    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+  <div style="background:var(--surface);border-radius:14px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden;max-height:calc(100vh - 48px);display:flex;flex-direction:column">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0">
       <div style="flex:1;font-size:16px;font-weight:700">Keep extracting invoices</div>
       <button onclick="closeUpgradeModal()" style="font-size:18px;padding:4px 10px;background:transparent;border:none;cursor:pointer;color:var(--text3)">×</button>
     </div>
-    <div id="upgrade-modal-body" style="padding:20px 22px;display:flex;flex-direction:column;gap:16px"></div>
+    <div id="upgrade-modal-body" style="padding:20px 22px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0"></div>
   </div>
 </div>
 
@@ -7222,7 +7258,7 @@ async function renderTrialNudge(){
     : `Free trial — <strong style="color:var(--text)">${u} of ${limit}</strong> extractions used, <strong style="color:var(--text)">${left}</strong> left. No charge until you continue.`;
   el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
       <div style="font-size:13px;color:var(--text2);line-height:1.5">${msg}</div>
-      <button class="bp" style="font-size:12.5px;padding:7px 14px;white-space:nowrap" onclick="goTo('plans')">${left === 0 ? 'Choose a plan' : 'See plans'}</button>
+      <button class="bp" style="font-size:13px;padding:11px 16px;white-space:nowrap;min-height:44px" onclick="goTo('plans')">${left === 0 ? 'Choose a plan' : 'See plans'}</button>
     </div>`;
   el.style.borderLeftColor = accent;
   el.style.display = 'block';
