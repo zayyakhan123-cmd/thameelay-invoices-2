@@ -518,6 +518,9 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 }
 @media(max-width:768px){
   .side{display:none}
+  /* Mobile nav drawer: hidden by default, shown as a fixed overlay when the
+     hamburger adds .show; goTo() strips .show so it closes on navigation. */
+  .side.show{display:flex;position:fixed;top:64px;left:0;bottom:0;z-index:1000;box-shadow:0 8px 30px rgba(0,0,0,.45)}
   .mets,.g2,.g3{grid-template-columns:1fr 1fr}
   .main{padding:16px}
   .banner{grid-template-columns:1fr 1fr}
@@ -1125,7 +1128,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 <div class="app-wrap">
 <header>
   <div class="h-l">
-    <div class="h-icon-btn" onclick="document.querySelector('.side').classList.toggle('hide')" title="Toggle sidebar"><i class="ti ti-menu-2"></i></div>
+    <div class="h-icon-btn" onclick="document.querySelector('.side').classList.toggle('show')" title="Toggle sidebar" style="cursor:pointer"><i class="ti ti-menu-2"></i></div>
     <div class="h-title">
       <div class="h-name" id="page-title">Dashboard</div>
       <div class="h-sub" id="page-subtitle">AI-powered invoice analysis and price optimization</div>
@@ -4033,6 +4036,7 @@ let INV=null, APPROVALS={}, FILE_QUEUE=[];
 
 // ═══════════ NAVIGATION ═══════════
 function goTo(id){
+  document.querySelector('.side')?.classList.remove('show'); // close mobile nav drawer on navigate
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('nav a').forEach(a=>a.classList.remove('on'));
   const pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('on');
