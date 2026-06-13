@@ -3263,7 +3263,20 @@ function safeUrl(s){
 
 // ═══════════ STORAGE ═══════════
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
-function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let _lsQuotaWarned = false;
+function lsSet(k,v){
+  try{ localStorage.setItem(k, JSON.stringify(v)); }
+  catch(e){
+    console.error('localStorage write failed for', k, e);
+    // Surface a full-storage failure instead of silently losing the write —
+    // otherwise an owner approves an invoice, sees it, and it vanishes on reload.
+    const quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+    if(quota && !_lsQuotaWarned){
+      _lsQuotaWarned = true;
+      try{ showToast('error', 'Your browser storage is full — recent changes may not have been saved. Please contact support before adding more.', 14000); }catch(_){}
+    }
+  }
+}
 // In-memory cache: avoids re-parsing localStorage JSON on every render (was happening 30+ times per page load).
 // Caches are invalidated on every save.
 const _CACHE = {hist:null, db:null, prodMeta:null};
