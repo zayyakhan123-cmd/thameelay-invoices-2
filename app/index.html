@@ -45,8 +45,8 @@
   /* Text */
   --text:#e7e9f0;
   --text2:#8a90a0;
-  --text3:#8a90a0;
-  --text4:#5e6474;
+  --text3:#a0a7b8;
+  --text4:#808898;
 
   /* Brand (blue — cyan flip is a separate commit) */
   --c1:#22d3ee;
@@ -89,7 +89,7 @@ header{background:var(--bg3);border-bottom:1px solid var(--border);height:64px;d
 .h-icon-btn{position:relative;width:36px;height:36px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;border:1px solid var(--border);transition:all .15s}
 .h-icon-btn:hover{background:var(--bg4)}
 .h-bell{font-size:14px}
-.h-bell-cnt{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg3)}
+.h-bell-cnt{position:absolute;top:-3px;right:-3px;background:#c0162f;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg3)}
 .h-user{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 8px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s}
 .h-user:hover{background:var(--bg4)}
 .h-avatar{width:30px;height:30px;border-radius:50%;background:var(--c1);color:#fff;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -377,6 +377,8 @@ body.new-edit-fullpage #pg-dashboard #batch-done{display:none !important}
 
 /* ─── BUTTONS ──────────────────────────────────── */
 button{font-family:var(--font-sans);font-size:12px;font-weight:500;padding:8px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;letter-spacing:-.005em}
+/* Visible keyboard focus for all interactive elements (a11y / WCAG 2.4.7) */
+button:focus-visible,a:focus-visible,nav a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
 button:hover{background:var(--bg3);color:var(--text)}
 .bp{background:var(--c1)!important;color:#fff!important;border-color:transparent!important;font-weight:600;box-shadow:0 0 0 1px rgba(34,211,238,0.40),0 8px 24px -6px rgba(34,211,238,0.55)}
 .bp:hover{background:var(--c1h)!important;box-shadow:0 0 0 1px rgba(103,232,249,0.50),0 10px 28px -6px rgba(34,211,238,0.65)}
@@ -1361,7 +1363,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
           <div class="db2-approvals-search">
             <i class="ti ti-search" style="opacity:.4;font-size:13px"></i>
-            <input type="text" placeholder="Search items..." id="db-search" oninput="dbSearchDebounced()">
+            <input type="text" placeholder="Search items..." id="db-search" aria-label="Search items" oninput="dbSearchDebounced()">
           </div>
           <button class="tbl-btn" id="db-export-open-btn" onclick="openExportPanel()"><i class="ti ti-download" style="margin-right:6px"></i>Export</button>
           <button class="db-save-btn" id="db-save-btn" onclick="dbSaveAll()" title="Upload and review an invoice before saving" disabled><i class="ti ti-device-floppy"></i>Save</button>
@@ -2709,7 +2711,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </main>
 </div>
 </div><!-- /.app-wrap -->
-<div class="toast-wrap" id="toast-wrap"></div>
+<div class="toast-wrap" id="toast-wrap" role="status" aria-live="polite" aria-atomic="false"></div>
 
 <!-- Export side panel (commit 3a). Opened by the Workbench Export dropdown.
      Footer actions route to the standalone Export to POS page until commit
@@ -2731,7 +2733,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </aside>
 
 <!-- Product detail modal: opened by clicking Open on a vendor drill-down row -->
-<div id="prod-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9100;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeProdDetailModal()">
+<div id="prod-detail-modal" role="dialog" aria-modal="true" aria-label="Product details" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9100;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeProdDetailModal()">
   <div style="background:var(--surface);border-radius:16px;width:100%;max-width:540px;box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px var(--border);overflow:hidden">
     <div style="padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
@@ -2798,7 +2800,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </div>
 
 <!-- Vendor drill-down modal: opened by clicking a vendor card on the Vendor Dashboard -->
-<div id="vnd-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto" onclick="if(event.target===this)vendorClose()">
+<div id="vnd-modal" role="dialog" aria-modal="true" aria-label="Vendor insights" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9000;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto" onclick="if(event.target===this)vendorClose()">
   <div style="background:var(--surface);border-radius:14px;max-width:1200px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden">
     <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <button id="vnd-back-btn" onclick="productBackToVendor()" style="display:none;font-size:13px;padding:6px 12px;background:var(--bg3);border:1px solid var(--border2)" title="Back to vendor view">← Back</button>
@@ -2821,7 +2823,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </div>
 
 <!-- Vendor merge modal -->
-<div id="vmerge-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9100;align-items:center;justify-content:center;padding:32px 16px" onclick="if(event.target===this)closeVendorMerge()">
+<div id="vmerge-modal" role="dialog" aria-modal="true" aria-label="Merge vendors" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9100;align-items:center;justify-content:center;padding:32px 16px" onclick="if(event.target===this)closeVendorMerge()">
   <div style="background:var(--surface);border-radius:14px;max-width:540px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden">
     <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
       <div style="flex:1;font-size:16px;font-weight:700">Merge vendors</div>
@@ -2847,7 +2849,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </div>
 
 <!-- Upgrade paywall modal — shown at the monthly-invoice limit (replaces the old vanishing toast) -->
-<div id="upgrade-modal" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9200;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeUpgradeModal()">
+<div id="upgrade-modal" role="dialog" aria-modal="true" aria-label="Choose a plan" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9200;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeUpgradeModal()">
   <div style="background:var(--surface);border-radius:14px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 0 1px var(--border);overflow:hidden;max-height:calc(100vh - 48px);display:flex;flex-direction:column">
     <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0">
       <div style="flex:1;font-size:16px;font-weight:700">Keep extracting invoices</div>
@@ -7807,7 +7809,7 @@ function renderNewEditShell(){
     } else if(apStatus==='rejected'){
       actionHtml=`<div style="display:flex;flex-direction:column;gap:3px"><span class="apr-act-btn rejected">✕ Rejected</span><span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="setAp('${escKey}','pending');renderNewEditShell()">Undo</span></div>`;
     } else {
-      actionHtml=`<div style="display:flex;gap:4px"><button type="button" class="apr-act-btn approve" onclick="setAp('${escKey}','approved');showToast('success','✓ Item approved');renderNewEditShell()">✓</button><button type="button" class="apr-act-btn reject" title="Reject — excludes this item from the price-change export. You can undo." onclick="setAp('${escKey}','rejected');renderNewEditShell()">✕</button></div>`;
+      actionHtml=`<div style="display:flex;gap:4px"><button type="button" class="apr-act-btn approve" aria-label="Approve item" onclick="setAp('${escKey}','approved');showToast('success','✓ Item approved');renderNewEditShell()">✓</button><button type="button" class="apr-act-btn reject" aria-label="Reject item" title="Reject — excludes this item from the price-change export. You can undo." onclick="setAp('${escKey}','rejected');renderNewEditShell()">✕</button></div>`;
     }
 
     return `<tr>
@@ -7985,7 +7987,7 @@ document.addEventListener('click', e => {
   }
 });
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape'){ closeExportMenu(); closeExportPanel(); }
+  if(e.key === 'Escape'){ closeExportMenu(); closeExportPanel(); closeProdDetailModal(); vendorClose(); closeVendorMerge(); closeUpgradeModal(); }
 });
 
 // 1. SUMMARY BANNER
