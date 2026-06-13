@@ -155,32 +155,10 @@ serve(async (req) => {
   );
   const isExempt = exemptSet.has(userData.user.id);
 
-  if (!isExempt) {
-    // Approval gate — every new account starts unapproved; an admin flips
-    // user_profiles.approved=true in Supabase Studio to let them in.
-    const { data: profile, error: profileErr } = await supabase
-      .from("user_profiles")
-      .select("approved")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-    if (profileErr) {
-      return json(
-        { error: "Approval check failed: " + profileErr.message },
-        origin,
-        { status: 500 },
-      );
-    }
-    if (!profile?.approved) {
-      return json(
-        {
-          error: "Your account is pending approval. The admin will let you in soon.",
-          code: "not_approved",
-        },
-        origin,
-        { status: 403 },
-      );
-    }
-  }
+  // (Approval gate removed: signups auto-approve (handle_new_user) and billing
+  // now gates access. The old invite-only `approved` check could 403 a brand-new
+  // self-serve user if the auto-approve trigger raced or failed — a silent
+  // dead-end with no recovery. Access is enforced by the monthly quota below.)
 
   // Parse request body before charging quota — a malformed request shouldn't
   // burn one of the user's daily extractions.

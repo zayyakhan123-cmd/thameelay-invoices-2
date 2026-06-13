@@ -3367,21 +3367,11 @@ function cloudMark(table){
 // this is the UX layer so the user sees a friendly screen, not a 403.
 async function checkApprovalAndGate(){
   if(!_USER || !_supabase) return;
-  try{
-    const { data, error } = await _supabase
-      .from('user_profiles')
-      .select('approved')
-      .eq('user_id', _USER.id)
-      .maybeSingle();
-    if(error){ console.warn('Approval check failed:', error.message); return; }
-    if(data?.approved){
-      document.body.classList.remove('pending-approval');
-      document.body.classList.remove('app-locked');
-    } else {
-      document.body.classList.add('pending-approval');
-      document.body.classList.add('app-locked');
-    }
-  }catch(e){ console.warn('Approval check failed:', e); }
+  // Approval is no longer the access model — signups auto-approve and billing
+  // gates access. Never trap a signed-in user behind "pending approval"
+  // (a trigger race/failure used to lock them out with no recovery).
+  document.body.classList.remove('pending-approval');
+  document.body.classList.remove('app-locked');
 }
 
 // Load the signed-in user's profile (plan + invoice_limit + business fields)
