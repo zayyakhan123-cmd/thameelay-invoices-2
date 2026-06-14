@@ -1063,6 +1063,51 @@ body.cloud-active [data-cloud-show]{display:block !important}
   .db2-kpi-val{font-size:22px}
   .db2-kpi-card{padding:12px 10px 10px}
 }
+
+/* ── Money / Opportunities page ── */
+.money-nav-badge{margin-left:auto;font-size:11px;font-weight:700;color:#16c784;font-family:var(--font-mono)}
+.money-hero{background:linear-gradient(135deg, rgba(22,199,132,.13), rgba(22,199,132,.02) 55%, var(--surface));border:1px solid var(--border2);border-radius:18px;padding:30px 28px;margin-bottom:22px}
+.money-hero-label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#16c784}
+.money-total{font-size:clamp(40px,7vw,60px);font-weight:800;letter-spacing:-.03em;color:var(--text);line-height:1.04;margin:6px 0 6px;font-family:var(--font-mono)}
+.money-hero-sub{font-size:14px;color:var(--text2);max-width:560px;line-height:1.5}
+.money-hero-stats{display:flex;gap:32px;margin-top:20px;flex-wrap:wrap}
+.mhs-num{font-size:22px;font-weight:700;color:var(--text);font-family:var(--font-mono)}
+.mhs-lbl{font-size:12px;color:var(--text3);margin-top:2px}
+.money-section{margin-bottom:24px}
+.money-sec-head{margin-bottom:12px}
+.money-sec-title{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.money-sec-desc{font-size:13px;color:var(--text3);margin-top:2px}
+.money-list{display:flex;flex-direction:column;gap:8px}
+.money-row{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;transition:border-color .12s,transform .12s}
+.money-row:hover{border-color:var(--border2);transform:translateY(-1px)}
+.mr-main{flex:1;min-width:0}
+.mr-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mr-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.mr-up{color:#eab308;font-weight:600}
+.mr-price{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.mr-now,.mr-rec{display:flex;flex-direction:column;font-size:15px;font-weight:700;font-family:var(--font-mono);color:var(--text);text-align:right}
+.mr-now span,.mr-rec span{font-size:9px;font-weight:500;color:var(--text4);font-family:var(--font-sans);text-transform:uppercase;letter-spacing:.04em}
+.mr-rec{color:#16c784}
+.mr-arrow{color:var(--text4);font-size:15px}
+.mr-impact{font-size:16px;font-weight:800;font-family:var(--font-mono);color:#eab308;min-width:66px;text-align:right;flex-shrink:0}
+.mr-impact.green{color:#16c784}
+.mr-switch{font-size:13px;color:var(--text2);flex-shrink:0;text-align:right}
+.mr-switch strong{color:var(--text)}
+.mr-switch-cost{display:block;font-family:var(--font-mono);font-weight:700;color:#16c784}
+.mr-apply{flex-shrink:0;background:var(--c1);color:#042630;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.mr-apply:hover{filter:brightness(1.08)}
+.money-none{font-size:13px;color:var(--text3);padding:18px;background:var(--surface);border:1px dashed var(--border2);border-radius:12px;text-align:center}
+.money-empty{text-align:center;padding:56px 24px;max-width:440px;margin:0 auto}
+.money-empty-icon{font-size:38px;color:#16c784;margin-bottom:10px}
+.money-empty-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}
+.money-empty-sub{font-size:14px;color:var(--text2);line-height:1.5;margin-bottom:18px}
+@media(max-width:700px){
+  .money-row{flex-wrap:wrap;gap:8px}
+  .mr-price{order:3;width:100%;justify-content:flex-start}
+  .mr-impact{order:2}
+  .mr-switch{order:3;width:100%;text-align:left}
+  .mr-apply{order:4;width:100%}
+}
 </style>
 </head>
 <body>
@@ -1190,6 +1235,9 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="side-head">
     <div class="side-brand">Thameelay</div>
     <div class="side-brand-sub">Invoice Intelligence</div>
+  </div>
+  <div class="sg">
+    <a data-pg="money" class="money-nav"><i class="sico ti ti-currency-dollar"></i>Money<span class="money-nav-badge" id="money-nav-badge"></span></a>
   </div>
   <div class="sg"><div class="slabel">Workflow</div>
     <a data-pg="dashboard" class="on"><i class="sico ti ti-layout-dashboard"></i>Dashboard</a>
@@ -1573,6 +1621,10 @@ body.cloud-active [data-cloud-show]{display:block !important}
 </div>
 
 <!-- UPLOAD -->
+<div class="pg" id="pg-money">
+  <div id="money-body"></div>
+</div>
+
 <div class="pg" id="pg-upload">
   <div class="pgh"><div class="pgt">Upload Invoice</div><div class="pgs">Drop a vendor invoice PDF — AI extracts every line item automatically</div></div>
   <div class="steps"><div class="step active">1 · Upload</div><div class="step">2 · Review &amp; approve</div><div class="step">3 · Export</div></div>
@@ -4123,6 +4175,7 @@ function goTo(id){
   document.querySelectorAll(`nav a[data-pg="${id}"]`).forEach(a=>a.classList.add('on'));
   updatePageHeader(id);
   if(id==='dashboard')renderDashboard();
+  if(id==='money')renderMoneyPage();
   if(id==='tracker')renderTracker('all');
   if(id==='items')renderItemMaster();
   if(id==='vendors')renderVendors();
@@ -8679,9 +8732,122 @@ function updateDataFreshness(){
 }
 
 // Update page title in header when navigating
+// ═══════════ MONEY / OPPORTUNITIES ═══════════
+// Turns saved invoice data into actionable money: reprice-for-margin + cheaper-vendor switches.
+let _MONEY = null;
+function computeMoney(){
+  const db = loadDB(), hist = loadHist(), pm = loadProdMeta();
+  // Most-recent order volume per product key (vendorKey|itemNo): total retail units bought.
+  const vol = {};
+  const sortedHist = hist.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  for(const inv of sortedHist){
+    for(const it of (inv.items||[])){
+      if(!it.item || (it._rt && it._rt!==RT.PURCHASED)) continue;
+      const key = normV(inv.vendor)+'|'+it.item;
+      if(vol[key]) continue;
+      vol[key] = { units:(it.qty||0)*(it._u||1), cat:it.cat||'other' };
+    }
+  }
+  const roundR = c => charmRoundUp(c, [0.29,0.49,0.79,0.99]);
+  // (A) Reprice: products whose latest unit cost rose vs the prior observation.
+  const reprice = [];
+  for(const key in db){
+    const obs = db[key];
+    if(!obs || obs.length<2) continue;
+    const cur = obs[obs.length-1], prev = obs[obs.length-2];
+    if(!(cur.unitCost>0 && prev.unitCost>0) || cur.unitCost<=prev.unitCost) continue;
+    const pct = (cur.unitCost-prev.unitCost)/prev.unitCost*100;
+    if(pct<2) continue;
+    const v = vol[key];
+    const mk = catMarkup((v&&v.cat)||cur.cat||'other');
+    const mem = pm[prodMetaKey(cur.desc, cur.vendor)];
+    const nowRetail = (mem && mem.last_retail>0) ? mem.last_retail : roundR(prev.unitCost*(1+mk/100));
+    const recRetail = roundR(cur.unitCost*(1+mk/100));
+    const units = (v&&v.units)||0;
+    reprice.push({ desc:cur.desc, vendor:cur.vendor, oldCost:prev.unitCost, newCost:cur.unitCost,
+      pct, nowRetail, recRetail, units, impact:(cur.unitCost-prev.unitCost)*units });
+  }
+  reprice.sort((a,b)=> b.impact-a.impact || b.pct-a.pct);
+  // (B) Cross-vendor: same product (by normalized description) sold by 2+ vendors.
+  const byDesc = {};
+  for(const key in db){
+    const obs = db[key]; if(!obs||!obs.length) continue;
+    const cur = obs[obs.length-1]; if(!(cur.unitCost>0)) continue;
+    const nd = (cur.normDesc||(cur.desc||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').trim());
+    if(nd.length<5) continue;
+    const vk = normV(cur.vendor);
+    byDesc[nd] = byDesc[nd]||{};
+    if(!byDesc[nd][vk] || cur.unitCost<byDesc[nd][vk].cost)
+      byDesc[nd][vk] = { cost:cur.unitCost, vendor:cur.vendor, desc:cur.desc, key };
+  }
+  const cross = [];
+  for(const nd in byDesc){
+    const vs = Object.values(byDesc[nd]); if(vs.length<2) continue;
+    vs.sort((a,b)=> a.cost-b.cost);
+    const lo=vs[0], hi=vs[vs.length-1], per=hi.cost-lo.cost;
+    if(per<=0 || per/hi.cost<0.03) continue;
+    const units = (vol[hi.key]&&vol[hi.key].units)||0;
+    cross.push({ desc:hi.desc, fromVendor:hi.vendor, fromCost:hi.cost, toVendor:lo.vendor, toCost:lo.cost,
+      per, units, save:per*units, n:vs.length });
+  }
+  cross.sort((a,b)=> b.save-a.save || b.per-a.per);
+  const repriceTotal = reprice.reduce((s,r)=>s+r.impact,0);
+  const crossTotal = cross.reduce((s,c)=>s+c.save,0);
+  return { reprice, cross, repriceTotal, crossTotal, total:repriceTotal+crossTotal };
+}
+function renderMoneyPage(){
+  const el = document.getElementById('money-body'); if(!el) return;
+  _MONEY = computeMoney();
+  const M = _MONEY;
+  const m0 = n => '$'+Math.round(n).toLocaleString();
+  const m2 = n => '$'+n.toFixed(2);
+  const badge = document.getElementById('money-nav-badge');
+  if(badge) badge.textContent = M.total>0 ? m0(M.total) : '';
+  if(!loadHist().length){
+    el.innerHTML = `<div class="money-empty"><div class="money-empty-icon"><i class="ti ti-currency-dollar"></i></div>`+
+      `<div class="money-empty-title">Upload a few invoices to unlock your money</div>`+
+      `<div class="money-empty-sub">Once Track Aisle has your supplier invoices, this page shows exactly where you're losing margin and which vendors are cheaper.</div>`+
+      `<button class="bp" onclick="goTo('dashboard')">Upload an invoice</button></div>`;
+    return;
+  }
+  let h = `<div class="money-hero"><div class="money-hero-label">Money on the table</div>`+
+    `<div class="money-total">${m0(M.total)}</div>`+
+    `<div class="money-hero-sub">${M.reprice.length} repricing fix${M.reprice.length!==1?'es':''} and ${M.cross.length} cheaper-vendor switch${M.cross.length!==1?'es':''}, based on your most recent order quantities.</div>`+
+    `<div class="money-hero-stats"><div class="mhs"><div class="mhs-num">${m0(M.repriceTotal)}</div><div class="mhs-lbl">recover by repricing</div></div>`+
+    `<div class="mhs"><div class="mhs-num">${m0(M.crossTotal)}</div><div class="mhs-lbl">save by switching vendor</div></div></div></div>`;
+  h += `<div class="money-section"><div class="money-sec-head"><div class="money-sec-title">Reprice now</div><div class="money-sec-desc">A supplier raised your cost — bump these shelf prices to hold your margin.</div></div>`;
+  if(!M.reprice.length){ h += `<div class="money-none">No cost increases detected — your margins are holding. ✓</div>`; }
+  else { h += `<div class="money-list">`;
+    M.reprice.slice(0,50).forEach((r,i)=>{ h += `<div class="money-row">`+
+      `<div class="mr-main"><div class="mr-name">${esc(r.desc)}</div><div class="mr-meta">${esc(r.vendor)} · <span class="mr-up">cost ↑ ${r.pct.toFixed(0)}%</span> (${m2(r.oldCost)} → ${m2(r.newCost)}/unit)</div></div>`+
+      `<div class="mr-price"><div class="mr-now"><span>your price</span>${m2(r.nowRetail)}</div><div class="mr-arrow">→</div><div class="mr-rec"><span>suggested</span>${m2(r.recRetail)}</div></div>`+
+      `<div class="mr-impact" title="Extra cost you're absorbing on your recent order volume">${r.impact>0?m0(r.impact):'—'}</div>`+
+      `<button class="mr-apply" onclick="moneyApply(${i})">Apply</button></div>`; });
+    h += `</div>`; }
+  h += `</div>`;
+  h += `<div class="money-section"><div class="money-sec-head"><div class="money-sec-title">Switch &amp; save</div><div class="money-sec-desc">Another vendor sells the same item for less.</div></div>`;
+  if(!M.cross.length){ h += `<div class="money-none">No cheaper-vendor opportunities yet — add invoices from more suppliers to compare prices.</div>`; }
+  else { h += `<div class="money-list">`;
+    M.cross.slice(0,50).forEach(c=>{ h += `<div class="money-row">`+
+      `<div class="mr-main"><div class="mr-name">${esc(c.desc)}</div><div class="mr-meta">You buy from <strong>${esc(c.fromVendor)}</strong> at ${m2(c.fromCost)}/unit</div></div>`+
+      `<div class="mr-switch">switch to <strong>${esc(c.toVendor)}</strong> <span class="mr-switch-cost">${m2(c.toCost)}/unit</span></div>`+
+      `<div class="mr-impact green" title="Savings on your recent order volume">${c.save>0?'save '+m0(c.save):'-'+m2(c.per)+'/u'}</div></div>`; });
+    h += `</div>`; }
+  h += `</div>`;
+  el.innerHTML = h;
+}
+function moneyApply(i){
+  if(!_MONEY || !_MONEY.reprice[i]) return;
+  const r = _MONEY.reprice[i];
+  setProdLastRetail(r.desc, r.vendor, r.recRetail);
+  showToast('success', `Set ${r.desc} to $${r.recRetail.toFixed(2)} — it'll be the suggested price next time this item is on an invoice.`);
+  renderMoneyPage();
+}
+
 function updatePageHeader(pgId){
   const titles = {
     dashboard: ['Dashboard', 'AI-powered invoice analysis and price optimization'],
+    money: ['Money', 'Reprice for margin and switch to cheaper vendors'],
     upload: ['Upload Invoices', 'Drop vendor invoice PDFs to extract line items'],
     verify: ['Verify Lines', 'Review and correct extracted line items'],
     export: ['Export to POS', 'Export approved prices to your POS system'],
