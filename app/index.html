@@ -4298,12 +4298,24 @@ async function _totalInvoiceCount(){
     return error ? null : (count ?? 0);
   } catch { return null; }
 }
+// Master/owner accounts with NO usage limit. MUST stay in sync with the
+// EXEMPT_USER_IDS secret on the `ai` edge function: that one exempts the
+// SERVER quota (check_ai_monthly_quota); this one exempts the CLIENT gate,
+// which otherwise blocks the upload before the server is ever called. A UUID
+// is not a secret — the real enforcement is the server env var, not this list.
+const MASTER_UIDS = new Set([
+  '557e2ae3-c789-4a41-a30f-81c78561e208', // zayyakhan2.2 (master)
+]);
+
 // Unified allowance for the current user: { needsTrial, trialing, limit, used }.
 // Three states, keyed off (plan, status):
 //   plan 'free'        → no subscription/trial yet; must start the trial (blocked)
 //   status 'trialing'  → card on file; FREE_TRIAL_INVOICES extractions, lifetime
 //   else (paid/active) → the plan's invoice_limit per calendar month
 async function _invoiceAllowance(){
+  // Master/owner accounts: unlimited everywhere (mirrors EXEMPT_USER_IDS server-side).
+  // limit:0 is treated as "unlimited" by checkMonthlyInvoiceLimit and trimInvsToLimit.
+  if(_USER && MASTER_UIDS.has(_USER.id)) return { needsTrial:false, limit: 0, used: 0 };
   if(!_sPro) await loadProfile();
   // Fail OPEN if the profile is unknown — never block on a transient load error;
   // the server quota RPC is the real backstop.
