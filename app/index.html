@@ -4019,7 +4019,11 @@ async function cloudPullAll(){
       linksR.data.forEach(l => { links[(l.vendor_key || '') + '|' + (l.item_no || '')] = l.product_id; });
       lsSet('tm_product_links', links);
     }
-    if(pcCatR.data){
+    // Guard on .length, not truthiness: an empty cloud produce_catalog returns []
+    // (truthy), and overwriting localStorage with it wipes the client-side Truong
+    // seed (pcSeed). With _PC_SEEDED already set, it can't re-seed and every line
+    // shows "No catalog match". Empty cloud → keep the local seed; it flushes back up.
+    if(pcCatR.data?.length){
       const cat = pcCatR.data.map(r => r.data || { id: r.id, name: r.name, unit: r.unit, cost: r.cost ? Number(r.cost) : 0, image: r.image, aliases: r.aliases });
       lsSet(SK.PC_CAT, cat);
     }
