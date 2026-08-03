@@ -7645,7 +7645,12 @@ function safeItems(){
 }
 
 function renderNewEditShell(){
-  const tw = document.querySelector('.dash-row-full .card .tw');
+  // Approvals table container. The Evergreen redesign (commit 38ec09b) moved
+  // this out of the old `.dash-row-full .card` wrapper into `.db2-approvals`;
+  // the stale selector silently returned here, so freshly uploaded invoices
+  // never rendered ("disappeared" after extraction). `.tw` is unique to this
+  // card in the dashboard markup.
+  const tw = document.querySelector('.db2-approvals .tw');
   if(!tw) return;
 
   const hasInv = !!(INV && INV.items);
