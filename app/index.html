@@ -747,6 +747,7 @@ body.pending-approval #login-form,
 body.pending-approval #login-toggle,
 body.pending-approval #login-msg{display:none !important}
 body.cloud-active [data-cloud-hide]{display:none !important}
+body:not(.is-admin) [data-admin-only]{display:none !important}
 body.cloud-active [data-cloud-show]{display:block !important}
 .toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:12px 16px;box-shadow:0 8px 24px rgba(0,0,0,0.4);font-size:12px;display:flex;align-items:center;gap:10px;min-width:240px;max-width:380px;pointer-events:auto;animation:toast-in .3s ease-out;border-left:4px solid var(--c1)}
 .toast.success{border-left-color:var(--green)}
@@ -1108,6 +1109,45 @@ body.cloud-active [data-cloud-show]{display:block !important}
   .mr-switch{order:3;width:100%;text-align:left}
   .mr-apply{order:4;width:100%}
 }
+/* ─── ASK AI (chat over your invoice data) ───────── */
+.ask-wrap{display:flex;flex-direction:column;height:calc(100vh - 190px);min-height:420px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--rxl);overflow:hidden}
+.ask-log{flex:1;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.ask-row{display:flex}
+.ask-row.me{justify-content:flex-end}
+.ask-bub{max-width:min(680px,88%);background:var(--bg3);border:1px solid var(--border);border-radius:var(--rxl);padding:12px 15px;font-size:13px;line-height:1.6;color:var(--text)}
+.ask-bub.me{background:var(--c1);border-color:var(--c1);color:#fff;white-space:pre-wrap}
+.ask-bub p{margin:0 0 8px}
+.ask-bub p:last-child{margin-bottom:0}
+.ask-bub ul,.ask-bub ol{margin:4px 0 8px 18px}
+.ask-bub li{margin-bottom:3px}
+.ask-bub code{font-family:var(--font-mono);font-size:12px;background:var(--bg4);padding:1px 5px;border-radius:4px}
+.ask-h{font-weight:700;margin:6px 0 4px}
+.ask-tool{align-self:flex-start;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:999px;padding:4px 11px}
+.ask-tool b{color:var(--text2);font-weight:600}
+.ask-think{display:flex;gap:5px;align-items:center;padding:14px 16px}
+.ask-think span{width:6px;height:6px;border-radius:50%;background:var(--text4);animation:askblink 1.2s infinite}
+.ask-think span:nth-child(2){animation-delay:.2s}
+.ask-think span:nth-child(3){animation-delay:.4s}
+@keyframes askblink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.ask-empty{margin:auto;text-align:center;max-width:440px;padding:30px 10px}
+.ask-empty-icon{font-size:34px;color:var(--c1);opacity:.5;margin-bottom:10px}
+.ask-empty-t{font-size:16px;font-weight:700;margin-bottom:6px}
+.ask-empty-s{font-size:12.5px;color:var(--text3);line-height:1.6}
+.ask-foot{border-top:1px solid var(--border);padding:12px 14px;background:var(--bg3)}
+.ask-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:thin}
+.ask-chip{flex:0 0 auto;font-size:11.5px;color:var(--text2);background:var(--surface);border:1px solid var(--border2);border-radius:999px;padding:6px 12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ask-chip:hover{border-color:var(--c1);color:var(--c1)}
+.ask-bar{display:flex;gap:10px;align-items:flex-end}
+.ask-bar textarea{flex:1;resize:none;height:42px;max-height:160px;padding:11px 13px;font-family:inherit;font-size:13px;line-height:1.4;color:var(--text);background:var(--surface);border:1px solid var(--border2);border-radius:var(--rl);outline:none}
+.ask-bar textarea:focus{border-color:var(--c1)}
+.ask-bar textarea:disabled{opacity:.6}
+#ask-send{width:42px;height:42px;flex:0 0 auto;border:none;border-radius:var(--rl);background:var(--c1);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#ask-send:disabled{opacity:.55;cursor:default}
+#ask-send .ti-loader-2{animation:askspin 1s linear infinite}
+@keyframes askspin{to{transform:rotate(360deg)}}
+.ask-note{font-size:10.5px;color:var(--text4);margin-top:8px;text-align:center}
+@media(max-width:760px){.ask-wrap{height:calc(100vh - 210px)}.ask-bub{max-width:94%}}
+
 </style>
 </head>
 <body>
@@ -1241,6 +1281,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
   <div class="sg"><div class="slabel">Workflow</div>
     <a data-pg="dashboard" class="on"><i class="sico ti ti-layout-dashboard"></i>Dashboard</a>
+    <a data-pg="ask" data-admin-only title="Ask questions about your own costs, vendors and prices"><i class="sico ti ti-message-chatbot"></i>Ask AI</a>
     <a data-pg="upload"><i class="sico ti ti-upload"></i>Upload Invoices</a>
   </div>
   <div class="sg"><div class="slabel">Intelligence</div>
@@ -1936,6 +1977,22 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
 </div>
 
+
+<!-- ASK AI -->
+<div class="pg" id="pg-ask">
+  <div class="pgh"><div class="pgt">Ask AI</div><div class="pgs">Questions about your own costs, vendors and prices — answered from your saved invoices</div></div>
+  <div class="ask-wrap">
+    <div class="ask-log" id="ask-log"></div>
+    <div class="ask-foot">
+      <div class="ask-chips" id="ask-chips"></div>
+      <div class="ask-bar">
+        <textarea id="ask-input" rows="1" placeholder="e.g. What did I pay for sugar apple last time?" oninput="askAutoGrow(this)" onkeydown="askKey(event)"></textarea>
+        <button id="ask-send" onclick="askSend()" title="Send"><i class="ti ti-send"></i></button>
+      </div>
+      <div class="ask-note">Reads your saved invoices only. Check any number against the invoice before you act on it. <a onclick="askClear()" style="cursor:pointer;color:var(--c1)">Clear chat</a></div>
+    </div>
+  </div>
+</div>
 
 <!-- API SETTINGS -->
 <div class="pg" id="pg-api-settings">
@@ -3525,14 +3582,15 @@ async function cloudInit(){
     _supabase = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: { session } } = await _supabase.auth.getSession();
     _USER = session?.user || null;
-    if(_USER){ await checkApprovalAndGate(); await loadProfile(); }
+    if(_USER){ await checkApprovalAndGate(); await loadProfile(); askApplyAdminGate(); }
     _supabase.auth.onAuthStateChange(async (_evt, sess) => {
       const wasUser = _USER;
       _USER = sess?.user || null;
-      if(_USER){ await checkApprovalAndGate(); await loadProfile(); }
+      if(_USER){ await checkApprovalAndGate(); await loadProfile(); askApplyAdminGate(); }
       else {
         document.body.classList.add('app-locked');
         document.body.classList.remove('pending-approval');
+        askApplyAdminGate();
       }
       cloudUpdateAuthUI();
       if(_USER && !wasUser){
@@ -4187,6 +4245,7 @@ function goTo(id){
   if(id==='history')renderHistory();
   if(id==='pricing')renderTargets();
   if(id==='produce')pcOpenPage();
+  if(id==='ask'){ if(!askIsAdmin()){ goTo('dashboard'); return; } askOpenPage(); }
   if(id==='account-settings')renderSettings();
   if(id==='plans')renderPlanCards();
   if(id==='export'){
@@ -4720,9 +4779,13 @@ function aiAvailable(){ return !!(_USER && _supabase) || !!AI_KEY(); }
 //
 // Throws Error('no_api_key') if no key is configured (caller can route to settings).
 // Throws Error(message) for API errors with the server's message preserved.
-async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, system }){
+async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, system, tools }){
   const body = { model, max_tokens: maxTokens, messages };
   if(system) body.system = system;
+  // Tool definitions pass straight through to Anthropic (and through the Edge
+  // Function, which forwards the body verbatim). Callers that don't use tools
+  // are unaffected — the key stays absent from the body.
+  if(tools && tools.length) body.tools = tools;
 
   // ── Cloud path: signed-in users hit our Edge Function, which holds the API key
   // ── server-side. The user never sees or supplies a key.
@@ -8879,6 +8942,7 @@ function updatePageHeader(pgId){
     'api-settings': ['API Settings', 'Configure your Anthropic API key'],
     pricing: ['Pricing Rules', 'Set markup percentages by category'],
     calc: ['Margin Calculator', 'Calculate margins and retail prices'],
+    ask: ['Ask AI', 'Questions about your own costs, vendors and prices'],
   };
   const [t, s] = titles[pgId] || ['Dashboard', ''];
   const tEl = document.getElementById('page-title');
@@ -11323,6 +11387,523 @@ async function sConvertTrial(btn){
     showToast('error', 'Could not start your plan: ' + e.message);
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+// ASK AI — chat over your own invoice data
+// ═══════════════════════════════════════════════════════════
+// Grounding rule: the model never sees the raw dataset. It asks for slices
+// through the tools below, which read the same localStorage the rest of the
+// app reads (loadDB / loadHist / loadProdMeta / loadCats). Every number in an
+// answer therefore traces back to a saved invoice line — nothing is invented.
+const ASK_MODEL = 'claude-sonnet-4-6';
+// Owner-confirmed 2026-08-25: wholesale = 20% markup over unit cost.
+const ASK_WHOLESALE_MARKUP_PCT = 20;
+const ASK_MAX_ROUNDS = 6;   // tool-call round trips per question
+let ASK_MSGS = [];          // Anthropic-shaped message list (this session only)
+let ASK_BUSY = false;
+
+// Admin-only for now. MASTER_UIDS is the same client-side owner list the
+// invoice-limit exemption uses. This hides the UI; it is NOT a security
+// boundary — the tools only ever read the caller's own tenant data, and
+// server-side enforcement of who may spend AI budget on chat is still to do.
+function askIsAdmin(){ return !!(_USER && MASTER_UIDS.has(_USER.id)); }
+function askApplyAdminGate(){ document.body.classList.toggle('is-admin', askIsAdmin()); }
+
+// ── Data access ────────────────────────────────────────────
+// Flatten the price DB (dried + produce cross-feed both land here) into one
+// row per product+vendor, newest observation last.
+function askIndex(){
+  const db = loadDB();
+  const meta = loadProdMeta();
+  const rows = [];
+  for(const key of Object.keys(db)){
+    const ents = (db[key] || []).filter(e => e && e.unitCost > 0);
+    if(!ents.length) continue;
+    const sorted = ents.slice().sort((a,b) => new Date(a.date||0) - new Date(b.date||0));
+    const last = sorted[sorted.length-1];
+    const vendor = last.vendor || key.split('|')[0] || 'Unknown';
+    const costs = sorted.map(e => e.unitCost);
+    const m = meta[prodMetaKey(last.desc, vendor)] || {};
+    rows.push({
+      key, desc: last.desc || '', vendor, cat: last.cat || 'other',
+      entries: sorted,
+      lastCost: last.unitCost, lastCaseCost: last.caseCost || 0,
+      units: last.units || 1, size: last.size || '',
+      lastSeen: last.date || '',
+      cheapest: Math.min(...costs), dearest: Math.max(...costs),
+      orders: sorted.length,
+      lastRetail: m.last_retail != null ? Number(m.last_retail) : null,
+      discontinued: !!m.discontinued, note: m.note || '',
+    });
+  }
+  return rows;
+}
+
+// Token-overlap score between a free-text query and a product row.
+// Deliberately generous: the owner types "hung" or "sugar apple", not the
+// exact invoice description.
+function askScore(query, row){
+  const q = normDesc(query);
+  if(!q) return 0;
+  const hay = normDesc(row.desc + ' ' + row.vendor + ' ' + row.cat);
+  if(!hay) return 0;
+  if(hay === q) return 1;
+  if(hay.includes(q)) return 0.9;
+  const qt = q.split(' ').filter(Boolean);
+  const ht = new Set(hay.split(' ').filter(Boolean));
+  if(!qt.length) return 0;
+  let hits = 0;
+  for(const t of qt){
+    if(ht.has(t)) { hits++; continue; }
+    for(const h of ht){ if(h.length>3 && t.length>3 && (h.startsWith(t)||t.startsWith(h))) { hits += 0.6; break; } }
+  }
+  return hits / qt.length;
+}
+
+function askFind(query, vendor, limit){
+  let rows = askIndex();
+  if(vendor){
+    const vq = normDesc(vendor);
+    const hit = rows.filter(r => normDesc(r.vendor).includes(vq) || vq.includes(normDesc(r.vendor)));
+    if(hit.length) rows = hit;
+  }
+  return rows
+    .map(r => ({ r, s: askScore(query, r) }))
+    .filter(x => x.s >= 0.34)
+    .sort((a,b) => b.s - a.s || new Date(b.r.lastSeen||0) - new Date(a.r.lastSeen||0))
+    .slice(0, limit || 10)
+    .map(x => ({ ...x.r, _score: Math.round(x.s*100)/100 }));
+}
+
+const askRound = n => (n==null || isNaN(n)) ? null : Math.round(n*100)/100;
+function askProductOut(r){
+  return {
+    product: r.desc, vendor: r.vendor, category: r.cat,
+    unit_cost: askRound(r.lastCost), case_cost: askRound(r.lastCaseCost),
+    units_per_case: r.units, size: r.size,
+    cheapest_unit_cost_ever: askRound(r.cheapest),
+    highest_unit_cost_ever: askRound(r.dearest),
+    times_ordered: r.orders, last_ordered: r.lastSeen,
+    last_approved_retail: askRound(r.lastRetail),
+    discontinued: r.discontinued || undefined,
+    note: r.note || undefined,
+  };
+}
+
+// ── Tool schemas ───────────────────────────────────────────
+function askTools(){
+  const S = (props, req) => ({ type:'object', properties: props, required: req || [] });
+  const q = { type:'string', description:'Product name as the owner would say it, e.g. "sugar apple", "jasmine rice 25lb".' };
+  const v = { type:'string', description:'Vendor name or part of it, e.g. "hung". Optional.' };
+  return [
+    { name:'search_products', description:'Find products the owner has actually bought, with current cost per unit and per case. Use this first for any product question.',
+      input_schema: S({ query:q, vendor:v, limit:{type:'integer'} }, ['query']) },
+    { name:'product_cost_history', description:'Every recorded purchase of one product from one vendor, oldest first — date, invoice number, case cost, unit cost. Use for "has this gone up?" questions.',
+      input_schema: S({ query:q, vendor:v, limit:{type:'integer'} }, ['query']) },
+    { name:'compare_vendors', description:'Same product across every vendor that supplied it, cheapest first. Use for "who is cheapest for X" / "where should I buy X".',
+      input_schema: S({ query:q }, ['query']) },
+    { name:'suggest_price', description:'Cost basis plus a markup, giving a suggested selling price. price_type "retail" uses the owner\'s category markup; "wholesale" uses the owner\'s fixed 20% wholesale markup. Also returns the last retail the owner actually approved for this product.',
+      input_schema: S({ query:q, vendor:v, price_type:{type:'string', enum:['retail','wholesale'], description:'Default retail.'}, markup_pct:{type:'number', description:'Explicit override; wins over price_type.'} }, ['query']) },
+    { name:'list_vendors', description:'All vendors with invoice count, total spend, and date range.', input_schema: S({}) },
+    { name:'vendor_products', description:'What one vendor supplies, with latest cost each.',
+      input_schema: S({ vendor:v, limit:{type:'integer'}, sort:{type:'string', enum:['recent','cost_high','cost_low','most_ordered']} }, ['vendor']) },
+    { name:'spend_summary', description:'Spend by month and by vendor over the last N months.',
+      input_schema: S({ months:{type:'integer'} }) },
+    { name:'list_invoices', description:'Recent invoices — number, date, vendor, total, line count.',
+      input_schema: S({ vendor:v, limit:{type:'integer'} }) },
+    { name:'get_invoice', description:'Every line on one invoice, by invoice number.',
+      input_schema: S({ invoice_no:{type:'string'} }, ['invoice_no']) },
+    { name:'pricing_rules', description:'The owner\'s category markup targets, used to turn cost into a selling price.', input_schema: S({}) },
+  ];
+}
+
+// ── Tool executors ─────────────────────────────────────────
+// Each returns a plain object; the loop JSON-stringifies it as the tool_result.
+function askRunTool(name, a){
+  a = a || {};
+  switch(name){
+
+  case 'search_products': {
+    const hits = askFind(a.query, a.vendor, Math.min(a.limit || 8, 25));
+    return hits.length ? { matches: hits.map(askProductOut) }
+                       : { matches: [], note: 'No purchase of that product is on file. It may be spelled differently on the invoice — try a shorter query.' };
+  }
+
+  case 'product_cost_history': {
+    const hit = askFind(a.query, a.vendor, 1)[0];
+    if(!hit) return { error:'No purchase history on file for that product.' };
+    const lim = Math.min(a.limit || 15, 40);
+    const ents = hit.entries.slice(-lim);
+    const first = ents[0], last = ents[ents.length-1];
+    return {
+      product: hit.desc, vendor: hit.vendor, category: hit.cat,
+      purchases: ents.map(e => ({
+        date: e.date, invoice_no: e.invoiceNo,
+        case_cost: askRound(e.caseCost), unit_cost: askRound(e.unitCost),
+        units_per_case: e.units, size: e.size || '',
+      })),
+      change_over_window: first && last && first.unitCost > 0
+        ? { from: askRound(first.unitCost), to: askRound(last.unitCost),
+            pct: askRound((last.unitCost - first.unitCost) / first.unitCost * 100) }
+        : null,
+    };
+  }
+
+  case 'compare_vendors': {
+    const hits = askFind(a.query, null, 40);
+    if(!hits.length) return { error:'No purchase of that product is on file.' };
+    // Group by vendor, keep the closest-matching row per vendor.
+    const byVendor = {};
+    for(const h of hits){
+      const k = normV(h.vendor);
+      if(!byVendor[k] || h._score > byVendor[k]._score) byVendor[k] = h;
+    }
+    const rows = Object.values(byVendor)
+      .map(r => ({ vendor:r.vendor, product:r.desc, unit_cost:askRound(r.lastCost),
+                   case_cost:askRound(r.lastCaseCost), units_per_case:r.units, size:r.size,
+                   cheapest_unit_cost_ever:askRound(r.cheapest), times_ordered:r.orders, last_ordered:r.lastSeen }))
+      .sort((x,y) => x.unit_cost - y.unit_cost);
+    const out = { vendors: rows };
+    if(rows.length > 1){
+      const lo = rows[0], hi = rows[rows.length-1];
+      out.cheapest = lo.vendor;
+      out.spread_per_unit = askRound(hi.unit_cost - lo.unit_cost);
+      out.spread_pct = lo.unit_cost > 0 ? askRound((hi.unit_cost - lo.unit_cost)/lo.unit_cost*100) : null;
+      out.caution = 'Unit costs are only comparable when the pack size matches — check units_per_case and size before switching vendors.';
+    } else {
+      out.note = 'Only one vendor on file for this product, so there is nothing to compare against.';
+    }
+    return out;
+  }
+
+  case 'suggest_price': {
+    const hit = askFind(a.query, a.vendor, 1)[0];
+    if(!hit) return { error:'No cost on file for that product, so any price would be a guess.' };
+    const wholesale = a.price_type === 'wholesale';
+    const catMk = catMarkup_safe(hit.cat);
+    const markup = (a.markup_pct != null && !isNaN(a.markup_pct)) ? Number(a.markup_pct)
+                 : wholesale ? ASK_WHOLESALE_MARKUP_PCT : catMk;
+    const price = hit.lastCost * (1 + markup/100);
+    return {
+      product: hit.desc, vendor: hit.vendor, category: hit.cat,
+      unit_cost: askRound(hit.lastCost), case_cost: askRound(hit.lastCaseCost),
+      units_per_case: hit.units, last_ordered: hit.lastSeen,
+      price_type: wholesale ? 'wholesale' : 'retail',
+      markup_pct_used: markup,
+      markup_source: (a.markup_pct != null && !isNaN(a.markup_pct)) ? 'caller override'
+                   : wholesale ? 'owner wholesale rate (20%)' : ('category target for ' + hit.cat),
+      suggested_price: askRound(price),
+      profit_per_unit: askRound(price - hit.lastCost),
+      profit_per_case: askRound((price - hit.lastCost) * (hit.units || 1)),
+      last_approved_retail: askRound(hit.lastRetail),
+      note: 'Markup %, not gross-margin %.'
+    };
+  }
+
+  case 'pricing_rules':
+    return { categories: loadCats().map(c => ({ id:c.id, label:c.label, markup_pct:c.markup })),
+             wholesale_markup_pct: ASK_WHOLESALE_MARKUP_PCT,
+             formula: 'selling price = unit cost × (1 + markup_pct/100)' };
+
+  case 'list_vendors': {
+    const hist = loadHist();
+    const idx = askIndex();
+    const V = {};
+    for(const inv of hist){
+      const k = normV(inv.vendor);
+      if(!k) continue;
+      V[k] = V[k] || { vendor: inv.vendor, invoices:0, spend:0, first:null, last:null, products:0 };
+      V[k].invoices++;
+      V[k].spend += Number(inv.total) || 0;
+      const d = inv.date || '';
+      if(d && (!V[k].first || d < V[k].first)) V[k].first = d;
+      if(d && (!V[k].last  || d > V[k].last))  V[k].last  = d;
+    }
+    for(const r of idx){
+      const k = normV(r.vendor);
+      V[k] = V[k] || { vendor:r.vendor, invoices:0, spend:0, first:null, last:null, products:0 };
+      V[k].products++;
+    }
+    return { vendors: Object.values(V)
+      .map(v => ({ ...v, spend: askRound(v.spend) }))
+      .sort((a2,b2) => b2.spend - a2.spend) };
+  }
+
+  case 'vendor_products': {
+    const vq = normDesc(a.vendor || '');
+    let rows = askIndex().filter(r => { const rv = normDesc(r.vendor); return rv.includes(vq) || vq.includes(rv); });
+    if(!rows.length) return { error:'No vendor on file matching "'+(a.vendor||'')+'". Call list_vendors to see the real names.' };
+    const sort = a.sort || 'recent';
+    rows.sort((x,y) =>
+      sort==='cost_high'    ? y.lastCost - x.lastCost :
+      sort==='cost_low'     ? x.lastCost - y.lastCost :
+      sort==='most_ordered' ? y.orders - x.orders :
+                              new Date(y.lastSeen||0) - new Date(x.lastSeen||0));
+    return { vendor: rows[0].vendor, product_count: rows.length,
+             products: rows.slice(0, Math.min(a.limit || 20, 60)).map(askProductOut) };
+  }
+
+  case 'spend_summary': {
+    const months = Math.min(a.months || 6, 24);
+    const cut = new Date(); cut.setMonth(cut.getMonth() - months);
+    const hist = loadHist().filter(i => i.date && new Date(i.date) >= cut);
+    const byMonth = {}, byVendor = {};
+    for(const inv of hist){
+      const m = String(inv.date).slice(0,7);
+      const t = Number(inv.total) || 0;
+      byMonth[m] = (byMonth[m] || 0) + t;
+      const v = inv.vendor || 'Unknown';
+      byVendor[v] = (byVendor[v] || 0) + t;
+    }
+    return {
+      window_months: months, invoices: hist.length,
+      total_spend: askRound(Object.values(byMonth).reduce((s,x)=>s+x,0)),
+      by_month: Object.keys(byMonth).sort().map(m => ({ month:m, spend:askRound(byMonth[m]) })),
+      by_vendor: Object.entries(byVendor).sort((x,y)=>y[1]-x[1]).map(([v,s]) => ({ vendor:v, spend:askRound(s) })),
+      caveat: 'Totals come from invoice totals as extracted, so credits and hand-written adjustments may not be reflected.',
+    };
+  }
+
+  case 'list_invoices': {
+    let hist = loadHist().slice();
+    if(a.vendor){ const vq = normDesc(a.vendor); hist = hist.filter(i => normDesc(i.vendor||'').includes(vq)); }
+    hist.sort((x,y) => new Date(y.date||0) - new Date(x.date||0));
+    return { invoices: hist.slice(0, Math.min(a.limit || 10, 40)).map(i => ({
+      invoice_no: i.invoiceNo, date: i.date, vendor: i.vendor,
+      total: askRound(Number(i.total)||0), lines: (i.items||[]).length, doc_type: i.docType || 'invoice',
+    })) };
+  }
+
+  case 'get_invoice': {
+    const want = String(a.invoice_no||'').trim().toLowerCase();
+    const inv = loadHist().find(i => String(i.invoiceNo||'').trim().toLowerCase() === want);
+    if(!inv) return { error:'No invoice with that number is saved. Call list_invoices to see what exists.' };
+    return {
+      invoice_no: inv.invoiceNo, date: inv.date, vendor: inv.vendor,
+      total: askRound(Number(inv.total)||0),
+      lines: (inv.items||[]).map(it => ({
+        item_no: it.item, description: it.desc, size: it.size, qty: it.qty,
+        case_cost: askRound(it.caseCost), unit_cost: askRound(unitCost(it)),
+        sold_by: soldByLabel(it), category: it.cat, row_type: it._rt,
+      })),
+    };
+  }
+
+  default:
+    return { error: 'Unknown tool: ' + name };
+  }
+}
+
+// catMarkup() exists but throws nothing on unknown ids; keep a guarded wrapper
+// so a category deleted after an invoice was saved can't break a price answer.
+function catMarkup_safe(cat){
+  const m = catMarkup(cat);
+  return (m != null && !isNaN(m)) ? m : 30;
+}
+
+// ── System prompt ──────────────────────────────────────────
+function askSystemPrompt(){
+  const hist = loadHist();
+  const idx = askIndex();
+  const vendors = [...new Set(idx.map(r => r.vendor))];
+  const dates = hist.map(i => i.date).filter(Boolean).sort();
+  return [
+    "You are the assistant inside Track Aisle, an invoice-and-pricing tool used by the owner of an Asian grocery store.",
+    "You answer questions about THIS store's own purchase history — what they paid, which vendor was cheapest, what to charge.",
+    "",
+    "DATA YOU CAN SEE (only through tools — never guess a number):",
+    "- " + hist.length + " saved invoices" + (dates.length ? " covering " + dates[0] + " to " + dates[dates.length-1] : ""),
+    "- " + idx.length + " product+vendor cost records across " + vendors.length + " vendors" + (vendors.length ? ": " + vendors.slice(0,25).join(', ') : ""),
+    "",
+    "RULES:",
+    "1. Every figure you state must come from a tool result in this conversation. If a tool returns nothing, say plainly that it isn't in the data — never estimate a cost or a market price from general knowledge.",
+    "2. Costs are what the owner PAID. 'unit_cost' is per selling unit (per lb, per each); 'case_cost' is per box. Say which one you mean.",
+    "3. When you name a cost, name the vendor and the date it came from.",
+    "4. Selling-price answers use the owner's own category markup unless they give you a number. Wholesale is a fixed 20% markup over unit cost (owner-confirmed) — use suggest_price with price_type 'wholesale' for any wholesale question.",
+    "5. Comparing vendors is only valid at matching pack sizes — flag it when sizes differ.",
+    "6. Answer in a few sentences or a short list. Lead with the number the owner asked for. No preamble.",
+    "7. You may call several tools before answering. Prefer searching over asking the owner to rephrase.",
+  ].join('\n');
+}
+
+// ── Chat loop ──────────────────────────────────────────────
+async function askSend(preset){
+  if(ASK_BUSY) return;
+  if(!askIsAdmin()) return;
+  const box = document.getElementById('ask-input');
+  const text = (preset || (box ? box.value : '') || '').trim();
+  if(!text) return;
+  if(!aiAvailable()){
+    showToast('warn', 'Sign in (or add an API key in API Settings) to use Ask AI');
+    return;
+  }
+  if(box){ box.value = ''; askAutoGrow(box); }
+
+  ASK_MSGS.push({ role:'user', content: text });
+  askRender();
+  ASK_BUSY = true;
+  askSetBusy(true);
+
+  try {
+    const tools = askTools();
+    const system = askSystemPrompt();
+    for(let round = 0; round < ASK_MAX_ROUNDS; round++){
+      // system as a cache-controlled block: tools render before system, so this
+      // one breakpoint caches tools+system across rounds and follow-up questions
+      // (5-min TTL; reads bill at 10% of input rate).
+      const sysBlocks = [{ type:'text', text: system, cache_control:{ type:'ephemeral' } }];
+      const res = await callAI({ messages: ASK_MSGS, model: ASK_MODEL, maxTokens: 4000, system: sysBlocks, tools });
+      ASK_MSGS.push({ role:'assistant', content: res.content });
+      askRender();
+      if(res.stopReason !== 'tool_use') break;
+
+      const results = [];
+      for(const block of res.content){
+        if(block.type !== 'tool_use') continue;
+        let out;
+        try { out = askRunTool(block.name, block.input); }
+        catch(e){ out = { error: 'Tool failed: ' + e.message }; }
+        results.push({ type:'tool_result', tool_use_id: block.id, content: JSON.stringify(out).slice(0, 60000) });
+      }
+      if(!results.length) break;
+      ASK_MSGS.push({ role:'user', content: results });
+      askRender();
+      if(round === ASK_MAX_ROUNDS - 1){
+        ASK_MSGS.push({ role:'user', content:'Stop calling tools and answer with what you have.' });
+      }
+    }
+  } catch(e){
+    const msg = e && e.message === 'no_api_key'
+      ? 'No API key set — add one in API Settings, or sign in to use the built-in AI.'
+      : (e && e.message) || 'Something went wrong';
+    ASK_MSGS.push({ role:'assistant', content:[{ type:'text', text:'⚠ ' + msg }] });
+    askRender();
+  } finally {
+    ASK_BUSY = false;
+    askSetBusy(false);
+    const el = document.getElementById('ask-input'); if(el) el.focus();
+  }
+}
+
+function askClear(){
+  if(ASK_BUSY) return;
+  ASK_MSGS = [];
+  askRender();
+}
+
+// ── Rendering ──────────────────────────────────────────────
+const ASK_TOOL_LABEL = {
+  search_products:'Looking up products',
+  product_cost_history:'Reading cost history',
+  compare_vendors:'Comparing vendors',
+  suggest_price:'Working out a price',
+  pricing_rules:'Checking your markup rules',
+  list_vendors:'Listing vendors',
+  vendor_products:'Reading vendor items',
+  spend_summary:'Adding up spend',
+  list_invoices:'Finding invoices',
+  get_invoice:'Opening an invoice',
+};
+
+// Minimal markdown → HTML. Input is escaped FIRST, so nothing the model emits
+// can inject markup; only the patterns below re-introduce tags.
+function askMd(raw){
+  const lines = esc(String(raw||'')).split('\n');
+  let html = '', list = null;
+  const inline = s => s
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  const closeList = () => { if(list){ html += '</'+list+'>'; list = null; } };
+  for(const ln of lines){
+    const t = ln.trim();
+    if(!t){ closeList(); continue; }
+    const ul = t.match(/^[-*•]\s+(.*)$/);
+    const ol = t.match(/^\d+[.)]\s+(.*)$/);
+    if(ul){ if(list!=='ul'){ closeList(); html += '<ul>'; list='ul'; } html += '<li>'+inline(ul[1])+'</li>'; continue; }
+    if(ol){ if(list!=='ol'){ closeList(); html += '<ol>'; list='ol'; } html += '<li>'+inline(ol[1])+'</li>'; continue; }
+    closeList();
+    const h = t.match(/^#{1,4}\s+(.*)$/);
+    html += h ? '<div class="ask-h">'+inline(h[1])+'</div>' : '<p>'+inline(t)+'</p>';
+  }
+  closeList();
+  return html;
+}
+
+function askRender(){
+  const log = document.getElementById('ask-log');
+  if(!log) return;
+  if(!ASK_MSGS.length){ log.innerHTML = askEmptyHtml(); return; }
+  let html = '';
+  for(const m of ASK_MSGS){
+    if(m.role === 'user'){
+      if(typeof m.content === 'string'){
+        html += '<div class="ask-row me"><div class="ask-bub me">'+esc(m.content)+'</div></div>';
+      }
+      continue; // tool_result blocks are internal — the tool chip already showed it
+    }
+    const blocks = Array.isArray(m.content) ? m.content : [{ type:'text', text:m.content }];
+    for(const b of blocks){
+      if(b.type === 'text' && b.text && b.text.trim()){
+        html += '<div class="ask-row"><div class="ask-bub">'+askMd(b.text)+'</div></div>';
+      } else if(b.type === 'tool_use'){
+        const label = ASK_TOOL_LABEL[b.name] || b.name;
+        const arg = b.input && (b.input.query || b.input.vendor || b.input.invoice_no);
+        html += '<div class="ask-tool"><i class="ti ti-database-search"></i>'+esc(label)+(arg?': <b>'+esc(arg)+'</b>':'')+'</div>';
+      }
+    }
+  }
+  if(ASK_BUSY) html += '<div class="ask-row"><div class="ask-bub ask-think"><span></span><span></span><span></span></div></div>';
+  log.innerHTML = html;
+  log.scrollTop = log.scrollHeight;
+}
+
+function askEmptyHtml(){
+  const n = loadHist().length;
+  return '<div class="ask-empty">'
+    + '<div class="ask-empty-icon"><i class="ti ti-message-chatbot"></i></div>'
+    + '<div class="ask-empty-t">Ask about your own numbers</div>'
+    + '<div class="ask-empty-s">'
+    + (n ? 'Answers come from your '+n+' saved invoice'+(n===1?'':'s')+' — costs, vendors and dates you actually recorded.'
+         : 'Upload an invoice first — with no saved invoices there is nothing for the assistant to read.')
+    + '</div></div>';
+}
+
+const ASK_SUGGESTIONS = [
+  'What did I pay for sugar apple last time?',
+  'Who is the cheapest vendor for jasmine rice?',
+  'What should I sell Mr Hung\'s items at wholesale?',
+  'Which costs went up the most in the last 3 months?',
+  'How much did I spend per vendor this year?',
+];
+
+function askSetBusy(on){
+  const btn = document.getElementById('ask-send');
+  if(btn){ btn.disabled = on; btn.innerHTML = on ? '<i class="ti ti-loader-2"></i>' : '<i class="ti ti-send"></i>'; }
+  const inp = document.getElementById('ask-input');
+  if(inp) inp.disabled = on;
+  askRender();
+}
+
+function askAutoGrow(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function askKey(e){
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); askSend(); }
+}
+
+function askOpenPage(){
+  const chips = document.getElementById('ask-chips');
+  if(chips && !chips.dataset.built){
+    chips.dataset.built = '1';
+    chips.innerHTML = ASK_SUGGESTIONS.map(s =>
+      '<button class="ask-chip" onclick="askSend(this.dataset.q)" data-q="'+esc(s)+'">'+esc(s)+'</button>').join('');
+  }
+  askRender();
+  const inp = document.getElementById('ask-input'); if(inp) inp.focus();
+}
+
 </script>
 </body>
 </html>
