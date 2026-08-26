@@ -169,6 +169,16 @@ serve(async (req) => {
     return json({ error: "Invalid JSON in request body" }, origin, { status: 400 });
   }
 
+  // Tool-use bodies (the admin-only Ask AI chat sends `tools`) are rejected for
+  // non-exempt users: the client hides the chat UI, but that gate is cosmetic —
+  // this is the real enforcement so nobody spends AI budget from the console.
+  // Plain extraction bodies (no `tools`) are unaffected.
+  if (!isExempt && body && typeof body === "object" &&
+      Array.isArray((body as { tools?: unknown[] }).tools) &&
+      (body as { tools: unknown[] }).tools.length > 0) {
+    return json({ error: "Chat is not enabled for this account." }, origin, { status: 403 });
+  }
+
   if (!isExempt) {
     // Per-user monthly quota — reads invoice_limit from user_profiles (set by
     // Stripe webhook) and counts invoices saved this calendar month.
