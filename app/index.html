@@ -11554,6 +11554,8 @@ function askTools(){
     { name:'get_invoice', description:'Every line on one invoice, by invoice number.',
       input_schema: S({ invoice_no:{type:'string'} }, ['invoice_no']) },
     { name:'pricing_rules', description:'The owner\'s category markup targets, used to turn cost into a selling price.', input_schema: S({}) },
+    { name:'open_page', description:'Navigate the app to a page for the owner — use when they ask to SEE something ("show me", "open", "take me to"). Optional search prefills that page\'s filter box.',
+      input_schema: S({ page:{type:'string', enum:['dashboard','money','upload','items','tracker','vendors','alerts','produce','history','pricing','calc','account-settings']}, search:{type:'string', description:'Optional filter text, supported on items and tracker.'} }, ['page']) },
   ];
 }
 
@@ -11678,6 +11680,17 @@ function askRunTool(name, a){
     };
   }
 
+  case 'open_page': {
+    const pages = ['dashboard','money','upload','items','tracker','vendors','alerts','produce','history','pricing','calc','account-settings'];
+    if(!pages.includes(a.page)) return { error:'Unknown page. Valid: ' + pages.join(', ') };
+    goTo(a.page);
+    if(a.search){
+      if(a.page === 'tracker'){ const el = document.getElementById('tr-search'); if(el){ el.value = a.search; renderTracker('all'); } }
+      if(a.page === 'items'){ const el = document.getElementById('im-search'); if(el){ el.value = a.search; renderItemMaster(); } }
+    }
+    return { ok:true, opened:a.page, note:'The page is now on screen. The chat stays available in the sidebar under Ask AI.' };
+  }
+
   case 'pricing_rules':
     return { categories: loadCats().map(c => ({ id:c.id, label:c.label, markup_pct:c.markup })),
              wholesale_markup_pct: ASK_WHOLESALE_MARKUP_PCT,
@@ -11786,8 +11799,21 @@ function askSystemPrompt(){
   const vendors = [...new Set(idx.map(r => r.vendor))];
   const dates = hist.map(i => i.date).filter(Boolean).sort();
   return [
-    "You are the assistant inside Track Aisle, an invoice-and-pricing tool used by the owner of an Asian grocery store.",
-    "You answer questions about THIS store's own purchase history — what they paid, which vendor was cheapest, what to charge.",
+    "You are the assistant inside Track Aisle, an invoice-and-pricing tool used by the owner of an Asian grocery store. You are their operations sidekick: direct, practical, numerate. You know the app itself, you can open its pages, and you can prepare changes for the owner to approve — not just answer questions.",
+    "",
+    "THE APP (so you can guide the owner around it):",
+    "- Workflow: Upload Invoices (PDF/photo → AI extracts lines) → dashboard approval table (approve retail per item) → approved prices feed Price Tracker, Item Master and Export to POS.",
+    "- Dashboard: KPI cards, approval table for the loaded invoice, upload queue.",
+    "- Money: items to reprice (cost rose, margin now below target) and cheaper-vendor switches.",
+    "- Item Master: every product with pack size, reorder point, notes.",
+    "- Price Tracker: cost history per product with trends. Vendor Insights: per-vendor drilldown, spend, sold-by recompute.",
+    "- Alerts: price jumps needing attention. Produce Matcher: matches produce invoice lines to a 298-item catalog, prints price-book PDFs.",
+    "- Pricing Rules: markup % per category. Margin Calculator: quick case-cost → retail math.",
+    "- Invoice History: every saved invoice. Account Settings: business info, plan, billing.",
+    "",
+    "YOU CAN ACT:",
+    "- open_page navigates the app when the owner asks to see something. Say what you opened.",
+    "- propose_action stages a change (set a product's retail memory, change a category markup, mark a product discontinued). The owner gets an Apply button in the chat — a change is NOT made until they tap it. After proposing, tell them to tap Apply. Never claim a change happened on your own.",
     "",
     "DATA YOU CAN SEE (only through tools — never guess a number):",
     "- " + hist.length + " saved invoices" + (dates.length ? " covering " + dates[0] + " to " + dates[dates.length-1] : ""),
@@ -11880,6 +11906,8 @@ const ASK_TOOL_LABEL = {
   list_vendors:'Listing vendors',
   vendor_products:'Reading vendor items',
   spend_summary:'Adding up spend',
+  open_page:'Opening a page',
+  propose_action:'Preparing a change for approval',
   list_invoices:'Finding invoices',
   get_invoice:'Opening an invoice',
 };
