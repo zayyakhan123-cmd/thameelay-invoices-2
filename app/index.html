@@ -11412,20 +11412,55 @@ function askApplyAdminGate(){ document.body.classList.toggle('is-admin', askIsAd
 // ── Data access ────────────────────────────────────────────
 // Flatten the price DB (dried + produce cross-feed both land here) into one
 // row per product+vendor, newest observation last.
+// Merges TWO sources into one product+vendor index:
+//   1. the price-observations DB (dried goods cross-fed on approval + produce)
+//   2. the full invoice history — many invoices were saved before the price DB
+//      existed (or were never approved into it), so history-only vendors would
+//      otherwise be invisible to the chat entirely.
+// Same invoice can appear in both, so entries dedup by invoiceNo per product.
 function askIndex(){
   const db = loadDB();
   const meta = loadProdMeta();
-  const rows = [];
+  const byKey = {};
+  const push = (desc, vendor, cat, e) => {
+    if(!desc || !vendor || !(e.unitCost > 0)) return;
+    const k = prodMetaKey(desc, vendor);
+    let b = byKey[k];
+    if(!b) b = byKey[k] = { desc, vendor, cat: cat || 'other', entries: [], _seen: new Set() };
+    const dk = String(e.invoiceNo || '') + '|' + String(e.date || '');
+    if(b._seen.has(dk)) return;
+    b._seen.add(dk);
+    b.entries.push(e);
+    if(cat) b.cat = cat;
+  };
   for(const key of Object.keys(db)){
-    const ents = (db[key] || []).filter(e => e && e.unitCost > 0);
-    if(!ents.length) continue;
-    const sorted = ents.slice().sort((a,b) => new Date(a.date||0) - new Date(b.date||0));
+    for(const e of (db[key] || [])){
+      if(!e) continue;
+      push(e.desc, e.vendor || key.split('|')[0] || 'Unknown', e.cat, {
+        date: e.date, invoiceNo: e.invoiceNo, caseCost: e.caseCost || 0,
+        unitCost: e.unitCost, units: e.units || 1, size: e.size || '',
+      });
+    }
+  }
+  for(const inv of loadHist()){
+    for(const it of (inv.items || [])){
+      if(it._rt !== RT.PURCHASED) continue;
+      if(!it.caseCost || it.caseCost <= 0) continue;
+      const cu = unitCost(it);
+      if(!(cu > 0)) continue;
+      push(it.desc, inv.vendor || 'Unknown', it.cat, {
+        date: inv.date, invoiceNo: inv.invoiceNo, caseCost: it.caseCost,
+        unitCost: cu, units: it._u || 1, size: it.size || '',
+      });
+    }
+  }
+  return Object.values(byKey).map(b => {
+    const sorted = b.entries.sort((a,b2) => new Date(a.date||0) - new Date(b2.date||0));
     const last = sorted[sorted.length-1];
-    const vendor = last.vendor || key.split('|')[0] || 'Unknown';
     const costs = sorted.map(e => e.unitCost);
-    const m = meta[prodMetaKey(last.desc, vendor)] || {};
-    rows.push({
-      key, desc: last.desc || '', vendor, cat: last.cat || 'other',
+    const m = meta[prodMetaKey(b.desc, b.vendor)] || {};
+    return {
+      desc: b.desc, vendor: b.vendor, cat: b.cat,
       entries: sorted,
       lastCost: last.unitCost, lastCaseCost: last.caseCost || 0,
       units: last.units || 1, size: last.size || '',
@@ -11434,9 +11469,8 @@ function askIndex(){
       orders: sorted.length,
       lastRetail: m.last_retail != null ? Number(m.last_retail) : null,
       discontinued: !!m.discontinued, note: m.note || '',
-    });
-  }
-  return rows;
+    };
+  });
 }
 
 // Token-overlap score between a free-text query and a product row.
