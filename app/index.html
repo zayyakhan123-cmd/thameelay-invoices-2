@@ -11827,8 +11827,37 @@ function catMarkup_safe(cat){
 // the proposal was made, and the model's params are never trusted blindly.
 let ASK_PROPOSALS = {};   // id → {id,type,params,summary,status:'pending'|'applied'|'dismissed'}
 
-// Filled in by the chat-persistence layer; safe no-op until then.
-function askPersist(){}
+// ── Chat persistence (local-only key, NOT cloud-synced) ────
+// Keeps the conversation across reloads. Trimmed at message boundaries so a
+// tool_use never survives without its tool_result (the API rejects orphans).
+const ASK_STORE_KEY = 'tm_ask_chat';
+const ASK_KEEP_MSGS = 40;
+
+function askPersist(){
+  try {
+    let msgs = ASK_MSGS.slice(-ASK_KEEP_MSGS);
+    // If the cut landed on a tool_result user-message, its tool_use is gone — drop it.
+    while(msgs.length && msgs[0].role === 'user' && Array.isArray(msgs[0].content)) msgs = msgs.slice(1);
+    localStorage.setItem(ASK_STORE_KEY, JSON.stringify({ msgs, proposals: ASK_PROPOSALS }));
+  } catch(e){ /* storage full — chat still works, just won't survive reload */ }
+}
+
+function askRestore(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(ASK_STORE_KEY) || 'null');
+    if(saved && Array.isArray(saved.msgs)){
+      ASK_MSGS = saved.msgs;
+      ASK_PROPOSALS = saved.proposals || {};
+      // A reload mid-answer leaves a dangling tool_use with no result — trim it.
+      while(ASK_MSGS.length){
+        const last = ASK_MSGS[ASK_MSGS.length-1];
+        if(last.role === 'assistant' && Array.isArray(last.content) && last.content.some(b => b.type === 'tool_use')) ASK_MSGS.pop();
+        else break;
+      }
+    }
+  } catch(e){ ASK_MSGS = []; }
+}
+askRestore();
 
 function askPrepareProposal(a){
   const id = 'ap_' + Date.now() + '_' + Math.floor(Math.random()*9999);
@@ -11946,6 +11975,7 @@ async function askSend(preset){
   if(box){ box.value = ''; askAutoGrow(box); }
 
   ASK_MSGS.push({ role:'user', content: text });
+  askPersist();
   askRender();
   ASK_BUSY = true;
   askSetBusy(true);
@@ -11960,6 +11990,7 @@ async function askSend(preset){
       const sysBlocks = [{ type:'text', text: system, cache_control:{ type:'ephemeral' } }];
       const res = await callAI({ messages: ASK_MSGS, model: ASK_MODEL, maxTokens: 4000, system: sysBlocks, tools });
       ASK_MSGS.push({ role:'assistant', content: res.content });
+      askPersist();
       askRender();
       if(res.stopReason !== 'tool_use') break;
 
@@ -11973,6 +12004,7 @@ async function askSend(preset){
       }
       if(!results.length) break;
       ASK_MSGS.push({ role:'user', content: results });
+      askPersist();
       askRender();
       if(round === ASK_MAX_ROUNDS - 1){
         ASK_MSGS.push({ role:'user', content:'Stop calling tools and answer with what you have.' });
@@ -11983,6 +12015,7 @@ async function askSend(preset){
       ? 'No API key set — add one in API Settings, or sign in to use the built-in AI.'
       : (e && e.message) || 'Something went wrong';
     ASK_MSGS.push({ role:'assistant', content:[{ type:'text', text:'⚠ ' + msg }] });
+    askPersist();
     askRender();
   } finally {
     ASK_BUSY = false;
@@ -11994,6 +12027,8 @@ async function askSend(preset){
 function askClear(){
   if(ASK_BUSY) return;
   ASK_MSGS = [];
+  ASK_PROPOSALS = {};
+  try { localStorage.removeItem(ASK_STORE_KEY); } catch(e){}
   askRender();
 }
 
