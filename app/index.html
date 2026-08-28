@@ -3161,7 +3161,7 @@ function parseUnitsRobust(size){
   if(oi){const n=parseInt(oi[1]);return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.75,note:`Outer pack format: ${n} inner packs per case`};}
   // Variable-weight range (no AxB): "10-15LB", "10/15LB", "10-15KG" — bag of
   // variable weight, sold per pound/kg. Average the bounds.
-  const varRange=s.match(/^(\d+(?:\.\d+)?)\s*[-\/]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?)\b/i);
+  const varRange=s.match(/^(\d+(?:\.\d+)?)\s*[-\/]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?)(?!\w)/i);
   if(varRange){
     const lo=parseFloat(varRange[1]);
     const hi=parseFloat(varRange[2]);
@@ -3170,8 +3170,29 @@ function parseUnitsRobust(size){
     const unit=(rawU==='#'||rawU==='LB')?'lb':'kg';
     return {u:avg||1,boxCount:1,perBoxAmount:avg,unit,inferredSoldBy:unit,conf:0.85,note:`Variable weight: ${lo}-${hi} ${unit} (avg ${avg})`};
   }
+  // Dual-weight "20KGS/44.09LBS" — fish vendors print metric + imperial.
+  // The LBS figure is the case weight for a US store: sold per pound.
+  const dual=s.match(/(\d+(?:\.\d+)?)\s*KGS?\s*\/\s*(\d+(?:\.\d+)?)\s*(?:LBS?|#)\b/i);
+  if(dual){
+    const lbs=parseFloat(dual[2]);
+    if(lbs>0) return {u:lbs,boxCount:1,perBoxAmount:lbs,unit:'lb',inferredSoldBy:'lb',conf:0.95,note:`Dual weight: ${lbs} lb`};
+  }
+  // Reversed pack "4LB X 5" / "2LB X 10" / "16OZ X 24" — weight-per-pack × count.
+  // Must run before the single-weight match, which would swallow the leading
+  // "2LB" and price a 10-bag case as one 2-lb bag.
+  const rev=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|GM?|GR)\s*[xX×]\s*(\d+)\b/i);
+  if(rev){
+    const per=parseFloat(rev[1]); const cnt=parseInt(rev[3]);
+    const rawU=rev[2].toUpperCase().replace(/S$/,'');
+    let unit=null;
+    if(rawU==='#'||rawU==='LB') unit='lb';
+    else if(rawU==='KG') unit='kg';
+    else if(rawU==='OZ') unit='oz';
+    else if(rawU==='G'||rawU==='GM'||rawU==='GR') unit='g';
+    if(cnt>=1&&cnt<=500) return {u:cnt,boxCount:cnt,perBoxAmount:per,unit,inferredSoldBy:'each',conf:0.85,note:`${cnt} packs of ${per}${unit||''}`};
+  }
   // Single-weight without AxB: "10LB", "33#", "10KG", "500G"
-  const simpleWt=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|G|GR)\b/i);
+  const simpleWt=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|G|GR)(?!\w)/i);
   if(simpleWt){
     const amt=parseFloat(simpleWt[1]);
     const rawU=simpleWt[2].toUpperCase().replace(/S$/,'');
@@ -3262,6 +3283,15 @@ function classifyRow(item,allItems){
 // This pattern post-corrects items where the description clearly indicates a sauce/condiment.
 const SAUCE_RE = /\b(sauc|fish\s*sauce|soy\s*sauce|oyster|sriracha|sambal|hoisin|chili\s*(paste|oil|garlic)|curry\s*paste|shrimp\s*paste|crab\s*paste|galingale|galangal|peppercorn|pickled\s*chil|tamarind\s*paste|vinegar|seasoning|miso|gochujang|nam\s*pla|nuoc\s*mam|paste|condiment)\b/i;
 
+// A per-pound rate printed in the size — "@$2.79LB", "@ $3.99/LB" — is the
+// vendor stating the item is sold by weight. Outranks the AI's soldBy guess.
+const SIZE_LB_RATE_RE = /@\s*\$?\s*(\d+(?:\.\d+)?)\s*\/?\s*LBS?\b/i;
+function sizePerLbRate(size){
+  const m = String(size||'').match(SIZE_LB_RATE_RE);
+  return m ? parseFloat(m[1]) : null;
+}
+function sizeForcesLb(size){ return sizePerLbRate(size) != null; }
+
 // Shrimp count grade markers — "20/30", "30/40 CT", "U-10" / "U/10" / "U10".
 // Presence anywhere in size or description means the item is sold per-pound;
 // the actual case weight still comes from an AxB# pattern elsewhere in the
@@ -3302,7 +3332,21 @@ function classifyInvoice(inv){
         item._notes = (item._notes || []).concat('Shrimp count detected but no weight in size — verify sold-by');
       }
     }
-    item._u = r.u || p.u;
+    // Printed $/lb rate: caseCost ÷ rate recovers the true case weight even
+    // when the size's weight figure is the ORDER total, not the case (MAA
+    // Import prints both styles on one invoice). Trust the parser's weight
+    // when it agrees with the implied one (±15%); otherwise use the implied.
+    const lbRate = sizePerLbRate(item.size);
+    if(lbRate > 0 && item.caseCost > 0){
+      const impliedLbs = Math.round((item.caseCost / lbRate) * 100) / 100;
+      const parsedLbs = (p.unit === 'lb') ? (p.boxCount || 1) * (p.perBoxAmount || 1) : null;
+      const lbs = (parsedLbs && Math.abs(parsedLbs - impliedLbs) / impliedLbs <= 0.15) ? parsedLbs : impliedLbs;
+      if(!parsedLbs || lbs !== parsedLbs){
+        (item._notes = item._notes || []).push(`Case weight ${lbs} lb derived from printed $${lbRate}/lb rate`);
+      }
+      p = { ...p, unit:'lb', inferredSoldBy:'lb', boxCount:1, perBoxAmount:lbs, u:lbs, _rateDerived:true };
+    }
+    item._u = p._rateDerived ? p.u : (r.u || p.u);
     item._boxCount = p.boxCount;
     item._perBoxAmount = p.perBoxAmount;
     item._inferredSoldBy = p.inferredSoldBy;
@@ -3310,7 +3354,7 @@ function classifyInvoice(inv){
     // Precedence: user override > description override (WHOLE FISH/FILLET) > AI's soldBy > parser inference.
     const override = meta[prodMetaKey(item.desc, inv.vendor)]?.sold_by;
     const aiSoldBy = (typeof item.soldBy === 'string' && item.soldBy) ? item.soldBy : null;
-    const descOverride = descForcesLb(item.desc) ? 'lb' : null;
+    const descOverride = (descForcesLb(item.desc) || sizeForcesLb(item.size)) ? 'lb' : null;
     item._aiSoldBy = aiSoldBy;
     item._soldByOverride = override || null;
     item._soldBy = override || descOverride || aiSoldBy || p.inferredSoldBy;
