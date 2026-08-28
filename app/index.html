@@ -1126,6 +1126,15 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .ask-tbl{border-collapse:collapse;font-size:12px;min-width:60%}
 .ask-tbl th,.ask-tbl td{border:1px solid var(--border2);padding:5px 9px;text-align:left;white-space:nowrap}
 .ask-tbl th{background:var(--bg4);font-weight:600}
+.ask-prop{align-self:flex-start;max-width:min(560px,92%);border:1px solid var(--c1);border-left:4px solid var(--c1);background:var(--c1l);border-radius:var(--rl);padding:12px 14px}
+.ask-prop.done{border-color:var(--border2);border-left-color:var(--border3);background:var(--bg3);opacity:.75}
+.ask-prop-t{font-size:13px;font-weight:600;display:flex;gap:8px;align-items:flex-start}
+.ask-prop-r{font-size:11.5px;color:var(--text3);margin-top:4px}
+.ask-prop-btns{display:flex;gap:8px;margin-top:10px}
+.ask-prop-apply{border:none;background:var(--c1);color:#fff;font-size:12px;font-weight:600;padding:7px 16px;border-radius:7px;cursor:pointer}
+.ask-prop-apply:hover{background:var(--c1h)}
+.ask-prop-dismiss{border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:12px;padding:7px 14px;border-radius:7px;cursor:pointer}
+.ask-prop-st{font-size:11.5px;font-weight:600;color:var(--text3);margin-top:8px}
 .ask-tool{align-self:flex-start;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:999px;padding:4px 11px}
 .ask-tool b{color:var(--text2);font-weight:600}
 .ask-think{display:flex;gap:5px;align-items:center;padding:14px 16px}
@@ -11554,6 +11563,17 @@ function askTools(){
     { name:'get_invoice', description:'Every line on one invoice, by invoice number.',
       input_schema: S({ invoice_no:{type:'string'} }, ['invoice_no']) },
     { name:'pricing_rules', description:'The owner\'s category markup targets, used to turn cost into a selling price.', input_schema: S({}) },
+    { name:'propose_action', description:'Stage a change for the owner to approve with an Apply button in the chat. NOTHING happens until they tap it. Types: set_retail (remember an approved retail for a product), set_category_markup (change a category\'s markup %), set_discontinued (mark/unmark a product discontinued).',
+      input_schema: S({
+        type:{type:'string', enum:['set_retail','set_category_markup','set_discontinued']},
+        product:{type:'string', description:'Product name for set_retail / set_discontinued.'},
+        vendor:v,
+        price:{type:'number', description:'set_retail: the retail price to remember.'},
+        category_id:{type:'string', description:'set_category_markup: the category id from pricing_rules.'},
+        markup_pct:{type:'number', description:'set_category_markup: new markup %.'},
+        discontinued:{type:'boolean', description:'set_discontinued: true = discontinued.'},
+        reason:{type:'string', description:'One short line shown to the owner: why this change.'},
+      }, ['type']) },
     { name:'open_page', description:'Navigate the app to a page for the owner — use when they ask to SEE something ("show me", "open", "take me to"). Optional search prefills that page\'s filter box.',
       input_schema: S({ page:{type:'string', enum:['dashboard','money','upload','items','tracker','vendors','alerts','produce','history','pricing','calc','account-settings']}, search:{type:'string', description:'Optional filter text, supported on items and tracker.'} }, ['page']) },
   ];
@@ -11680,6 +11700,15 @@ function askRunTool(name, a){
     };
   }
 
+  case 'propose_action': {
+    const prep = askPrepareProposal(a);
+    if(prep.error) return prep;
+    ASK_PROPOSALS[prep.id] = prep;
+    askPersist();
+    return { proposal_id: prep.id, status:'pending_owner_approval', will_do: prep.summary,
+             note:'An Apply button is now in the chat. The change happens only when the owner taps it — tell them it is ready.' };
+  }
+
   case 'open_page': {
     const pages = ['dashboard','money','upload','items','tracker','vendors','alerts','produce','history','pricing','calc','account-settings'];
     if(!pages.includes(a.page)) return { error:'Unknown page. Valid: ' + pages.join(', ') };
@@ -11790,6 +11819,79 @@ function askRunTool(name, a){
 function catMarkup_safe(cat){
   const m = catMarkup(cat);
   return (m != null && !isNaN(m)) ? m : 30;
+}
+
+// ── Action proposals ───────────────────────────────────────
+// The model may STAGE a change; only an explicit tap on Apply runs it.
+// Everything re-validates at apply time — the data may have moved since
+// the proposal was made, and the model's params are never trusted blindly.
+let ASK_PROPOSALS = {};   // id → {id,type,params,summary,status:'pending'|'applied'|'dismissed'}
+
+// Filled in by the chat-persistence layer; safe no-op until then.
+function askPersist(){}
+
+function askPrepareProposal(a){
+  const id = 'ap_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+  if(a.type === 'set_retail'){
+    const price = Number(a.price);
+    if(!Number.isFinite(price) || price <= 0 || price > 10000) return { error:'set_retail needs a price between 0 and 10000.' };
+    const hit = askFind(a.product || '', a.vendor, 1)[0];
+    if(!hit) return { error:'No product on file matching "' + (a.product||'') + '". Use search_products first.' };
+    return { id, type:a.type, params:{ product:hit.desc, vendor:hit.vendor, price },
+             summary:'Remember $' + price.toFixed(2) + ' as the approved retail for ' + hit.desc + ' (' + hit.vendor + ')',
+             reason:a.reason || '', status:'pending' };
+  }
+  if(a.type === 'set_category_markup'){
+    const pct = Number(a.markup_pct);
+    if(!Number.isFinite(pct) || pct < 0 || pct > 500) return { error:'set_category_markup needs markup_pct between 0 and 500.' };
+    const cat = catFind(a.category_id);
+    if(!cat) return { error:'No category "' + (a.category_id||'') + '". Call pricing_rules for valid ids.' };
+    return { id, type:a.type, params:{ category_id:cat.id, markup_pct:pct },
+             summary:'Change ' + cat.label + ' markup from ' + cat.markup + '% to ' + pct + '%',
+             reason:a.reason || '', status:'pending' };
+  }
+  if(a.type === 'set_discontinued'){
+    const hit = askFind(a.product || '', a.vendor, 1)[0];
+    if(!hit) return { error:'No product on file matching "' + (a.product||'') + '".' };
+    const disc = a.discontinued !== false;
+    return { id, type:a.type, params:{ product:hit.desc, vendor:hit.vendor, discontinued:disc },
+             summary:(disc ? 'Mark ' : 'Un-mark ') + hit.desc + ' (' + hit.vendor + ') as discontinued',
+             reason:a.reason || '', status:'pending' };
+  }
+  return { error:'Unknown action type: ' + a.type };
+}
+
+function askApplyProposal(id){
+  const pr = ASK_PROPOSALS[id];
+  if(!pr || pr.status !== 'pending') return;
+  const p = pr.params;
+  try {
+    if(pr.type === 'set_retail'){
+      setProdLastRetail(p.product, p.vendor, p.price);
+    } else if(pr.type === 'set_category_markup'){
+      if(!catFind(p.category_id)){ showToast('warn','That category no longer exists'); return; }
+      saveCats(loadCats().map(x => x.id === p.category_id ? {...x, markup: p.markup_pct} : x));
+      const el = document.getElementById('tgt-' + p.category_id); if(el) el.value = p.markup_pct;
+    } else if(pr.type === 'set_discontinued'){
+      const m = loadProdMeta(); const k = prodMetaKey(p.product, p.vendor);
+      m[k] = m[k] || {}; m[k].discontinued = p.discontinued; saveProdMeta(m);
+    } else return;
+    pr.status = 'applied';
+    showToast('success', 'Applied: ' + pr.summary);
+  } catch(e){
+    showToast('error', 'Could not apply: ' + e.message);
+    return;
+  }
+  askPersist();
+  askRender();
+}
+
+function askDismissProposal(id){
+  const pr = ASK_PROPOSALS[id];
+  if(!pr || pr.status !== 'pending') return;
+  pr.status = 'dismissed';
+  askPersist();
+  askRender();
 }
 
 // ── System prompt ──────────────────────────────────────────
@@ -11970,6 +12072,23 @@ function askRender(){
     for(const b of blocks){
       if(b.type === 'text' && b.text && b.text.trim()){
         html += '<div class="ask-row"><div class="ask-bub">'+askMd(b.text)+'</div></div>';
+      } else if(b.type === 'tool_use' && b.name === 'propose_action'){
+        // Find the proposal this call created (match on the following tool_result)
+        const pid = askProposalIdForToolUse(b.id);
+        const pr = pid && ASK_PROPOSALS[pid];
+        if(pr){
+          const st = pr.status;
+          html += '<div class="ask-prop' + (st!=='pending' ? ' done' : '') + '">'
+            + '<div class="ask-prop-t"><i class="ti ti-'+(st==='applied'?'check':'player-play')+'"></i>' + esc(pr.summary) + '</div>'
+            + (pr.reason ? '<div class="ask-prop-r">' + esc(pr.reason) + '</div>' : '')
+            + (st === 'pending'
+                ? '<div class="ask-prop-btns"><button class="ask-prop-apply" onclick="askApplyProposal(\''+esc(pid)+'\')">Apply</button>'
+                  + '<button class="ask-prop-dismiss" onclick="askDismissProposal(\''+esc(pid)+'\')">Dismiss</button></div>'
+                : '<div class="ask-prop-st">' + (st==='applied' ? '✓ Applied' : 'Dismissed') + '</div>')
+            + '</div>';
+        } else {
+          html += '<div class="ask-tool"><i class="ti ti-player-play"></i>Preparing a change for approval</div>';
+        }
       } else if(b.type === 'tool_use'){
         const label = ASK_TOOL_LABEL[b.name] || b.name;
         const arg = b.input && (b.input.query || b.input.vendor || b.input.invoice_no);
@@ -11980,6 +12099,19 @@ function askRender(){
   if(ASK_BUSY) html += '<div class="ask-row"><div class="ask-bub ask-think"><span></span><span></span><span></span></div></div>';
   log.innerHTML = html;
   log.scrollTop = log.scrollHeight;
+}
+
+// The tool_result for a propose_action call carries {proposal_id:...} — find it.
+function askProposalIdForToolUse(tuId){
+  for(const m of ASK_MSGS){
+    if(m.role !== 'user' || !Array.isArray(m.content)) continue;
+    for(const b of m.content){
+      if(b.type === 'tool_result' && b.tool_use_id === tuId){
+        try { const o = JSON.parse(b.content); return o.proposal_id || null; } catch(e){ return null; }
+      }
+    }
+  }
+  return null;
 }
 
 function askEmptyHtml(){
