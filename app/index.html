@@ -11834,12 +11834,64 @@ const ASK_STORE_KEY = 'tm_ask_chat';
 const ASK_KEEP_MSGS = 40;
 
 function askPersist(){
+  let payload = null;
   try {
     let msgs = ASK_MSGS.slice(-ASK_KEEP_MSGS);
     // If the cut landed on a tool_result user-message, its tool_use is gone — drop it.
     while(msgs.length && msgs[0].role === 'user' && Array.isArray(msgs[0].content)) msgs = msgs.slice(1);
-    localStorage.setItem(ASK_STORE_KEY, JSON.stringify({ msgs, proposals: ASK_PROPOSALS }));
+    payload = { msgs, proposals: ASK_PROPOSALS, savedAt: new Date().toISOString() };
+    localStorage.setItem(ASK_STORE_KEY, JSON.stringify(payload));
   } catch(e){ /* storage full — chat still works, just won't survive reload */ }
+  if(payload) askCloudPush(payload);
+}
+
+// ── Cloud copy (ask_chat table, one row per tenant) ────────
+// Local storage is the fast path; the cloud row makes the chat follow the
+// account across devices. Debounced so a burst of tool rounds is one write.
+// This table is intentionally OUTSIDE the cloudMark/cloudFlush sync set.
+let _ASK_CLOUD_TIMER = null;
+let _ASK_CLOUD_PULLED = false;
+
+function askCloudPush(payload){
+  if(!_USER || !_supabase) return;
+  clearTimeout(_ASK_CLOUD_TIMER);
+  _ASK_CLOUD_TIMER = setTimeout(async () => {
+    try {
+      await _supabase.from('ask_chat').upsert({
+        tenant_id: _USER.id, data: payload, updated_at: new Date().toISOString(),
+      });
+    } catch(e){ console.warn('ask chat cloud save failed:', e); }
+  }, 1200);
+}
+
+async function askCloudPull(){
+  if(_ASK_CLOUD_PULLED || !_USER || !_supabase) return;
+  _ASK_CLOUD_PULLED = true;
+  try {
+    const { data, error } = await _supabase.from('ask_chat')
+      .select('data').eq('tenant_id', _USER.id).maybeSingle();
+    if(error || !data || !data.data || !Array.isArray(data.data.msgs)) return;
+    const cloud = data.data;
+    let local = null;
+    try { local = JSON.parse(localStorage.getItem(ASK_STORE_KEY) || 'null'); } catch(e){}
+    // Newest copy wins; a cloud row always beats a local copy with no timestamp.
+    if(!local || !local.savedAt || (cloud.savedAt && cloud.savedAt > local.savedAt)){
+      if(ASK_BUSY) return; // never swap the transcript mid-answer
+      ASK_MSGS = cloud.msgs || [];
+      ASK_PROPOSALS = cloud.proposals || {};
+      askTrimDangling();
+      try { localStorage.setItem(ASK_STORE_KEY, JSON.stringify(cloud)); } catch(e){}
+      askRender();
+    }
+  } catch(e){ /* offline or table missing — local copy still works */ }
+}
+
+function askTrimDangling(){
+  while(ASK_MSGS.length){
+    const last = ASK_MSGS[ASK_MSGS.length-1];
+    if(last.role === 'assistant' && Array.isArray(last.content) && last.content.some(b => b.type === 'tool_use')) ASK_MSGS.pop();
+    else break;
+  }
 }
 
 function askRestore(){
@@ -11849,11 +11901,7 @@ function askRestore(){
       ASK_MSGS = saved.msgs;
       ASK_PROPOSALS = saved.proposals || {};
       // A reload mid-answer leaves a dangling tool_use with no result — trim it.
-      while(ASK_MSGS.length){
-        const last = ASK_MSGS[ASK_MSGS.length-1];
-        if(last.role === 'assistant' && Array.isArray(last.content) && last.content.some(b => b.type === 'tool_use')) ASK_MSGS.pop();
-        else break;
-      }
+      askTrimDangling();
     }
   } catch(e){ ASK_MSGS = []; }
 }
@@ -12029,6 +12077,11 @@ function askClear(){
   ASK_MSGS = [];
   ASK_PROPOSALS = {};
   try { localStorage.removeItem(ASK_STORE_KEY); } catch(e){}
+  clearTimeout(_ASK_CLOUD_TIMER); // a queued push must not resurrect the cleared chat
+  if(_USER && _supabase){
+    _supabase.from('ask_chat').delete().eq('tenant_id', _USER.id)
+      .then(()=>{}, e => console.warn('ask chat cloud clear failed:', e));
+  }
   askRender();
 }
 
@@ -12186,6 +12239,7 @@ function askKey(e){
 }
 
 function askOpenPage(){
+  askCloudPull(); // async; re-renders if the cloud copy is newer
   const chips = document.getElementById('ask-chips');
   if(chips && !chips.dataset.built){
     chips.dataset.built = '1';
