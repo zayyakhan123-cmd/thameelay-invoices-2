@@ -11536,6 +11536,8 @@ function askTools(){
       input_schema: S({ query:q, vendor:v, limit:{type:'integer'} }, ['query']) },
     { name:'compare_vendors', description:'Same product across every vendor that supplied it, cheapest first. Use for "who is cheapest for X" / "where should I buy X".',
       input_schema: S({ query:q }, ['query']) },
+    { name:'price_increases', description:'Products whose unit cost changed inside a time window, biggest increase first. THE tool for "which costs went up" questions.',
+      input_schema: S({ months:{type:'integer', description:'Window in months, default 3.'}, vendor:v, direction:{type:'string', enum:['up','down','both'], description:'Default up.'}, limit:{type:'integer'} }) },
     { name:'suggest_price', description:'Cost basis plus a markup, giving a suggested selling price. price_type "retail" uses the owner\'s category markup; "wholesale" uses the owner\'s fixed 20% wholesale markup. Also returns the last retail the owner actually approved for this product.',
       input_schema: S({ query:q, vendor:v, price_type:{type:'string', enum:['retail','wholesale'], description:'Default retail.'}, markup_pct:{type:'number', description:'Explicit override; wins over price_type.'} }, ['query']) },
     { name:'list_vendors', description:'All vendors with invoice count, total spend, and date range.', input_schema: S({}) },
@@ -11608,6 +11610,44 @@ function askRunTool(name, a){
       out.note = 'Only one vendor on file for this product, so there is nothing to compare against.';
     }
     return out;
+  }
+
+  case 'price_increases': {
+    const months = Math.min(a.months || 3, 24);
+    const cut = new Date(); cut.setMonth(cut.getMonth() - months);
+    const dir = a.direction || 'up';
+    let rows = askIndex();
+    if(a.vendor){
+      const vq = normDesc(a.vendor);
+      rows = rows.filter(r => normDesc(r.vendor).includes(vq) || vq.includes(normDesc(r.vendor)));
+    }
+    const out = [];
+    for(const r of rows){
+      // Baseline = last purchase BEFORE the window (or the first inside it);
+      // current = the latest purchase inside the window.
+      const inWin = r.entries.filter(e => e.date && new Date(e.date) >= cut);
+      if(!inWin.length) continue;
+      const cur = inWin[inWin.length-1];
+      const before = r.entries.filter(e => e.date && new Date(e.date) < cut);
+      const base = before.length ? before[before.length-1] : (inWin.length > 1 ? inWin[0] : null);
+      if(!base || !(base.unitCost > 0)) continue;
+      const diff = cur.unitCost - base.unitCost;
+      if(Math.abs(diff) < 0.005) continue;
+      if(dir === 'up' && diff <= 0) continue;
+      if(dir === 'down' && diff >= 0) continue;
+      out.push({
+        product: r.desc, vendor: r.vendor, category: r.cat,
+        from_unit_cost: askRound(base.unitCost), from_date: base.date,
+        to_unit_cost: askRound(cur.unitCost), to_date: cur.date,
+        change: askRound(diff), change_pct: askRound(diff / base.unitCost * 100),
+      });
+    }
+    out.sort((x,y) => Math.abs(y.change_pct) - Math.abs(x.change_pct));
+    const lim = Math.min(a.limit || 15, 40);
+    return out.length
+      ? { window_months: months, changes: out.slice(0, lim), total_changed: out.length }
+      : { window_months: months, changes: [],
+          note: 'No product bought in this window has more than one recorded price, so there are no changes to rank. Products bought only once cannot show a change.' };
   }
 
   case 'suggest_price': {
@@ -11830,6 +11870,7 @@ const ASK_TOOL_LABEL = {
   search_products:'Looking up products',
   product_cost_history:'Reading cost history',
   compare_vendors:'Comparing vendors',
+  price_increases:'Ranking cost changes',
   suggest_price:'Working out a price',
   pricing_rules:'Checking your markup rules',
   list_vendors:'Listing vendors',
