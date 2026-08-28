@@ -85,7 +85,12 @@ Ranked. Each is a new `askRunTool` case + schema entry; no UI work.
 7. **`produce_unmatched`** — invoice lines that never matched a catalog item, so the chat can
    feed the Produce Matcher instead of just reporting a gap.
 
-## Phase 3 — make answers actionable
+## Phase 3 — make answers actionable (items 9–10 + app-agent BUILT 2026-08-28)
+Built: app-aware system prompt (knows every page + workflow), `open_page` navigation
+tool (with search prefill on items/tracker), `propose_action` with Apply/Dismiss cards
+(set_retail, set_category_markup, set_discontinued — re-validated at apply time, model
+can never write directly), and chat persistence across reloads (local-only key).
+Still open from this phase: expandable tool chips (8), "draft my order" (11).
 8. **Expandable tool chips.** Tap "Comparing vendors" to see the actual rows behind the
    number. Trust comes from being able to check the work.
 9. **Deep links.** Model emits `[[invoice:A-1042]]` / `[[product:SUGAR APPLE|Hung Phat]]`;
