@@ -3395,6 +3395,16 @@ function classifyInvoice(inv){
       p = { ...p, unit:'lb', inferredSoldBy:'lb', boxCount:1, perBoxAmount:lbs, u:lbs, _rateDerived:true };
     }
     item._u = p._rateDerived ? p.u : (r.u || p.u);
+    // Per-product pack-count override — set when the owner corrects the
+    // UNIT/CASE field in the approval editor (mirrors the sold_by override).
+    // The vendor's printed pack math is sometimes wrong ("X12 BAGS" on a
+    // 10-bag case), and only the owner knows the real count. Count units
+    // only: weight-based rows keep the parsed weight.
+    const uOverride = meta[prodMetaKey(item.desc, inv.vendor)]?.units_per_case;
+    if(uOverride > 0 && !p._rateDerived){
+      item._u = uOverride;
+      item._uOverride = true;
+    }
     item._boxCount = p.boxCount;
     item._perBoxAmount = p.perBoxAmount;
     item._inferredSoldBy = p.inferredSoldBy;
@@ -5386,6 +5396,25 @@ function onUnitsChange(itemKey, el){
   const item = INV && INV.items.find(x => x.item === itemKey); if(!item) return;
   let v = parseFloat(el.value); if(!(v >= 1)) v = 1;
   item._u = v; el.value = v;
+  // Remember the correction for this product+vendor so every future invoice
+  // starts with the owner's count instead of the vendor's printed pack math.
+  // Only when it differs from what the parser would say — an untouched field
+  // never writes an override.
+  const parsed = parseUnitsRobust(item.size).u || 1;
+  const meta = loadProdMeta(); const k = prodMetaKey(item.desc, INV.vendor);
+  if(Math.abs(v - parsed) > 0.001){
+    meta[k] = meta[k] || {};
+    if(meta[k].units_per_case !== v){
+      meta[k].units_per_case = v;
+      saveProdMeta(meta);
+      showToast('success', `Pack count ${v} remembered for ${item.desc} — future invoices will use it`);
+    }
+  } else if(meta[k] && meta[k].units_per_case != null){
+    // Typed back to the parsed value → drop the override.
+    delete meta[k].units_per_case;
+    saveProdMeta(meta);
+    showToast('info', 'Pack count override cleared — using the invoice size again');
+  }
   _aprRefreshFormulaRetail(itemKey, item);
   renderNewEditShell();
 }
