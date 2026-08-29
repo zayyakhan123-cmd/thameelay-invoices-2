@@ -3215,7 +3215,7 @@ function parseUnitsRobust(size){
   // Reversed pack "4LB X 5" / "2LB X 10" / "16OZ X 24" — weight-per-pack × count.
   // Must run before the single-weight match, which would swallow the leading
   // "2LB" and price a 10-bag case as one 2-lb bag.
-  const rev=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|GM?|GR)\s*[xX×]\s*(\d+)\b/i);
+  const rev=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|GM?|GR)\s*[xX×]\s*(\d+)(?!\s*[xX×]\s*\d)\b/i);
   if(rev){
     const per=parseFloat(rev[1]); const cnt=parseInt(rev[3]);
     const rawU=rev[2].toUpperCase().replace(/S$/,'');
@@ -3227,7 +3227,7 @@ function parseUnitsRobust(size){
     if(cnt>=1&&cnt<=500) return {u:cnt,boxCount:cnt,perBoxAmount:per,unit,inferredSoldBy:'each',conf:0.85,note:`${cnt} packs of ${per}${unit||''}`};
   }
   // Single-weight without AxB: "10LB", "33#", "10KG", "500G"
-  const simpleWt=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|G|GR)(?!\w)/i);
+  const simpleWt=s.match(/^(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|G|GR)(?!\w)(?!\s*[xX×]\s*\d)/i);
   if(simpleWt){
     const amt=parseFloat(simpleWt[1]);
     const rawU=simpleWt[2].toUpperCase().replace(/S$/,'');
@@ -3237,11 +3237,47 @@ function parseUnitsRobust(size){
     else {unit='g';inferredSoldBy='each';}
     return {u:amt||1,boxCount:1,perBoxAmount:amt,unit,inferredSoldBy,conf:0.9,note:''};
   }
+  // Compound-embedded-unit format: "6pcsx16packsx125ml", "50gx6bx8p", "20G X 84 X12 BAGS".
+  // Split on x, classify each segment as size (volume/weight) or count (packaging).
+  // Outermost pack wins: in a "size × inner × outer" chain the LAST count is the
+  // case pack — "20G X 84 X12 BAGS" is 12 bags per case, not 84 sachets. Two-segment
+  // strings keep the largest-count behavior. Runs BEFORE the mid-string NxM match
+  // when there are 3+ segments, so that match can't grab "84 X12" out of the middle.
+  const _compound=()=>{
+    if(!/[xX×]/.test(s)) return null;
+    const _SZ=/^(ml|l|fl\.?oz|floz|oz|g|gm|gr|kg|lb|lbs?)$/i;
+    const segs=s.split(/[xX×]/).map(seg=>{
+      const mm=seg.trim().match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/);
+      return mm?{n:parseFloat(mm[1]),u:(mm[2]||'').toLowerCase().replace(/\./g,'')}:null;
+    }).filter(Boolean);
+    const sizes=segs.filter(p=>_SZ.test(p.u));
+    const counts=segs.filter(p=>!_SZ.test(p.u)&&p.n>=1&&p.n<=500);
+    if(sizes.length>0&&counts.length>=1){
+      const lastSeg=segs[segs.length-1];
+      const lastIsCount=lastSeg&&!_SZ.test(lastSeg.u)&&lastSeg.n>=1&&lastSeg.n<=500;
+      const u=(segs.length>=3&&lastIsCount)?lastSeg.n:Math.max(...counts.map(p=>p.n));
+      const sz=sizes[0];
+      let unit=null;
+      if(/^ml$/i.test(sz.u))unit='ml';else if(/^(oz|floz)$/i.test(sz.u))unit='oz';
+      else if(/^(g|gm|gr)$/i.test(sz.u))unit='g';else if(/^kg$/i.test(sz.u))unit='kg';
+      return {u,boxCount:u,perBoxAmount:sz.n,unit,inferredSoldBy:'each',conf:0.8,
+        note:`Compound packing: ${counts.map(p=>p.n+(p.u||'')).join('×')}=${u} units`};
+    }
+    if(counts.length>=2){
+      const u=Math.max(...counts.map(p=>p.n));
+      return {u,boxCount:u,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.7,note:`Multi-count: largest=${u}`};
+    }
+    return null;
+  };
+  if(/[xX×][^xX×]*[xX×]/.test(s)){
+    const c=_compound(); if(c) return c;
+  }
+
   // NxAMOUNT[UNIT]: capture the second number and unit token so we can detect
   // single-box bulk-weight items and consumer-package items. The leading
   // boundary `(?:^|\s|-)` lets us find the pattern after prefixes like
   // "HLSO 6X4LB" or "U-10 BLACK TIGER 4X4LB" without anchoring to start.
-  const m=s.match(/(?:^|\s|-)(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|ML|L|PCS?|CT|EA|G|GR)?(?!\w)/i);
+  const m=s.match(/(?:^|\s|-)(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?|OZ|ML|L|PCS?|CT|EA|G|GR)?(?!\w)(?!\s*[xX×]\s*\d)/i);
   if(m){
     const boxCount=parseInt(m[1]);
     const perBoxAmount=parseFloat(m[2]);
@@ -3264,34 +3300,11 @@ function parseUnitsRobust(size){
     return {u,boxCount,perBoxAmount,unit,inferredSoldBy,conf:0.95,note};
   }
   // Simple "Nx" fallback (no amount after the x)
-  const simple=s.match(/^(\d+)\s*[xX]/i);
+  const simple=s.match(/^(\d+)\s*[xX]\s*(?!\d)/i);
   if(simple){const n=parseInt(simple[1]);if(n>=1&&n<=500)return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.95,note:''}; return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.6,note:`Unusual unit count: ${n}`};}
 
-  // Compound-embedded-unit format: "6pcsx16packsx125ml", "50gx6bx8p", "125gx6cpx12pk"
-  // Split on x, classify each segment as volume/weight (size dimension) or count (packaging),
-  // then take the largest count. Gives units=16, 8, 12 for the examples above.
-  if(/[xX×]/.test(s)){
-    const _SZ=/^(ml|l|fl\.?oz|floz|oz|g|gm|gr|kg|lb|lbs?)$/i;
-    const segs=s.split(/[xX×]/).map(seg=>{
-      const mm=seg.trim().match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/);
-      return mm?{n:parseFloat(mm[1]),u:(mm[2]||'').toLowerCase().replace(/\./g,'')}:null;
-    }).filter(Boolean);
-    const sizes=segs.filter(p=>_SZ.test(p.u));
-    const counts=segs.filter(p=>!_SZ.test(p.u)&&p.n>=1&&p.n<=500);
-    if(sizes.length>0&&counts.length>=1){
-      const u=Math.max(...counts.map(p=>p.n));
-      const sz=sizes[0];
-      let unit=null;
-      if(/^ml$/i.test(sz.u))unit='ml';else if(/^(oz|floz)$/i.test(sz.u))unit='oz';
-      else if(/^(g|gm|gr)$/i.test(sz.u))unit='g';else if(/^kg$/i.test(sz.u))unit='kg';
-      return {u,boxCount:u,perBoxAmount:sz.n,unit,inferredSoldBy:'each',conf:0.8,
-        note:`Compound packing: ${counts.map(p=>p.n+(p.u||'')).join('×')}=${u} units`};
-    }
-    if(counts.length>=2){
-      const u=Math.max(...counts.map(p=>p.n));
-      return {u,boxCount:u,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.7,note:`Multi-count: largest=${u}`};
-    }
-  }
+  // Compound fallback for strings with a single separator ("50gx8p")
+  { const c=_compound(); if(c) return c; }
 
   return {u:1,boxCount:1,perBoxAmount:1,unit:null,inferredSoldBy:'each',conf:0.4,note:`Cannot parse: "${s}"`};
 }
