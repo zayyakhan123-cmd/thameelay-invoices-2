@@ -4091,6 +4091,7 @@ async function cloudReplaceProductMeta(){
   const rows = Object.entries(meta).map(([key, v]) => ({
     tenant_id: _USER.id, key, discontinued: !!v.discontinued, note: v.note || null,
     sold_by: v.sold_by || null,
+    units_per_case: Number.isFinite(v.units_per_case) ? v.units_per_case : null,
     last_retail: Number.isFinite(v.last_retail) ? v.last_retail : null,
     last_retail_at: v.last_retail_at || null,
     pack_size: Number.isFinite(v.pack_size) ? v.pack_size : null,
@@ -4226,6 +4227,7 @@ async function cloudPullAll(){
       metaR.data.forEach(r => {
         meta[r.key] = {
           discontinued: !!r.discontinued, note: r.note, sold_by: r.sold_by || undefined,
+          units_per_case: r.units_per_case != null ? Number(r.units_per_case) : undefined,
           last_retail: r.last_retail != null ? Number(r.last_retail) : undefined,
           last_retail_at: r.last_retail_at || undefined,
           pack_size: r.pack_size != null ? Number(r.pack_size) : undefined,
