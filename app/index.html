@@ -3170,6 +3170,28 @@ function parseUnitsRobust(size){
   // Outer × (Inner×SIZE) pattern: "4 X (6X10.82" — outer N packs per case
   const oi=s.match(/^(\d+)\s*[xX]\s*\(/);
   if(oi){const n=parseInt(oi[1]);return {u:n,boxCount:n,perBoxAmount:1,unit:null,inferredSoldBy:'box',conf:0.75,note:`Outer pack format: ${n} inner packs per case`};}
+  // Slash-pack notation: "12/1KG", "40/100GM", "24/26OZ", "2/20L", "6 JAR/100PC"
+  // — A packs of B-size each (South Asian wholesale convention). Consumer units
+  // (G/OZ/ML/L/PC/CT/JAR) are always pack notation; LB/KG is pack only when
+  // A >= B — "10/15LB" with lo<hi stays a variable-weight range (fish).
+  const slashPack=s.match(/^(\d+)\s*(?:JARS?|PKS?|BOXES?|TRAYS?)?\s*\/\s*(\d+(?:\.\d+)?)\s*(GM?S?|GR|OZ|MLS?|L|PCS?|CT|JARS?|EA|LBS?|KGS?|#)(?!\w)/i);
+  if(slashPack){
+    const a=parseInt(slashPack[1]), bAmt=parseFloat(slashPack[2]);
+    const rawU=slashPack[3].toUpperCase().replace(/S$/,'');
+    const isWt=(rawU==='LB'||rawU==='#'||rawU==='KG');
+    if(!(isWt && a<bAmt) && a>=1 && a<=500){
+      const unit=(rawU==='LB'||rawU==='#')?'lb':rawU==='KG'?'kg':rawU==='OZ'?'oz':rawU==='ML'?'ml':rawU==='L'?'l':(rawU==='G'||rawU==='GM'||rawU==='GR')?'g':'pcs';
+      // Same sold-by convention as "AxB KG": multi-pack weight items sell by the box.
+      const inferredSoldBy=isWt ? (a>=2?'box':unit) : 'each';
+      return {u:a,boxCount:a,perBoxAmount:bAmt,unit,inferredSoldBy,conf:0.85,note:`${a} packs of ${bAmt}${unit==='pcs'?'pc':unit}`};
+    }
+  }
+  // Bare count: "18PC", "10CT", "6JAR", "24EA" — N sellable units, no size info.
+  const bareCount=s.match(/^(\d+)\s*(JARS?|PCS?|CT|PKS?|TRAYS?|BOXES?|EA)(?!\w)/i);
+  if(bareCount){
+    const n=parseInt(bareCount[1]);
+    if(n>=1&&n<=500) return {u:n,boxCount:n,perBoxAmount:1,unit:'pcs',inferredSoldBy:'each',conf:0.8,note:''};
+  }
   // Variable-weight range (no AxB): "10-15LB", "10/15LB", "10-15KG" — bag of
   // variable weight, sold per pound/kg. Average the bounds.
   const varRange=s.match(/^(\d+(?:\.\d+)?)\s*[-\/]\s*(\d+(?:\.\d+)?)\s*(#|LBS?|KGS?)(?!\w)/i);
