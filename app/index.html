@@ -879,6 +879,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
 /* Panels */
 .stab-panel{display:none;flex-direction:column;gap:16px}
 .stab-panel.on{display:flex}
+/* Redesign: Settings is one scrolling page; the old tab sidebar is hidden and every panel shows as a section. */
+#pg-account-settings .settings-sidebar{display:none}
+#pg-account-settings .stab-panel{display:flex;padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--border)}
+#pg-account-settings .stab-panel:last-child{border-bottom:0}
+#pg-account-settings .settings-main{max-width:720px;padding-top:0}
+#pg-account-settings .settings-wrap{min-height:0}
 /* Cards */
 .settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rxl);padding:20px 24px;display:flex;flex-direction:column;gap:14px}
 .settings-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
