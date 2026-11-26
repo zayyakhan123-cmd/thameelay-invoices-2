@@ -994,6 +994,24 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 /* ── Dashboard v2 ─────────────────────────────────────────────────── */
 
+.home-todo{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.home-todo-hd{display:flex;justify-content:space-between;align-items:baseline;padding:14px 18px 10px}
+.home-todo-title{font-size:15px;font-weight:700}
+.home-todo-count{font-size:12px;color:var(--text3)}
+.home-todo-row{white-space:normal;display:grid;grid-template-columns:40px minmax(0,1fr) 20px;gap:12px;align-items:center;width:100%;padding:13px 18px;border:0;border-top:1px solid var(--border);background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;min-height:56px}
+.home-todo-row:hover{background:var(--surface-h)}
+.home-todo-ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+.home-todo-ic.red{background:var(--redl);color:var(--red)}.home-todo-ic.amber{background:var(--amberl);color:var(--amber)}.home-todo-ic.green{background:var(--greenl);color:var(--green)}.home-todo-ic.blue{background:var(--bluel);color:var(--blue)}
+.home-todo-t{font-weight:600;font-size:14px}
+.home-todo-s{font-size:12px;color:var(--text2);margin-top:1px}
+.home-todo-chev{color:var(--text4);font-size:16px}
+.home-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.home-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.home-stat-l{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.home-stat-v{font-size:22px;font-weight:700;margin-top:2px}
+.home-stat-s{font-size:12px;color:var(--text2)}
+#pg-dashboard .db2-kpi-grid,#pg-dashboard .db2-analytics-wrap,#pg-dashboard .dash-bottom,#pg-dashboard #db-first-run{display:none!important}
+@media(max-width:700px){.home-stats{grid-template-columns:1fr 1fr}.home-stats .home-stat:first-child{grid-column:1/-1}}
 .db2-kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:20px}
 .db2-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px 14px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:border-color .15s}
 .db2-kpi-card:hover{border-color:rgba(15,23,42,.14)}
@@ -1294,8 +1312,8 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="h-l">
     <div class="h-icon-btn" onclick="document.querySelector('.side').classList.toggle('show')" title="Toggle sidebar" style="cursor:pointer"><i class="ti ti-menu-2"></i></div>
     <div class="h-title">
-      <div class="h-name" id="page-title">Dashboard</div>
-      <div class="h-sub" id="page-subtitle">AI-powered invoice analysis and price optimization</div>
+      <div class="h-name" id="page-title">Home</div>
+      <div class="h-sub" id="page-subtitle">What needs you today</div>
     </div>
   </div>
   <div class="h-r">
@@ -1353,7 +1371,14 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <!-- Trial nudge: shown while on the free trial so the 10-invoice wall never surprises -->
   <div id="db-trial-nudge" style="display:none;border:1px solid var(--border2);border-left:4px solid var(--c1);background:var(--surface);padding:12px 16px;margin-bottom:16px;border-radius:12px"></div>
 
-  <!-- KPI CARDS -->
+  <!-- WHAT NEEDS YOU (redesign home) -->
+  <div class="home-todo" id="home-todo">
+    <div class="home-todo-hd"><div class="home-todo-title">What needs you</div><div class="home-todo-count" id="home-todo-count"></div></div>
+    <div id="home-todo-list"></div>
+  </div>
+  <div class="home-stats" id="home-stats"></div>
+
+  <!-- KPI CARDS (hidden in the redesign; render code still writes to them) -->
   <div class="db2-kpi-grid">
     <div class="db2-kpi-card">
       <div class="db2-kpi-accent" style="background:var(--blue)"></div>
@@ -7554,6 +7579,66 @@ function renderDashboard(){
   renderKpiSparklines();
   updateNavCounts();
   updateDataFreshness();
+  renderHomeTodos();
+}
+
+// Home "What needs you" list + three month numbers. Reads what the older
+// render functions already computed (approval pill, computeMoney, history),
+// so it adds no new data.
+function renderHomeTodos(){
+  const list = document.getElementById('home-todo-list');
+  if(!list) return;
+  const hist = loadHist();
+  const todos = [];
+  const pill = document.getElementById('db-action-pill');
+  const review = pill ? parseInt(pill.textContent, 10) || 0 : 0;
+  if(INV){
+    const saved = hist.some(h => h.invoiceNo===INV.invoiceNo && normV(h.vendor)===normV(INV.vendor) && h.date===INV.date);
+    const n = (INV.items||[]).filter(i=>i._rt===RT.PURCHASED && i.qty>0).length;
+    if(review > 0 || !saved){
+      todos.push({ ic:'red', icon:'ti-file-invoice', t:`${saved?'Finish checking':'Approve'} the ${esc(INV.vendor||'current')} invoice`,
+        s: review > 0 ? `${review} item${review===1?'':'s'} need a price decision` : `${n} items read. Check the prices, then save.`,
+        go:"(document.querySelector('.db2-approvals')||document.querySelector('#pg-dashboard .ne-shell, #pg-dashboard [id^=ne-]'))?.scrollIntoView({behavior:'smooth',block:'start'})" });
+    }
+  }
+  let money = null;
+  try { money = computeMoney(); } catch(e){ money = null; }
+  if(money && money.reprice.length){
+    const n = money.reprice.length;
+    todos.push({ ic:'amber', icon:'ti-arrow-up-right', t:`Raise ${n} shelf price${n===1?'':'s'}`,
+      s:`Costs went up on these items. About ${fBig(money.repriceTotal)} at stake on your last orders.`, go:"goTo('money')" });
+  }
+  if(money && money.cross.length){
+    const n = money.cross.length;
+    todos.push({ ic:'green', icon:'ti-truck', t:`${n} item${n===1?' is':'s are'} cheaper from another vendor`,
+      s:`Save about ${fBig(money.crossTotal)} by switching.`, go:"goTo('money')" });
+  }
+  if(!hist.length && !INV){
+    todos.push({ ic:'blue', icon:'ti-upload', t:'Add your first invoice', s:'Snap a photo or choose a PDF. We read every line and flag what changed.', go:'navAddInvoice()' });
+  }
+  const cnt = document.getElementById('home-todo-count');
+  if(!todos.length){
+    list.innerHTML = `<div class="home-todo-row" style="cursor:default"><span class="home-todo-ic green"><i class="ti ti-check"></i></span><span><div class="home-todo-t">All caught up</div><div class="home-todo-s">New invoices you add will show up here.</div></span><span></span></div>`;
+    if(cnt) cnt.textContent = '';
+  } else {
+    list.innerHTML = todos.map(x => `<button type="button" class="home-todo-row" onclick="${x.go}">
+      <span class="home-todo-ic ${x.ic}"><i class="ti ${x.icon}"></i></span>
+      <span style="min-width:0"><div class="home-todo-t">${x.t}</div><div class="home-todo-s">${x.s}</div></span>
+      <span class="home-todo-chev"><i class="ti ti-chevron-right"></i></span></button>`).join('');
+    if(cnt) cnt.textContent = `${todos.length} thing${todos.length===1?'':'s'}`;
+  }
+  // Three numbers for this month
+  const now = new Date(), m0 = new Date(now.getFullYear(), now.getMonth(), 1);
+  const month = hist.filter(h => { const d = new Date(h.date||h.savedAt||0); return d >= m0 && d <= now; });
+  const spent = month.reduce((a,h)=>a+(h.total||0),0);
+  const vendors = new Set(month.map(h=>normV(h.vendor))).size;
+  const up = money ? money.reprice.length : 0;
+  const avg = money && up ? money.reprice.reduce((a,r)=>a+r.pct,0)/up : 0;
+  const stats = document.getElementById('home-stats');
+  if(stats) stats.innerHTML = `
+    <div class="home-stat"><div class="home-stat-l">Spent this month</div><div class="home-stat-v mn">${fBig(spent)}</div><div class="home-stat-s">${month.length} invoice${month.length===1?'':'s'} from ${vendors} vendor${vendors===1?'':'s'}</div></div>
+    <div class="home-stat"><div class="home-stat-l">Costs went up</div><div class="home-stat-v mn" style="color:${up?'var(--red)':'var(--text)'}">${up} item${up===1?'':'s'}</div><div class="home-stat-s">${up?`Average increase ${avg.toFixed(0)}%`:'Since your previous orders'}</div></div>
+    <div class="home-stat"><div class="home-stat-l">Invoices saved</div><div class="home-stat-v mn">${hist.length}</div><div class="home-stat-s">All time</div></div>`;
 }
 
 // Proactive free-trial status banner on the dashboard so the 10-invoice wall
