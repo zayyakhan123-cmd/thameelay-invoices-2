@@ -809,6 +809,14 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .db-strip-chip.dn.active{background:rgba(16,185,129,.22);border-color:var(--green);box-shadow:0 0 0 1px rgba(16,185,129,.3)}
 .db-strip-chip.new.active{background:rgba(96,165,250,.22);border-color:var(--blue);box-shadow:0 0 0 1px rgba(96,165,250,.3)}
 .db-strip-chip.stable.active{background:rgba(148,163,184,.18);border-color:var(--text3);box-shadow:0 0 0 1px rgba(148,163,184,.25)}
+/* Redesign: one sticky Approve bar under the invoice review */
+.apr-go{position:sticky;bottom:12px;z-index:5;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 16px;background:var(--text);color:var(--bg2);border-radius:12px;box-shadow:0 12px 32px -12px rgba(0,0,0,.45)}
+.apr-go-txt{font-size:13px;min-width:0}
+.apr-go-rev{color:#fbbf24}
+.apr-go-sub{font-size:11px;opacity:.7;margin-top:2px}
+.apr-go-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 20px;border:0;border-radius:9px;background:var(--c1);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.apr-go-btn:hover{background:var(--c1h)}
+@media(max-width:768px){.apr-go{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));border-radius:12px 12px 0 0;margin:0}.apr-go-btn{width:100%;justify-content:center}.apr-go-txt{width:100%}body.new-edit-fullpage .main{padding-bottom:calc(200px + env(safe-area-inset-bottom,0px))!important}}
 .db-save-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--c1),var(--c1d));color:#fff;border:none;cursor:pointer;letter-spacing:-.01em;transition:filter .15s,transform .15s,box-shadow .15s;box-shadow:0 0 16px -4px rgba(5,150,105,.4),inset 0 1px 0 rgba(255,255,255,.2);white-space:nowrap}
 .db-save-btn:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 0 24px -4px rgba(5,150,105,.55),inset 0 1px 0 rgba(255,255,255,.2)}
 .db-save-btn:active{transform:translateY(0)}
@@ -5911,6 +5919,7 @@ function finalizeAndSave(silent){
   const _ar={},_as={};Object.entries(APPROVALS).forEach(([k,v])=>{if(v){if(v.retailPrice!=null)_ar[k]=v.retailPrice;if(v.status)_as[k]=v.status;}});
   hist.unshift({...INV,_approvedRetails:_ar,_approvedStatuses:_as,savedAt:new Date().toISOString()});saveHist(hist);
   updateNavCounts();
+  if(typeof renderHomeTodos==='function') renderHomeTodos();
   if(document.getElementById('pg-history')?.classList.contains('on')) renderHistory();
   if(document.getElementById('pg-tracker')?.classList.contains('on')) renderTracker('all');
   if(document.getElementById('pg-vendors')?.classList.contains('on')) renderVendors();
@@ -8071,7 +8080,8 @@ function renderNewEditShell(){
 
   // Reset per-invoice state when a new invoice is loaded
   if(INV !== _newEditPrevInv){
-    _newEditFilter = 'all';
+    // Open on the items that need a decision; fall back to All when every item is safe.
+    _newEditFilter = (hasInv && INV.items && INV.items.length && safeCount < INV.items.filter(i=>i._rt===RT.PURCHASED && i.qty>0).length) ? 'review' : 'all';
     _newApprovalPage = 1;
     _newApprovalSearch = '';
     _newApprovalSort = {col: null, dir: 'asc'};
@@ -8394,6 +8404,10 @@ function renderNewEditShell(){
       </div>
       <div style="height:1px;background:var(--border);margin:12px 0"></div>
       <div class="apr-wrap${_aprImgHidden()?' img-hidden':''}">${leftPaneHtml}${rightPane}</div>
+    </div>
+    <div class="apr-go">
+      <div class="apr-go-txt"><b>${counts.safe} item${counts.safe===1?'':'s'} look fine</b>${counts.review?` · <span class="apr-go-rev">${counts.review} need${counts.review===1?'s':''} a look</span>`:''}<div class="apr-go-sub">Approving saves every price on this invoice to your history.</div></div>
+      <button type="button" class="apr-go-btn" onclick="dbSaveAll()"><i class="ti ti-check" aria-hidden="true"></i>Approve invoice (${purch.length})</button>
     </div>`;
 }
 
