@@ -5911,6 +5911,10 @@ function saveProdMeta(m){ _CACHE.prodMeta = m; lsSet(SK.PROD_META, m); cloudMark
 // ─── Product detail modal ────────────────────────────────────────────────────
 let _pdmDesc = null, _pdmVendor = null;
 
+// Short getElementById used by the product modal below. It was never
+// defined, so every 'Open' button in Prices/Vendors threw 'el is not defined'.
+function el(id){ return document.getElementById(id); }
+
 function openProdDetailModal(desc, vendor, lastCost, latestRetail, lastSeen, orders){
   _pdmDesc = desc; _pdmVendor = vendor;
   const m = loadProdMeta();
