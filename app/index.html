@@ -5010,7 +5010,11 @@ async function callAI({ messages, model='claude-sonnet-4-6', maxTokens=16000, sy
     const { data: { session } } = await _supabase.auth.getSession();
     if(!session) throw new Error('not_authenticated');
     const _aiCtrl = new AbortController();
-    const _aiTimeout = setTimeout(() => _aiCtrl.abort(), 120000);
+    // Supabase's edge gateway cuts a request at 150s. Give the AI call almost all
+    // of that window: large invoices take ~125s to extract and were being aborted
+    // here at 120s, a few seconds before the server finished (surfaced to the user
+    // as a generic "Extraction failed").
+    const _aiTimeout = setTimeout(() => _aiCtrl.abort(new Error('AI request timed out after 145s')), 145000);
     let resp;
     try {
       resp = await fetch(`${SUPABASE_URL}/functions/v1/ai`, {
@@ -7321,7 +7325,7 @@ function finishUploadProgress(success, errMsg){
 function friendlyExtractErr(msg){
   msg = String(msg || '');
   if(/fetch|network|connect|disconnect|reset|offline/i.test(msg)) return 'Network error — check your connection and try again.';
-  if(/timeout|timed out|deadline/i.test(msg)) return 'That took too long — try a smaller or clearer file and try again.';
+  if(/timeout|timed out|deadline|abort/i.test(msg)) return 'That took too long — try a smaller or clearer file and try again.';
   if(/rate.?limit|429|too many/i.test(msg)) return 'Too many requests right now — wait a moment and try again.';
   if(/invalid.?image|unsupported|format|corrupt|decode/i.test(msg)) return 'That file couldn’t be read — try a clear PDF or photo.';
   if(/quota|insufficient|billing|credit/i.test(msg)) return 'Extraction is temporarily unavailable — please try again shortly.';
