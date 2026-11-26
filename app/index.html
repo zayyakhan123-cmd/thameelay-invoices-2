@@ -1936,7 +1936,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
       <div class="tbl-search-input" style="flex:1;min-width:240px;max-width:360px">
-        <input type="text" placeholder="Search items, vendors, notes..." id="tr-search" oninput="trSearchDebounced()">
+        <input type="text" placeholder="Search items, UPC, SKU, vendors…" id="tr-search" oninput="trSearchDebounced()">
       </div>
       <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="tr-show-disc" onchange="renderTracker(_lastTrFilter||'all')"> Show discontinued
@@ -2924,6 +2924,16 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Retail</div><div id="pdm-retail" style="font-size:13px;color:var(--green);font-weight:600;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
         <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Last seen</div><div id="pdm-last-seen" style="font-size:13px;color:var(--text2);padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
         <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Orders</div><div id="pdm-orders" style="font-size:13px;color:var(--text2);padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border)">
+      <!-- Codes -->
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Codes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label for="pdm-upc" style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">UPC / barcode</label><input id="pdm-upc" type="text" inputmode="numeric" autocomplete="off" placeholder="12 digits on the package" oninput="pdmCheckUpc(this.value)" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div id="pdm-upc-msg" style="font-size:10px;color:var(--text4);margin-top:3px">Printed on tags and used in POS exports</div></div>
+          <div><label for="pdm-sku" style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Your SKU / store code</label><input id="pdm-sku" type="text" autocomplete="off" placeholder="Code in your register" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div style="font-size:10px;color:var(--text4);margin-top:3px">Matches this item to your POS</div></div>
+        </div>
+        <div id="pdm-vendor-codes" style="font-size:11px;color:var(--text3);margin-top:10px"></div>
       </div>
       <hr style="border:none;border-top:1px solid var(--border)">
       <!-- Sizing -->
@@ -4139,6 +4149,8 @@ async function cloudReplaceProductMeta(){
     reorder_point: Number.isFinite(v.reorder_point) ? v.reorder_point : null,
     target_stock: Number.isFinite(v.target_stock) ? v.target_stock : null,
     produce_group: v.produce_group || null,
+    upc: v.upc || null,
+    sku: v.sku || null,
   }));
   await _supabase.from('product_meta').delete().eq('tenant_id', _USER.id);
   if(rows.length) await _supabase.from('product_meta').insert(rows);
@@ -4275,6 +4287,8 @@ async function cloudPullAll(){
           reorder_point: r.reorder_point != null ? Number(r.reorder_point) : undefined,
           target_stock: r.target_stock != null ? Number(r.target_stock) : undefined,
           produce_group: r.produce_group || undefined,
+          upc: r.upc || undefined,
+          sku: r.sku || undefined,
         };
       });
       _CACHE.prodMeta = meta; lsSet(SK.PROD_META, meta);
@@ -5934,6 +5948,11 @@ function openProdDetailModal(desc, vendor, lastCost, latestRetail, lastSeen, ord
   el('pdm-target-stock').value = meta.target_stock != null ? meta.target_stock : '';
   el('pdm-produce-group').value = meta.produce_group || '';
   el('pdm-note').value = meta.note || '';
+  el('pdm-upc').value = meta.upc || '';
+  el('pdm-sku').value = meta.sku || '';
+  pdmCheckUpc(el('pdm-upc').value);
+  el('pdm-vendor-codes').innerHTML = pdmVendorCodes(desc).map(c =>
+    `<span style="display:inline-block;margin:0 10px 4px 0">${esc(c.vendor)} item # <b class="mn" style="color:var(--text2)">${esc(c.item)}</b></span>`).join('') || '<span>No vendor item number read from invoices yet.</span>';
   el('pdm-disc-btn').textContent = meta.discontinued ? 'Restore product' : 'Mark discontinued';
 
   const modal = document.getElementById('prod-detail-modal');
@@ -5961,11 +5980,42 @@ function saveProdDetailModal(){
   if(targetRaw !== '') m[k].target_stock = parseInt(targetRaw, 10); else delete m[k].target_stock;
   m[k].produce_group = el('pdm-produce-group').value || undefined;
   m[k].note = el('pdm-note').value.trim() || undefined;
+  const upcRaw = el('pdm-upc').value.replace(/\D/g,'');
+  if(upcRaw){
+    const bc = detectBarcodeFormat(upcRaw);
+    if(!bc.valid){ showToast('error', 'That UPC does not check out. Compare it with the package.'); el('pdm-upc').focus(); return; }
+  }
+  m[k].upc = upcRaw || undefined;
+  m[k].sku = el('pdm-sku').value.trim() || undefined;
 
   saveProdMeta(m);
   showToast('Saved.', 'success');
   closeProdDetailModal();
   if(document.getElementById('pg-vendors')?.classList.contains('on')) renderVendors();
+}
+
+// Live check of the UPC check digit while typing in the product modal.
+function pdmCheckUpc(val){
+  const msg = el('pdm-upc-msg'); if(!msg) return;
+  const digits = String(val||'').replace(/\D/g,'');
+  if(!digits){ msg.textContent = 'Printed on tags and used in POS exports'; msg.style.color = 'var(--text4)'; return; }
+  const bc = detectBarcodeFormat(digits);
+  if(bc.format === 'SKU' || bc.format === 'PLU'){ msg.textContent = 'A UPC has 12 digits (EAN 13, short UPC 8).'; msg.style.color = 'var(--amber)'; return; }
+  if(!bc.valid){ msg.textContent = 'Check digit does not match. Look for a typo.'; msg.style.color = 'var(--red)'; return; }
+  msg.textContent = bc.format + ' · check digit OK'; msg.style.color = 'var(--green)';
+}
+// Vendor item numbers already read from invoices for this product (from the price DB key vendor|item).
+function pdmVendorCodes(desc){
+  const db = loadDB(), want = (desc||'').toLowerCase().replace(/\s+/g,' ').trim(), out = [], seen = new Set();
+  for(const key in db){
+    const obs = db[key]; if(!obs || !obs.length) continue;
+    const last = obs[obs.length-1];
+    if((last.desc||'').toLowerCase().replace(/\s+/g,' ').trim() !== want) continue;
+    const [vendorKey, item] = key.split('|');
+    if(!item || seen.has(key)) continue; seen.add(key);
+    out.push({ vendor: last.vendor || vendorKey, item });
+  }
+  return out;
 }
 
 function pdmToggleDisc(){
@@ -6043,7 +6093,7 @@ function renderTracker(filter){
     return { kind:'dried', source:'dried', desc:last.desc, cat:last.cat||'other', vendor,
       prevCu, lastCu:last.unitCost, diff, pct, trend, orders:ents.length,
       lastSeen: last.invoiceDate || last.date || '',
-      latestRetail:lr, note:m.note||'', discontinued:!!m.discontinued };
+      latestRetail:lr, note:m.note||'', discontinued:!!m.discontinued, upc:m.upc||'', sku:m.sku||'', item:(key.split('|')[1]||'') };
   }).filter(Boolean);
 
   // Add produce-side products from PC_HIST (treats each catalogId+vendor as a product)
@@ -6109,7 +6159,10 @@ function renderTracker(filter){
     prods = prods.filter(p =>
       (p.desc||'').toLowerCase().includes(search) ||
       (p.vendor||'').toLowerCase().includes(search) ||
-      (p.note||'').toLowerCase().includes(search)
+      (p.note||'').toLowerCase().includes(search) ||
+      (p.upc||'').includes(search) ||
+      (p.sku||'').toLowerCase().includes(search) ||
+      (p.item||'').toLowerCase().includes(search)
     );
   }
   prods.sort((a,b)=> b.pct - a.pct);
