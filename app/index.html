@@ -112,6 +112,13 @@ nav a.on{background:var(--c1);color:#fff;font-weight:600;box-shadow:0 4px 10px -
 .scnt{margin-left:auto;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:20px;text-align:center;background:rgba(15,23,42,.08);color:var(--text2)}
 nav a.on .scnt{background:rgba(255,255,255,.28);color:#fff}
 .scnt-red{background:var(--red)!important;color:#fff!important}
+.side-add{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 14px 14px;padding:11px 14px;min-height:44px;border:0;border-radius:9px;background:var(--c1);color:#fff;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.side-add:hover{background:var(--c1h)}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 18px;padding:4px;background:var(--bg4);border-radius:10px;width:fit-content;max-width:100%}
+.subtab{border:0;background:transparent;color:var(--text2);font:inherit;font-size:13px;font-weight:600;padding:8px 14px;min-height:38px;border-radius:7px;cursor:pointer}
+.subtab:hover{color:var(--text)}
+.subtab.on{background:var(--bg2);color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.tabbar{display:none}
 .side-collapse{margin-top:auto;padding:14px 22px;border-top:1px solid var(--sb3);font-size:12px;color:var(--sb-text2);cursor:pointer;display:flex;align-items:center;gap:8px}
 .side-collapse:hover{color:var(--text)}
 
@@ -533,9 +540,18 @@ pre.csv{font-family:var(--font-mono);font-size:11px;color:var(--text2);backgroun
 }
 @media(max-width:768px){
   .side{display:none}
+  header .h-l > .h-icon-btn:first-child{display:none} /* hamburger: the bottom tab bar replaces the drawer */
   /* Mobile nav drawer: hidden by default, shown as a fixed overlay when the
      hamburger adds .show; goTo() strips .show so it closes on navigation. */
   .side.show{display:flex;position:fixed;top:64px;left:0;bottom:0;z-index:1000;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:900;background:var(--bg2);border-top:1px solid var(--border2);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;font-size:11px;font-weight:600;color:var(--text3);background:none!important;box-shadow:none!important;border-radius:0;padding:6px 0}
+  .tabbar a i{font-size:22px}
+  .tabbar a.on{color:var(--c1)}
+  .tabbar-add{flex:none;align-self:center;width:52px;height:46px;margin:0 4px;border:0;border-radius:14px;background:var(--c1);color:#fff;font-size:24px;display:grid;place-items:center;cursor:pointer}
+  .main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))!important}
+  .subtabs{flex-wrap:nowrap;overflow-x:auto;width:auto;scrollbar-width:none}
+  .subtab{flex:none}
   .mets,.g2,.g3{grid-template-columns:1fr 1fr}
   .main{padding:16px}
   .banner{grid-template-columns:1fr 1fr}
@@ -793,6 +809,14 @@ body.cloud-active [data-cloud-show]{display:block !important}
 .db-strip-chip.dn.active{background:rgba(16,185,129,.22);border-color:var(--green);box-shadow:0 0 0 1px rgba(16,185,129,.3)}
 .db-strip-chip.new.active{background:rgba(96,165,250,.22);border-color:var(--blue);box-shadow:0 0 0 1px rgba(96,165,250,.3)}
 .db-strip-chip.stable.active{background:rgba(148,163,184,.18);border-color:var(--text3);box-shadow:0 0 0 1px rgba(148,163,184,.25)}
+/* Redesign: one sticky Approve bar under the invoice review */
+.apr-go{position:sticky;bottom:12px;z-index:5;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 16px;background:var(--text);color:var(--bg2);border-radius:12px;box-shadow:0 12px 32px -12px rgba(0,0,0,.45)}
+.apr-go-txt{font-size:13px;min-width:0}
+.apr-go-rev{color:#fbbf24}
+.apr-go-sub{font-size:11px;opacity:.7;margin-top:2px}
+.apr-go-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 20px;border:0;border-radius:9px;background:var(--c1);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.apr-go-btn:hover{background:var(--c1h)}
+@media(max-width:768px){.apr-go{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));border-radius:12px 12px 0 0;margin:0}.apr-go-btn{width:100%;justify-content:center}.apr-go-txt{width:100%}body.new-edit-fullpage .main{padding-bottom:calc(200px + env(safe-area-inset-bottom,0px))!important}}
 .db-save-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--c1),var(--c1d));color:#fff;border:none;cursor:pointer;letter-spacing:-.01em;transition:filter .15s,transform .15s,box-shadow .15s;box-shadow:0 0 16px -4px rgba(5,150,105,.4),inset 0 1px 0 rgba(255,255,255,.2);white-space:nowrap}
 .db-save-btn:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 0 24px -4px rgba(5,150,105,.55),inset 0 1px 0 rgba(255,255,255,.2)}
 .db-save-btn:active{transform:translateY(0)}
@@ -864,6 +888,12 @@ body.cloud-active [data-cloud-show]{display:block !important}
 /* Panels */
 .stab-panel{display:none;flex-direction:column;gap:16px}
 .stab-panel.on{display:flex}
+/* Redesign: Settings is one scrolling page; the old tab sidebar is hidden and every panel shows as a section. */
+#pg-account-settings .settings-sidebar{display:none}
+#pg-account-settings .stab-panel{display:flex;padding-bottom:28px;margin-bottom:28px;border-bottom:1px solid var(--border)}
+#pg-account-settings .stab-panel:last-child{border-bottom:0}
+#pg-account-settings .settings-main{max-width:720px;padding-top:0}
+#pg-account-settings .settings-wrap{min-height:0}
 /* Cards */
 .settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rxl);padding:20px 24px;display:flex;flex-direction:column;gap:14px}
 .settings-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
@@ -979,6 +1009,24 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 /* ── Dashboard v2 ─────────────────────────────────────────────────── */
 
+.home-todo{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.home-todo-hd{display:flex;justify-content:space-between;align-items:baseline;padding:14px 18px 10px}
+.home-todo-title{font-size:15px;font-weight:700}
+.home-todo-count{font-size:12px;color:var(--text3)}
+.home-todo-row{white-space:normal;display:grid;grid-template-columns:40px minmax(0,1fr) 20px;gap:12px;align-items:center;width:100%;padding:13px 18px;border:0;border-top:1px solid var(--border);background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;min-height:56px}
+.home-todo-row:hover{background:var(--surface-h)}
+.home-todo-ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+.home-todo-ic.red{background:var(--redl);color:var(--red)}.home-todo-ic.amber{background:var(--amberl);color:var(--amber)}.home-todo-ic.green{background:var(--greenl);color:var(--green)}.home-todo-ic.blue{background:var(--bluel);color:var(--blue)}
+.home-todo-t{font-weight:600;font-size:14px}
+.home-todo-s{font-size:12px;color:var(--text2);margin-top:1px}
+.home-todo-chev{color:var(--text4);font-size:16px}
+.home-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.home-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.home-stat-l{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.home-stat-v{font-size:22px;font-weight:700;margin-top:2px}
+.home-stat-s{font-size:12px;color:var(--text2)}
+#pg-dashboard .db2-kpi-grid,#pg-dashboard .db2-analytics-wrap,#pg-dashboard .dash-bottom,#pg-dashboard #db-first-run{display:none!important}
+@media(max-width:700px){.home-stats{grid-template-columns:1fr 1fr}.home-stats .home-stat:first-child{grid-column:1/-1}}
 .db2-kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:20px}
 .db2-kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px 14px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:border-color .15s}
 .db2-kpi-card:hover{border-color:rgba(15,23,42,.14)}
@@ -1279,14 +1327,14 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <div class="h-l">
     <div class="h-icon-btn" onclick="document.querySelector('.side').classList.toggle('show')" title="Toggle sidebar" style="cursor:pointer"><i class="ti ti-menu-2"></i></div>
     <div class="h-title">
-      <div class="h-name" id="page-title">Dashboard</div>
-      <div class="h-sub" id="page-subtitle">AI-powered invoice analysis and price optimization</div>
+      <div class="h-name" id="page-title">Home</div>
+      <div class="h-sub" id="page-subtitle">What needs you today</div>
     </div>
   </div>
   <div class="h-r">
     <div class="h-data"><span class="live-dot"></span><span id="data-fresh">Live · just now</span></div>
-    <div class="h-icon-btn h-bell" title="Notifications" onclick="goTo('alerts')" style="cursor:pointer"><i class="ti ti-bell"></i><span class="h-bell-cnt" id="bell-cnt">0</span></div>
-    <div class="h-icon-btn" title="Help &amp; support" onclick="window.open('mailto:hello@trackaisle.com?subject=Help%20request','_blank')" style="cursor:pointer">?</div>
+    <div class="h-icon-btn h-bell" title="Notifications" onclick="goTo('alerts')" style="cursor:pointer;display:none"><i class="ti ti-bell"></i><span class="h-bell-cnt" id="bell-cnt">0</span></div>
+    <div class="h-icon-btn" title="Help &amp; support" onclick="window.open('mailto:hello@trackaisle.com?subject=Help%20request','_blank')" style="cursor:pointer;display:none">?</div>
     <div class="h-user">
       <div class="h-avatar" id="h-avatar">?</div>
       <div>
@@ -1297,37 +1345,31 @@ body.cloud-active [data-cloud-show]{display:block !important}
   </div>
 </header>
 <div class="layout">
-<nav class="side">
+<nav class="side" aria-label="Main">
   <div class="side-head">
     <div class="side-brand">Thameelay</div>
     <div class="side-brand-sub">Invoice Intelligence</div>
   </div>
+  <button type="button" class="side-add" onclick="navAddInvoice()"><i class="ti ti-plus"></i>Add invoice</button>
   <div class="sg">
-    <a data-pg="money" class="money-nav"><i class="sico ti ti-currency-dollar"></i>Money<span class="money-nav-badge" id="money-nav-badge"></span></a>
-  </div>
-  <div class="sg"><div class="slabel">Workflow</div>
-    <a data-pg="dashboard" class="on"><i class="sico ti ti-layout-dashboard"></i>Dashboard</a>
+    <a data-pg="dashboard" class="on"><i class="sico ti ti-home"></i>Home</a>
+    <a data-pg="history"><i class="sico ti ti-file-invoice"></i>Invoices <span class="scnt" id="hi-cnt">0</span></a>
+    <a data-pg="tracker"><i class="sico ti ti-tag"></i>Prices</a>
+    <a data-pg="vendors"><i class="sico ti ti-truck"></i>Vendors</a>
+    <a data-pg="account-settings"><i class="sico ti ti-settings"></i>Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
     <a data-pg="ask" data-admin-only title="Ask questions about your own costs, vendors and prices"><i class="sico ti ti-message-chatbot"></i>Ask AI</a>
-    <a data-pg="upload"><i class="sico ti ti-upload"></i>Upload Invoices</a>
   </div>
-  <div class="sg"><div class="slabel">Intelligence</div>
-    <a data-pg="items"><i class="sico ti ti-clipboard-list"></i>Item Master</a>
-    <a data-pg="tracker"><i class="sico ti ti-trending-up"></i>Price Tracker</a>
-    <a data-pg="vendors"><i class="sico ti ti-building-store"></i>Vendor Insights</a>
-    <a data-pg="alerts"><i class="sico ti ti-bell"></i>Alerts <span class="scnt scnt-red" id="al-cnt">0</span></a>
-    <a data-pg="produce" title="Produce items matched across all your invoices"><i class="sico ti ti-leaf"></i>Produce Matcher <span class="scnt" id="pc-cnt" style="display:none">0</span></a>
-  </div>
-  <div class="sg"><div class="slabel">History</div>
-    <a data-pg="history"><i class="sico ti ti-folder"></i>Invoice History <span class="scnt" id="hi-cnt">0</span></a>
-  </div>
-  <div class="sg"><div class="slabel">Settings</div>
-    <a data-pg="account-settings"><i class="sico ti ti-user-cog"></i>Account Settings</a>
-    <a data-pg="api-settings" data-cloud-hide><i class="sico ti ti-key"></i>API Settings <span class="scnt scnt-red" id="api-warn" style="display:none">!</span></a>
-    <a data-pg="pricing"><i class="sico ti ti-adjustments-horizontal"></i>Pricing Rules</a>
-    <a data-pg="calc"><i class="sico ti ti-calculator"></i>Margin Calculator</a>
-  </div>
-  <div id="cloud-auth" style="margin:6px 14px 4px;padding:8px 10px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
-  <div class="side-collapse" onclick="document.querySelector('.side').classList.toggle('hide')"><i class="ti ti-chevron-left"></i> Collapse menu</div>
+  <!-- Counters that older render code still writes to; kept so those writes never hit null. -->
+  <span hidden><span id="al-cnt">0</span><span id="pc-cnt">0</span><span id="money-nav-badge"></span></span>
+  <div id="cloud-auth" style="margin:auto 14px 12px;padding:8px 10px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
+</nav>
+<nav class="tabbar" aria-label="Main">
+  <a data-pg="dashboard" class="on"><i class="ti ti-home"></i><span>Home</span></a>
+  <a data-pg="history"><i class="ti ti-file-invoice"></i><span>Invoices</span></a>
+  <button type="button" class="tabbar-add" onclick="navAddInvoice()" aria-label="Add invoice"><i class="ti ti-plus"></i></button>
+  <a data-pg="tracker"><i class="ti ti-tag"></i><span>Prices</span></a>
+  <a data-pg="vendors"><i class="ti ti-truck"></i><span>Vendors</span></a>
+  <a data-pg="account-settings"><i class="ti ti-settings"></i><span>Settings</span></a>
 </nav>
 <main class="main">
 
@@ -1344,7 +1386,14 @@ body.cloud-active [data-cloud-show]{display:block !important}
   <!-- Trial nudge: shown while on the free trial so the 10-invoice wall never surprises -->
   <div id="db-trial-nudge" style="display:none;border:1px solid var(--border2);border-left:4px solid var(--c1);background:var(--surface);padding:12px 16px;margin-bottom:16px;border-radius:12px"></div>
 
-  <!-- KPI CARDS -->
+  <!-- WHAT NEEDS YOU (redesign home) -->
+  <div class="home-todo" id="home-todo">
+    <div class="home-todo-hd"><div class="home-todo-title">What needs you</div><div class="home-todo-count" id="home-todo-count"></div></div>
+    <div id="home-todo-list"></div>
+  </div>
+  <div class="home-stats" id="home-stats"></div>
+
+  <!-- KPI CARDS (hidden in the redesign; render code still writes to them) -->
   <div class="db2-kpi-grid">
     <div class="db2-kpi-card">
       <div class="db2-kpi-accent" style="background:var(--blue)"></div>
@@ -1896,7 +1945,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
       <div class="tbl-search-input" style="flex:1;min-width:240px;max-width:360px">
-        <input type="text" placeholder="Search items, vendors, notes..." id="tr-search" oninput="trSearchDebounced()">
+        <input type="text" placeholder="Search items, UPC, SKU, vendors…" id="tr-search" oninput="trSearchDebounced()">
       </div>
       <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="tr-show-disc" onchange="renderTracker(_lastTrFilter||'all')"> Show discontinued
@@ -2869,7 +2918,7 @@ body.cloud-active [data-cloud-show]{display:block !important}
 
 <!-- Product detail modal: opened by clicking Open on a vendor drill-down row -->
 <div id="prod-detail-modal" role="dialog" aria-modal="true" aria-label="Product details" style="display:none;position:fixed;inset:0;background:rgba(7,10,19,.75);z-index:9100;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeProdDetailModal()">
-  <div style="background:var(--surface);border-radius:16px;width:100%;max-width:540px;box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px var(--border);overflow:hidden">
+  <div style="background:var(--surface);border-radius:16px;width:100%;max-width:540px;max-height:calc(100vh - 24px);overflow:auto;box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px var(--border)">
     <div style="padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
         <div id="pdm-title" style="font-size:16px;font-weight:700;color:var(--text)"></div>
@@ -2884,6 +2933,16 @@ body.cloud-active [data-cloud-show]{display:block !important}
         <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Retail</div><div id="pdm-retail" style="font-size:13px;color:var(--green);font-weight:600;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
         <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Last seen</div><div id="pdm-last-seen" style="font-size:13px;color:var(--text2);padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
         <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Orders</div><div id="pdm-orders" style="font-size:13px;color:var(--text2);padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px"></div></div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border)">
+      <!-- Codes -->
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Codes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label for="pdm-upc" style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">UPC / barcode</label><input id="pdm-upc" type="text" inputmode="numeric" autocomplete="off" placeholder="12 digits on the package" oninput="pdmCheckUpc(this.value)" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div id="pdm-upc-msg" style="font-size:10px;color:var(--text4);margin-top:3px">Printed on tags and used in POS exports</div></div>
+          <div><label for="pdm-sku" style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Your SKU / store code</label><input id="pdm-sku" type="text" autocomplete="off" placeholder="Code in your register" style="width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text)"><div style="font-size:10px;color:var(--text4);margin-top:3px">Matches this item to your POS</div></div>
+        </div>
+        <div id="pdm-vendor-codes" style="font-size:11px;color:var(--text3);margin-top:10px"></div>
       </div>
       <hr style="border:none;border-top:1px solid var(--border)">
       <!-- Sizing -->
@@ -4099,6 +4158,8 @@ async function cloudReplaceProductMeta(){
     reorder_point: Number.isFinite(v.reorder_point) ? v.reorder_point : null,
     target_stock: Number.isFinite(v.target_stock) ? v.target_stock : null,
     produce_group: v.produce_group || null,
+    upc: v.upc || null,
+    sku: v.sku || null,
   }));
   await _supabase.from('product_meta').delete().eq('tenant_id', _USER.id);
   if(rows.length) await _supabase.from('product_meta').insert(rows);
@@ -4235,6 +4296,8 @@ async function cloudPullAll(){
           reorder_point: r.reorder_point != null ? Number(r.reorder_point) : undefined,
           target_stock: r.target_stock != null ? Number(r.target_stock) : undefined,
           produce_group: r.produce_group || undefined,
+          upc: r.upc || undefined,
+          sku: r.sku || undefined,
         };
       });
       _CACHE.prodMeta = meta; lsSet(SK.PROD_META, meta);
@@ -4351,7 +4414,9 @@ function goTo(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('nav a').forEach(a=>a.classList.remove('on'));
   const pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('on');
-  document.querySelectorAll(`nav a[data-pg="${id}"]`).forEach(a=>a.classList.add('on'));
+  const navId = NAV_PARENT[id] || id;
+  document.querySelectorAll(`nav a[data-pg="${navId}"]`).forEach(a=>a.classList.add('on'));
+  renderSubTabs(id);
   updatePageHeader(id);
   if(id==='dashboard')renderDashboard();
   if(id==='money')renderMoneyPage();
@@ -4372,6 +4437,41 @@ function goTo(id){
   }
 }
 document.querySelectorAll('nav a[data-pg]').forEach(a=>a.addEventListener('click',()=>goTo(a.dataset.pg)));
+
+// ═══════════ NAVIGATION (redesign) ═══════════
+// Five places: Home, Invoices, Prices, Vendors, Settings. Older pages still
+// exist and are reached from a tab strip inside their parent place.
+var NAV_PARENT = {
+  upload:'dashboard', alerts:'dashboard',
+  export:'history',
+  items:'tracker', money:'tracker', produce:'tracker',
+  pricing:'account-settings', calc:'account-settings', plans:'account-settings', 'api-settings':'account-settings'
+};
+var SUB_TABS = {
+  tracker: [['tracker','Price changes'],['items','All items'],['money','Money'],['produce','Produce']],
+  'account-settings': [['account-settings','Account'],['pricing','Markups'],['calc','Margin calculator'],['plans','Plan'],['api-settings','API key','cloud-hide']]
+};
+function renderSubTabs(id){
+  const parent = NAV_PARENT[id] || id;
+  const tabs = SUB_TABS[parent];
+  const pg = document.getElementById('pg-'+id);
+  if(!tabs || !pg) return;
+  let strip = pg.querySelector(':scope > .subtabs');
+  if(!strip){
+    strip = document.createElement('div');
+    strip.className = 'subtabs';
+    strip.setAttribute('role','tablist');
+    pg.prepend(strip);
+  }
+  strip.innerHTML = tabs.map(([t,label,flag]) =>
+    `<button type="button" role="tab" class="subtab${t===id?' on':''}" aria-selected="${t===id}" ${flag==='cloud-hide'?'data-cloud-hide':''} onclick="goTo('${t}')">${label}</button>`
+  ).join('');
+}
+function navAddInvoice(){
+  const inp = document.getElementById('file-in');
+  if(inp) inp.click(); else goTo('upload');
+}
+document.querySelectorAll('.tabbar a[data-pg]').forEach(a=>a.addEventListener('click',()=>window.scrollTo(0,0)));
 
 // ═══════════ DRAG & DROP ═══════════
 const DZ=document.getElementById('dropzone');
@@ -5819,6 +5919,7 @@ function finalizeAndSave(silent){
   const _ar={},_as={};Object.entries(APPROVALS).forEach(([k,v])=>{if(v){if(v.retailPrice!=null)_ar[k]=v.retailPrice;if(v.status)_as[k]=v.status;}});
   hist.unshift({...INV,_approvedRetails:_ar,_approvedStatuses:_as,savedAt:new Date().toISOString()});saveHist(hist);
   updateNavCounts();
+  if(typeof renderHomeTodos==='function') renderHomeTodos();
   if(document.getElementById('pg-history')?.classList.contains('on')) renderHistory();
   if(document.getElementById('pg-tracker')?.classList.contains('on')) renderTracker('all');
   if(document.getElementById('pg-vendors')?.classList.contains('on')) renderVendors();
@@ -5833,6 +5934,10 @@ function saveProdMeta(m){ _CACHE.prodMeta = m; lsSet(SK.PROD_META, m); cloudMark
 
 // ─── Product detail modal ────────────────────────────────────────────────────
 let _pdmDesc = null, _pdmVendor = null;
+
+// Short getElementById used by the product modal below. It was never
+// defined, so every 'Open' button in Prices/Vendors threw 'el is not defined'.
+function el(id){ return document.getElementById(id); }
 
 function openProdDetailModal(desc, vendor, lastCost, latestRetail, lastSeen, orders){
   _pdmDesc = desc; _pdmVendor = vendor;
@@ -5853,6 +5958,11 @@ function openProdDetailModal(desc, vendor, lastCost, latestRetail, lastSeen, ord
   el('pdm-target-stock').value = meta.target_stock != null ? meta.target_stock : '';
   el('pdm-produce-group').value = meta.produce_group || '';
   el('pdm-note').value = meta.note || '';
+  el('pdm-upc').value = meta.upc || '';
+  el('pdm-sku').value = meta.sku || '';
+  pdmCheckUpc(el('pdm-upc').value);
+  el('pdm-vendor-codes').innerHTML = pdmVendorCodes(desc).map(c =>
+    `<span style="display:inline-block;margin:0 10px 4px 0">${esc(c.vendor)} item # <b class="mn" style="color:var(--text2)">${esc(c.item)}</b></span>`).join('') || '<span>No vendor item number read from invoices yet.</span>';
   el('pdm-disc-btn').textContent = meta.discontinued ? 'Restore product' : 'Mark discontinued';
 
   const modal = document.getElementById('prod-detail-modal');
@@ -5880,11 +5990,42 @@ function saveProdDetailModal(){
   if(targetRaw !== '') m[k].target_stock = parseInt(targetRaw, 10); else delete m[k].target_stock;
   m[k].produce_group = el('pdm-produce-group').value || undefined;
   m[k].note = el('pdm-note').value.trim() || undefined;
+  const upcRaw = el('pdm-upc').value.replace(/\D/g,'');
+  if(upcRaw){
+    const bc = detectBarcodeFormat(upcRaw);
+    if(!bc.valid){ showToast('error', 'That UPC does not check out. Compare it with the package.'); el('pdm-upc').focus(); return; }
+  }
+  m[k].upc = upcRaw || undefined;
+  m[k].sku = el('pdm-sku').value.trim() || undefined;
 
   saveProdMeta(m);
   showToast('Saved.', 'success');
   closeProdDetailModal();
   if(document.getElementById('pg-vendors')?.classList.contains('on')) renderVendors();
+}
+
+// Live check of the UPC check digit while typing in the product modal.
+function pdmCheckUpc(val){
+  const msg = el('pdm-upc-msg'); if(!msg) return;
+  const digits = String(val||'').replace(/\D/g,'');
+  if(!digits){ msg.textContent = 'Printed on tags and used in POS exports'; msg.style.color = 'var(--text4)'; return; }
+  const bc = detectBarcodeFormat(digits);
+  if(bc.format === 'SKU' || bc.format === 'PLU'){ msg.textContent = 'A UPC has 12 digits (EAN 13, short UPC 8).'; msg.style.color = 'var(--amber)'; return; }
+  if(!bc.valid){ msg.textContent = 'Check digit does not match. Look for a typo.'; msg.style.color = 'var(--red)'; return; }
+  msg.textContent = bc.format + ' · check digit OK'; msg.style.color = 'var(--green)';
+}
+// Vendor item numbers already read from invoices for this product (from the price DB key vendor|item).
+function pdmVendorCodes(desc){
+  const db = loadDB(), want = (desc||'').toLowerCase().replace(/\s+/g,' ').trim(), out = [], seen = new Set();
+  for(const key in db){
+    const obs = db[key]; if(!obs || !obs.length) continue;
+    const last = obs[obs.length-1];
+    if((last.desc||'').toLowerCase().replace(/\s+/g,' ').trim() !== want) continue;
+    const [vendorKey, item] = key.split('|');
+    if(!item || seen.has(key)) continue; seen.add(key);
+    out.push({ vendor: last.vendor || vendorKey, item });
+  }
+  return out;
 }
 
 function pdmToggleDisc(){
@@ -5962,7 +6103,7 @@ function renderTracker(filter){
     return { kind:'dried', source:'dried', desc:last.desc, cat:last.cat||'other', vendor,
       prevCu, lastCu:last.unitCost, diff, pct, trend, orders:ents.length,
       lastSeen: last.invoiceDate || last.date || '',
-      latestRetail:lr, note:m.note||'', discontinued:!!m.discontinued };
+      latestRetail:lr, note:m.note||'', discontinued:!!m.discontinued, upc:m.upc||'', sku:m.sku||'', item:(key.split('|')[1]||'') };
   }).filter(Boolean);
 
   // Add produce-side products from PC_HIST (treats each catalogId+vendor as a product)
@@ -6028,7 +6169,10 @@ function renderTracker(filter){
     prods = prods.filter(p =>
       (p.desc||'').toLowerCase().includes(search) ||
       (p.vendor||'').toLowerCase().includes(search) ||
-      (p.note||'').toLowerCase().includes(search)
+      (p.note||'').toLowerCase().includes(search) ||
+      (p.upc||'').includes(search) ||
+      (p.sku||'').toLowerCase().includes(search) ||
+      (p.item||'').toLowerCase().includes(search)
     );
   }
   prods.sort((a,b)=> b.pct - a.pct);
@@ -7508,6 +7652,66 @@ function renderDashboard(){
   renderKpiSparklines();
   updateNavCounts();
   updateDataFreshness();
+  renderHomeTodos();
+}
+
+// Home "What needs you" list + three month numbers. Reads what the older
+// render functions already computed (approval pill, computeMoney, history),
+// so it adds no new data.
+function renderHomeTodos(){
+  const list = document.getElementById('home-todo-list');
+  if(!list) return;
+  const hist = loadHist();
+  const todos = [];
+  const pill = document.getElementById('db-action-pill');
+  const review = pill ? parseInt(pill.textContent, 10) || 0 : 0;
+  if(INV){
+    const saved = hist.some(h => h.invoiceNo===INV.invoiceNo && normV(h.vendor)===normV(INV.vendor) && h.date===INV.date);
+    const n = (INV.items||[]).filter(i=>i._rt===RT.PURCHASED && i.qty>0).length;
+    if(review > 0 || !saved){
+      todos.push({ ic:'red', icon:'ti-file-invoice', t:`${saved?'Finish checking':'Approve'} the ${esc(INV.vendor||'current')} invoice`,
+        s: review > 0 ? `${review} item${review===1?'':'s'} need a price decision` : `${n} items read. Check the prices, then save.`,
+        go:"(document.querySelector('.db2-approvals')||document.querySelector('#pg-dashboard .ne-shell, #pg-dashboard [id^=ne-]'))?.scrollIntoView({behavior:'smooth',block:'start'})" });
+    }
+  }
+  let money = null;
+  try { money = computeMoney(); } catch(e){ money = null; }
+  if(money && money.reprice.length){
+    const n = money.reprice.length;
+    todos.push({ ic:'amber', icon:'ti-arrow-up-right', t:`Raise ${n} shelf price${n===1?'':'s'}`,
+      s:`Costs went up on these items. About ${fBig(money.repriceTotal)} at stake on your last orders.`, go:"goTo('money')" });
+  }
+  if(money && money.cross.length){
+    const n = money.cross.length;
+    todos.push({ ic:'green', icon:'ti-truck', t:`${n} item${n===1?' is':'s are'} cheaper from another vendor`,
+      s:`Save about ${fBig(money.crossTotal)} by switching.`, go:"goTo('money')" });
+  }
+  if(!hist.length && !INV){
+    todos.push({ ic:'blue', icon:'ti-upload', t:'Add your first invoice', s:'Snap a photo or choose a PDF. We read every line and flag what changed.', go:'navAddInvoice()' });
+  }
+  const cnt = document.getElementById('home-todo-count');
+  if(!todos.length){
+    list.innerHTML = `<div class="home-todo-row" style="cursor:default"><span class="home-todo-ic green"><i class="ti ti-check"></i></span><span><div class="home-todo-t">All caught up</div><div class="home-todo-s">New invoices you add will show up here.</div></span><span></span></div>`;
+    if(cnt) cnt.textContent = '';
+  } else {
+    list.innerHTML = todos.map(x => `<button type="button" class="home-todo-row" onclick="${x.go}">
+      <span class="home-todo-ic ${x.ic}"><i class="ti ${x.icon}"></i></span>
+      <span style="min-width:0"><div class="home-todo-t">${x.t}</div><div class="home-todo-s">${x.s}</div></span>
+      <span class="home-todo-chev"><i class="ti ti-chevron-right"></i></span></button>`).join('');
+    if(cnt) cnt.textContent = `${todos.length} thing${todos.length===1?'':'s'}`;
+  }
+  // Three numbers for this month
+  const now = new Date(), m0 = new Date(now.getFullYear(), now.getMonth(), 1);
+  const month = hist.filter(h => { const d = new Date(h.date||h.savedAt||0); return d >= m0 && d <= now; });
+  const spent = month.reduce((a,h)=>a+(h.total||0),0);
+  const vendors = new Set(month.map(h=>normV(h.vendor))).size;
+  const up = money ? money.reprice.length : 0;
+  const avg = money && up ? money.reprice.reduce((a,r)=>a+r.pct,0)/up : 0;
+  const stats = document.getElementById('home-stats');
+  if(stats) stats.innerHTML = `
+    <div class="home-stat"><div class="home-stat-l">Spent this month</div><div class="home-stat-v mn">${fBig(spent)}</div><div class="home-stat-s">${month.length} invoice${month.length===1?'':'s'} from ${vendors} vendor${vendors===1?'':'s'}</div></div>
+    <div class="home-stat"><div class="home-stat-l">Costs went up</div><div class="home-stat-v mn" style="color:${up?'var(--red)':'var(--text)'}">${up} item${up===1?'':'s'}</div><div class="home-stat-s">${up?`Average increase ${avg.toFixed(0)}%`:'Since your previous orders'}</div></div>
+    <div class="home-stat"><div class="home-stat-l">Invoices saved</div><div class="home-stat-v mn">${hist.length}</div><div class="home-stat-s">All time</div></div>`;
 }
 
 // Proactive free-trial status banner on the dashboard so the 10-invoice wall
@@ -7876,7 +8080,8 @@ function renderNewEditShell(){
 
   // Reset per-invoice state when a new invoice is loaded
   if(INV !== _newEditPrevInv){
-    _newEditFilter = 'all';
+    // Open on the items that need a decision; fall back to All when every item is safe.
+    _newEditFilter = (hasInv && INV.items && INV.items.length && safeCount < INV.items.filter(i=>i._rt===RT.PURCHASED && i.qty>0).length) ? 'review' : 'all';
     _newApprovalPage = 1;
     _newApprovalSearch = '';
     _newApprovalSort = {col: null, dir: 'asc'};
@@ -8199,6 +8404,10 @@ function renderNewEditShell(){
       </div>
       <div style="height:1px;background:var(--border);margin:12px 0"></div>
       <div class="apr-wrap${_aprImgHidden()?' img-hidden':''}">${leftPaneHtml}${rightPane}</div>
+    </div>
+    <div class="apr-go">
+      <div class="apr-go-txt"><b>${counts.safe} item${counts.safe===1?'':'s'} look fine</b>${counts.review?` · <span class="apr-go-rev">${counts.review} need${counts.review===1?'s':''} a look</span>`:''}<div class="apr-go-sub">Approving saves every price on this invoice to your history.</div></div>
+      <button type="button" class="apr-go-btn" onclick="dbSaveAll()"><i class="ti ti-check" aria-hidden="true"></i>Approve invoice (${purch.length})</button>
     </div>`;
 }
 
@@ -9078,18 +9287,22 @@ function moneyApply(i){
 
 function updatePageHeader(pgId){
   const titles = {
-    dashboard: ['Dashboard', 'AI-powered invoice analysis and price optimization'],
-    money: ['Money', 'Reprice for margin and switch to cheaper vendors'],
-    upload: ['Upload Invoices', 'Drop vendor invoice PDFs to extract line items'],
+    dashboard: ['Home', 'What needs you today'],
+    money: ['Prices', 'Reprice for margin and switch to cheaper vendors'],
+    upload: ['Add invoice', 'Snap or upload a vendor invoice'],
     verify: ['Verify Lines', 'Review and correct extracted line items'],
     export: ['Export to POS', 'Export approved prices to your POS system'],
-    tracker: ['Price Tracker', 'Track product price history over time'],
-    vendors: ['Vendor Insights', 'Analyze vendor performance and pricing'],
+    tracker: ['Prices', 'What each item costs you and how it changed'],
+    vendors: ['Vendors', 'Who you buy from and how their prices move'],
     alerts: ['Alerts', 'Items requiring your attention'],
-    history: ['Invoice History', 'All past invoices and orders'],
-    'api-settings': ['API Settings', 'Configure your Anthropic API key'],
-    pricing: ['Pricing Rules', 'Set markup percentages by category'],
-    calc: ['Margin Calculator', 'Calculate margins and retail prices'],
+    history: ['Invoices', 'Every invoice you have added'],
+    'api-settings': ['Settings', 'Your Anthropic API key'],
+    pricing: ['Settings', 'Markup percentages by category'],
+    calc: ['Settings', 'Work out a margin or shelf price'],
+    items: ['Prices', 'Every item you carry'],
+    produce: ['Prices', 'Produce matched across your invoices'],
+    'account-settings': ['Settings', 'Your account, store and plan'],
+    plans: ['Settings', 'Your plan'],
     ask: ['Ask AI', 'Questions about your own costs, vendors and prices'],
   };
   const [t, s] = titles[pgId] || ['Dashboard', ''];
